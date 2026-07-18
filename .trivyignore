@@ -1,0 +1,2 @@
+# Accepted Trivy findings belong here, one vulnerability or misconfiguration ID
+# per line, with a short dated justification in the PR that adds the entry.

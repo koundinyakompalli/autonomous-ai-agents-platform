@@ -1,0 +1,567 @@
+schema_version: 1
+profile_version: 9
+generated_at: "2026-04-29T17:26:30.756Z"
+source_repo_commit_sha: 43d2ebe18d00d0c86c4b4dfca5df89286f79a080
+generated:
+  aliases:
+    - cp-interoperability-monorepo
+    - interop
+    - interoperability
+  domains:
+    - "$documentation"
+    - "$expand"
+    - "$generate"
+    - "$inquire"
+    - "$next"
+    - "$questionnaire"
+    - "$submit"
+    - "$validate"
+    - allergyintolerance
+    - auth
+    - authorization
+    - "automated testing"
+    - "aws cli"
+    - "aws healthlake"
+    - "batch loading"
+    - bsca
+    - bundle
+    - "care prominence"
+    - careplan
+    - cds
+    - "cds hook"
+    - cds-hooks
+    - claim
+    - claimresponse
+    - client-base-infra
+    - code
+    - codes
+    - communicationrequest
+    - correspondence
+    - coverage
+    - cpt
+    - data
+    - "davinci prior authorization testing"
+    - deploy
+    - der
+    - documentreference
+    - enhance
+    - extension
+    - "external integration"
+    - external-integrations
+    - fhir
+    - "fhir json"
+    - "fhir processor"
+    - "fhir resource"
+    - "fhir smart"
+    - "fhir transformer"
+    - forgot
+    - goal
+    - guidance
+    - "health lake"
+    - "health lake exporter"
+    - "health lake smart"
+    - healthlake
+    - hook1
+    - hook2
+    - implement
+    - implementation
+    - "inferno validator"
+    - interop
+    - "interop service"
+    - interoperability
+    - "interoperability monorepo"
+    - interqual
+    - "java interop app"
+    - "java openjdk"
+    - lambda
+    - launch
+    - mapping
+    - "medhok core api"
+    - medication
+    - medicationstatement
+    - medpharm
+    - metadata
+    - mhk
+    - "mhk api"
+    - "mhk interop api"
+    - "new resource types"
+    - notification
+    - organization
+    - package
+    - "pas submit flow"
+    - patient
+    - "payer api"
+    - pharmacy
+    - practitioner
+    - "preventing cold starts"
+    - prior
+    - "prior authorization"
+    - "prior authorization support"
+    - "prior authorization support controller"
+    - provider
+    - "provider api exchange"
+    - question
+    - questionnaire
+    - reference
+    - "regenerating mhk"
+    - requirements
+    - service
+    - "service requests"
+    - servicerequest
+    - services
+    - smart
+    - "smart introspection"
+    - "smart introspection lambda"
+    - sonar
+    - submit
+    - support
+    - terraform
+    - "the ecs"
+    - "the interop"
+    - "the interop service"
+    - "the interoperability"
+    - "the java"
+    - "this lambda"
+    - timeout
+    - type
+    - upsert
+    - "using client"
+    - uuid
+    - validation
+  packages:
+    - com.mhkinterop
+    - com.mhkinterop.client
+    - com.mhkinterop.common
+    - com.mhkinterop.fhir
+    - com.mhkinterop.mhk
+    - tests.integration.testScriptEngine.engine.fhir_executor
+    - tests.integration.testScriptEngine.engine.xml_parser
+  file_path_patterns:
+    - .cline
+    - .gitlab
+    - Bundles
+    - "CQL Libraries"
+    - "Library Resources"
+    - MedPharma
+    - Samples
+    - Templates
+    - batch-import
+    - cp-interoperability-monorepo
+    - deprecated
+    - fhir_processor
+    - health_lake_exporter
+    - healthlake_events
+    - implementation-guides
+    - integration
+    - lambdas
+    - merge_request_templates
+    - mhk-interopt-fhirhelper
+    - mock-questionnaires
+    - modules
+    - openApi
+    - postman_collections
+    - runbooks
+    - smart_introspection
+    - sqs_api_facade
+    - terraform
+  symbols:
+    - AbstractCDSBaseService
+    - AbstractCDSOrderService
+    - AbstractPriorAuthorizationService
+    - ActiveMemberProfile
+    - ActiveMemberProfileRowMapper
+    - AllergyController
+    - ApplicationProperty
+    - ApplicationPropertyRepository
+    - ApplicationPropertyRowMapper
+    - AssociatedResource
+    - AuthorizationController
+    - AuthorizationIdentifiers
+    - BaseEvent
+    - CARETEAM_PROVIDER_ROLES
+    - CDSController
+    - CDSHookConfig
+    - CDSOrderDispatchService
+    - CDSOrderSelectService
+    - CDSOrderSignService
+    - CDSRequest
+    - CDSResponse
+    - CRDController
+    - CRDService
+    - CancellationType
+    - CancellationValidationResult
+    - Card
+    - CardAssociatedResourceExtension
+    - CareplanController
+    - CdsServiceException
+    - CertificationType
+    - ClaimAdjudicationDecisionsCodeEnum
+    - ClaimIPDaysItem
+    - ClaimMedicalItem
+    - ClaimProcedureItem
+    - ClaimResponse
+    - ClaimResponseBuilder
+    - CloudWatch
+    - CodeSystemUtils
+    - CodesController
+    - Coding
+    - CommunicationRequest
+    - CommunicationRequestController
+    - CommunicationRequestRowMapper
+    - CommunicationRequestService
+    - CommunicationRequestServiceImpl
+    - ConfigOption
+    - ControllerUtils
+    - CoreRestClient
+    - CorrespondenceEvent
+    - CorrespondenceEventConfig
+    - CorrespondenceEventController
+    - CorrespondenceEventData
+    - CorrespondenceEventService
+    - CoverageController
+    - CoverageService
+    - CptCodeRecord
+    - CrdAdditionalDocEnum
+    - CrdCoverageDetailCodeEnum
+    - CrdCoverageInfoEnum
+    - CrdDocReasonEnum
+    - CrdEvaluation
+    - CrdInfoNeededEnum
+    - CrdPriorAuthDetailEnum
+    - DTRController
+    - DTRService
+    - DatabaseConfig
+    - DateConverter
+    - DateSupplierConfig
+    - DavinciConfig
+    - DavinciPasUtils
+    - DavinciSpringConfig
+    - DavinciUtils
+    - DocumentContext
+    - DocumentReference
+    - DocumentReferenceController
+    - DocumentService
+    - DocumentationTemplatesService
+    - DtrClient
+    - DtrClientLogger
+    - DtrValidator
+    - ErrorResponse
+    - EvalException
+    - EventConstants
+    - EventData
+    - EventExtension
+    - EventIdentifier
+    - EventMessage
+    - EventResource
+    - EventUtils
+    - FHIRAuthorization
+    - FHIRResourceError
+    - FHIRUtils
+    - FailedDependencyException
+    - FhirConfig
+    - FhirConverterUtil
+    - FhirDateUtils
+    - FhirIDServices
+    - FhirOperationException
+    - FhirQuestionnaireResponseToWSQuestionSetBuilder
+    - FhirResourceId
+    - FileHelper
+    - GlobalExceptionHandler
+    - GoalController
+    - HealthLake
+    - HealthLakeClientError
+    - HealthLakeConfig
+    - HealthLakeExporter
+    - HealthLakeFallbackController
+    - HealthLakeService
+    - HealthLakeServiceException
+    - HealthLakeServiceR4
+    - HealthlakeHapiClientTokenInterceptor
+    - HookEnum
+    - HookOrderSelectContext
+    - HookOrderSignContext
+    - IDSupplier
+    - IndicatorEnum
+    - InterQual
+    - InterestedMessage
+    - InternalServerException
+    - InteropConfig
+    - InterqualConfig
+    - InterqualDtrClient
+    - InterqualDtrValidator
+    - InterqualOauthToken
+    - InterqualServiceException
+    - JacksonCDSFhirResourceSerializer
+    - JacksonDavinciFhirResourceDeserializer
+    - JacksonDavinciFhirResourceSerializer
+    - LaunchContext
+    - Link
+    - MHKExceptionUtils
+    - MHKInteropException
+    - MHKWebServiceException
+    - McgConfig
+    - McgDtrClient
+    - MedPharmModuleHandler
+    - MedPharmPriorAuthCancellationService
+    - MedPharmPriorAuthorizationService
+    - MedicationController
+    - MemberAPIException
+    - MemberDAO
+    - MemberNotFoundException
+    - MemberOperationException
+    - MemberService
+    - MessageHeader
+    - MetadataController
+    - MetadataService
+    - MhkConfig
+    - MhkInteroperabilityApplication
+    - MockData
+    - MockDtrClient
+    - ModuleCodeSystems
+    - ModuleHandler
+    - ModuleType
+    - MultipleMembersFoundException
+    - NoopDtrClient
+    - NotFoundException
+    - NotImplementedException
+    - NoteComponentBuilder
+    - OAuthError
+    - OAuthTokenProvider
+    - OperationHandler
+    - OperationOutcome
+    - OperationType
+    - OrderDispatchContext
+    - OrderDispatchPrefetch
+    - OrderDispatchRequest
+    - OrderEvaluation
+    - OrderSelectContext
+    - OrderSelectPrefetch
+    - OrderSelectRequest
+    - OrderSignContext
+    - OrderSignPrefetch
+    - OrderSignRequest
+    - OrganizationController
+    - PHIScrub
+    - PaUrgency
+    - PatientContext
+    - PatientController
+    - PatientService
+    - PharmacyController
+    - PractitionerController
+    - PriorAuthCancellationService
+    - PriorAuthExtensionService
+    - PriorAuthInquireService
+    - PriorAuthRequestContext
+    - PriorAuthRequestContextBuilder
+    - PriorAuthSupportingInfoService
+    - PriorAuthorizationOrchestrator
+    - PriorAuthorizationService
+    - PriorAuthorizationSupportController
+    - PropertyCacheScheduler
+    - PropertyCacheSchedulerCondition
+    - PropertyCacheSchedulerConfig
+    - PropertyHelper
+    - ProviderContactRecord
+    - ProviderService
+    - RequestedUnits
+    - RestTemplateUtils
+    - RetryableHealthLakeException
+    - RetryableInterqualException
+    - RxPAClaimResponseBuilder
+    - SNSClientError
+    - SNSConfigurationError
+    - SNSPublishError
+    - SecurityConfig
+    - SelectionBehaviorEnum
+    - ServiceDiscoveryConfigExtension
+    - ServiceDiscoveryModel
+    - ServiceDiscoveryResponse
+    - ServiceRequest
+    - ServiceRequestProcessingException
+    - SmartLaunchController
+    - SmartLaunchParameters
+    - SmartLaunchRequest
+    - SmartLaunchResponse
+    - SmartLaunchService
+    - StringHelper
+    - SubscriptionWebhookController
+    - Suggestion
+    - SuppInfoCategoryEnum
+    - TypeEnum
+    - UMPriorAuthCancellationService
+    - UmModuleHandler
+    - UmPriorAuthUpdateService
+    - UmPriorAuthorizationService
+    - ValidationController
+    - ValidationService
+    - WebConfig
+    - XRayTracingAspect
+  endpoints:
+    - "/$inquire"
+    - "/$submit"
+    - "/$validate"
+    - /DocumentReference
+    - "/Questionnaire/$documentation-requirements"
+    - "/Questionnaire/$generate-guidance"
+    - "/Questionnaire/$next-question"
+    - "/Questionnaire/$questionnaire-package"
+    - "/ValueSet/$expand"
+    - "/allergyintolerance/{id}"
+    - "/authorization/{id}"
+    - "/careplan/{id}"
+    - /codes/cpt
+    - "/communicationrequest/{id}"
+    - /correspondence/upsert-document-reference
+    - "/correspondence/{id}"
+    - "/coverage/uuid/{uuid}"
+    - "/coverage/{id}"
+    - "/der/{id}"
+    - "/documentreference/uuid/{uuid}"
+    - "/goal/uuid/{uuid}"
+    - "/goal/{id}"
+    - /hook1
+    - /hook2
+    - "/medication/uuid/{uuid}"
+    - "/medication/{id}"
+    - "/medicationstatement/{id}"
+    - /mhk/test/notification
+    - "/organization/uuid/{uuid}"
+    - "/organization/{id}"
+    - "/patient/uuid/{uuid}"
+    - "/patient/{id}"
+    - "/pharmacy/{id}"
+    - "/practitioner/uuid/{uuid}"
+    - /r4
+    - "/r4/**"
+    - /r4/Claim
+    - /r4/_services/smart/Launch
+    - /r4/cds-services
+    - /r4/metadata
+    - /r4/mhk
+    - /r4/servicerequest
+    - /submit
+  tables: []
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `interop` is the FHIR/interoperability monorepo. It owns all
+# external-facing FHIR APIs for the Care Prominence platform: CDS Hooks
+# (order-sign, order-select, order-dispatch), DTR (Documentation Templates
+# and Rules), PAS (Prior Authorization Support), SMART on FHIR app launch,
+# the OLTP->FHIR transformation pipeline, and ingestion into AWS HealthLake.
+# Written primarily in Java (mhk-interopt-fhirhelper SpringBoot ECS service)
+# with supporting Python Lambdas (fhir_processor, health_lake_exporter,
+# healthlake_events, smart_introspection, sqs_api_facade).
+#
+# Typical ticket vocabulary: FHIR, CDS hook, DTR, CRD, PAS, order-sign,
+# order-select, order-dispatch, questionnaire-package, Interqual, MCG,
+# Coverage, HealthLake, SMART launch, MHK Internal Assessments, external
+# DTR provider, Coverage Requirements Discovery, Prior Auth Support, PA List.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - interop
+    - fhir-interop
+    - cp-interop
+    - interoperability-monorepo
+  domains:
+    - fhir
+    - cds-hooks
+    - cds hook
+    - crd
+    - coverage requirements discovery
+    - dtr
+    - documentation templates and rules
+    - pas
+    - prior authorization support
+    - smart on fhir
+    - smart launch
+    - questionnaire package
+    - order-sign
+    - order-select
+    - order-dispatch
+    - healthlake
+    - aws healthlake
+    - interqual
+    - mcg
+    - external dtr
+    - internal dtr
+    - mhk internal assessments
+    - external questionnaire
+    - pa list
+    - pa list service
+    - questionnaire-package
+    - davinci
+    - davinci pas
+    - coverage service
+    - fhir transformer
+    - fhir processor
+    - fhir mapper
+    - oltp to fhir
+    - claimresponse
+    - bundle
+    - cpt
+    - wsumquestionset
+    - core rest client
+    - corerestclient
+    - mhk core api
+    - core web services
+    - authrestservices
+    - memberrestservices
+    - rxparestservices
+    - submitpreauth
+    - fetchmember
+    - getquestionsetrx
+    - getcptcodes
+    - wsmemberquery
+    - wspreauthinput
+    - wsquestionset
+    - wsguideline
+    - fhir payer api
+    - payer api exchange
+    - smart introspection
+    - provider api exchange
+  packages:
+    - com.mhkinterop
+    - com.mhkinterop.common
+    - com.mhkinterop.fhir
+    - com.mhkinterop.common.service
+  file_path_patterns:
+    - mhk-interopt-fhirhelper
+    - fhir_processor
+    - health_lake_exporter
+    - healthlake_events
+    - smart_introspection
+    - sqs_api_facade
+    - DTR
+    - Bundles
+  symbols:
+    - AbstractCDSOrderService
+    - CDSOrderSignService
+    - CDSOrderSelectService
+    - CDSOrderDispatchService
+    - CRDService
+    - DTRService
+    - CoreRestClient
+    - AuthRestServices
+    - MemberRestServices
+    - RxPARestServices
+    - WSMemberQuery
+    - WSPreAuthInput
+    - WSQuestionSet
+    - WSGuideline
+    - CoverageService
+    - FhirMapper
+    - WSUMQuestionSetRequest
+    - PAListService
+    - PriorAuthorizationService
+  endpoints:
+    - /fhir
+    - /r4
+    - /r4/cds-services
+    - /Questionnaire/$questionnaire-package
+    - /Questionnaire/$next-question
+    - "$submit"
+    - "$inquire"
+    - /cds-services
+  tables: []

@@ -1,0 +1,6894 @@
+/* ============================================================
+   OneShot · Liquid Glass theme (macOS 26 inspired)
+   Layers: ambient colored backdrop → frosted glass panels
+
+   Scoped under .liquid-glass-scope so OfficePage and any other
+   route mounted under the same app root stays unaffected.
+   ============================================================ */
+
+/* Registered custom properties — typing these as <color> is what lets
+   browsers interpolate them inside gradients across @keyframes. Without
+   @property, custom-property color values step-change at each stop. */
+@property --aurora-a {
+  syntax: "<color>";
+  initial-value: rgba(113, 139, 202, 0.42);
+  inherits: true;
+}
+@property --aurora-b {
+  syntax: "<color>";
+  initial-value: rgba(77, 103, 176, 0.4);
+  inherits: true;
+}
+@property --aurora-c {
+  syntax: "<color>";
+  initial-value: rgba(12, 38, 159, 0.38);
+  inherits: true;
+}
+
+.liquid-glass-scope {
+  /* macOS Tahoe sampled deep blue ambient palette */
+  --ambient-a: #02126a; /* deep blue */
+  --ambient-b: #0c269f; /* cobalt */
+  --ambient-c: #1e50ad; /* blue highlight */
+  --ambient-d: #03080f; /* near-black with blue cast */
+  --ambient-warm: #381cbf;
+
+  --text: #f3f1ec;
+  --text-2: #dddad4;
+  --muted: #b0aca3;
+  --dim: #918d85;
+
+  --accent: #ffb870;
+  --accent-2: #ffd7a8;
+  --accent-dim: rgba(255, 184, 112, 0.14);
+
+  --running: #72b8ff;
+  --running-2: #a7d4ff;
+  --running-dim: rgba(114, 184, 255, 0.16);
+
+  --ok: #7fe3a1;
+  --ok-dim: rgba(127, 227, 161, 0.14);
+  --bad: #ff8a83;
+  --bad-dim: rgba(255, 138, 131, 0.14);
+  --warn: #ffd46b;
+  --warn-dim: rgba(255, 212, 107, 0.14);
+
+  /* Primary (pipeline-active blue). No liquid-glass equivalent; kept as a
+     named token so JS-side COLORS can reference it via var(--primary). */
+  --primary: #5e6ad2;
+
+  /* Alpha variants derived from the semantic tokens. Expressed with
+     color-mix() so changes to --accent / --bad cascade through the
+     derivatives without hand-tuned rgba drift. */
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-strong: color-mix(in srgb, var(--accent) 36%, transparent);
+  --bad-border: color-mix(in srgb, var(--bad) 24%, transparent);
+
+  /* Surface chrome tokens used by modals, code blocks, sweep highlights. */
+  --modal-overlay: rgba(2, 6, 13, 0.74);
+  --sweep-highlight: rgba(255, 255, 255, 0.22);
+  --code-bg: rgba(0, 0, 0, 0.35);
+  --deploy-grey: rgba(255, 255, 255, 0.22);
+  --pill-on-completed: #1c1917;
+
+  --surface-1: #111215;
+  --surface-2: #161819;
+  --surface-3: #1b1d20;
+  --surface-stroke: #2c2f36;
+  --surface-stroke-2: #363a42;
+
+  /* Translucent panel surface — lets ambient bleed through uniformly
+     across tabs regardless of how many panels are stacked. */
+  --panel-bg: rgba(19, 20, 23, 0.92);
+  --panel-blur: saturate(1.4) blur(14px);
+
+  --glass-1: rgba(255, 255, 255, 0.055);
+  --glass-2: rgba(255, 255, 255, 0.09);
+  --glass-3: rgba(255, 255, 255, 0.13);
+  --glass-stroke: rgba(255, 255, 255, 0.09);
+  --glass-stroke-2: rgba(255, 255, 255, 0.16);
+  --glass-inner-hi: rgba(255, 255, 255, 0.22);
+  --glass-inner-lo: rgba(0, 0, 0, 0.35);
+
+  --sidebar-shell-bg:
+    linear-gradient(
+      180deg,
+      var(--aurora-c) 0%,
+      var(--aurora-b) 45%,
+      var(--aurora-a) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(13, 16, 27) 0%,
+      rgb(17, 22, 34) 58%,
+      rgb(22, 28, 42) 100%
+    );
+  --sidebar-shell-stroke: rgba(255, 255, 255, 0.12);
+  --sidebar-shell-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.24) inset,
+    1px 0 0 rgba(255, 255, 255, 0.08) inset, 0 -1px 0 rgba(0, 0, 0, 0.24) inset,
+    10px 14px 32px -28px rgba(0, 0, 0, 0.72),
+    0 28px 64px -24px rgba(0, 0, 0, 0.72);
+  --sidebar-shell-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.08) 24%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  --sidebar-divider: rgba(255, 255, 255, 0.1);
+  --sidebar-tagline: rgba(221, 208, 167, 0.52);
+  --sidebar-section-label: rgba(214, 198, 158, 0.34);
+  --sidebar-nav-text: rgba(244, 240, 233, 0.84);
+  --sidebar-nav-icon: rgba(232, 226, 212, 0.55);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: linear-gradient(
+    180deg,
+    rgb(105, 112, 144),
+    rgb(94, 101, 131)
+  );
+  --sidebar-active-stroke: rgba(255, 255, 255, 0.15);
+  --sidebar-active-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.28) inset,
+    0 10px 24px -10px rgba(14, 17, 34, 0.65);
+  --sidebar-count-bg: rgba(255, 255, 255, 0.09);
+  --sidebar-count-stroke: rgba(255, 255, 255, 0.1);
+  --sidebar-chip-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-chip-stroke: rgba(255, 255, 255, 0.08);
+
+  --sans: "Inter", -apple-system, "SF Pro Text", sans-serif;
+  --display: "Inter", -apple-system, "SF Pro Display", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --app-bg:
+    radial-gradient(
+      88% 118% at -8% 8%,
+      rgba(113, 139, 202, 0.14) 0%,
+      transparent 48%
+    ),
+    radial-gradient(
+      62% 86% at 4% 84%,
+      rgba(30, 80, 173, 0.1) 0%,
+      transparent 54%
+    ),
+    linear-gradient(180deg, #0a0b0e 0%, #08090c 62%, #070809 100%);
+
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+
+  position: relative;
+  min-height: 100vh;
+  font-family: var(--sans);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+  letter-spacing: -0.003em;
+  background: var(--app-bg);
+  background-attachment: fixed, fixed, fixed;
+}
+
+.liquid-glass-scope * {
+  box-sizing: border-box;
+}
+
+/* Viewport-locked ambient — colored blobs stay fixed while content scrolls */
+.liquid-glass-scope::before {
+  content: "";
+  position: fixed;
+  inset: -16% -10% -8% -12%;
+  background:
+    radial-gradient(
+      40% 48% at 15% 18%,
+      rgba(30, 80, 173, 0.25) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      34% 40% at 8% 52%,
+      rgba(100, 82, 204, 0.18) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      32% 38% at 24% 74%,
+      rgba(12, 38, 159, 0.16) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      34% 42% at 12% 96%,
+      rgba(113, 139, 202, 0.12) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      28% 34% at 35% 10%,
+      rgba(56, 28, 191, 0.14) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      26% 34% at 5% 86%,
+      rgba(132, 153, 206, 0.13) 0%,
+      transparent 60%
+    );
+  z-index: -2;
+  filter: saturate(1.1);
+  pointer-events: none;
+}
+
+/* Slow sidebar color breathing. The registered @property vars below
+   are referenced by .sidebar's gradient and box-shadow so they retint
+   in sync without changing the rest of the dashboard background.
+   `alternate` gives a seamless loop — end state of each iteration
+   equals start state of the next. */
+@keyframes sidebar-aurora {
+  0% {
+    --aurora-a: rgba(113, 139, 202, 0.42);
+    --aurora-b: rgba(30, 80, 173, 0.4);
+    --aurora-c: rgba(2, 18, 106, 0.4);
+  }
+  25% {
+    --aurora-a: rgba(132, 153, 206, 0.43);
+    --aurora-b: rgba(30, 80, 173, 0.42);
+    --aurora-c: rgba(0, 15, 110, 0.4);
+  }
+  50% {
+    --aurora-a: rgba(100, 82, 204, 0.42);
+    --aurora-b: rgba(79, 47, 205, 0.41);
+    --aurora-c: rgba(56, 28, 191, 0.38);
+  }
+  75% {
+    --aurora-a: rgba(113, 139, 202, 0.41);
+    --aurora-b: rgba(12, 38, 159, 0.41);
+    --aurora-c: rgba(30, 80, 173, 0.36);
+  }
+  100% {
+    --aurora-a: rgba(113, 139, 202, 0.42);
+    --aurora-b: rgba(30, 80, 173, 0.4);
+    --aurora-c: rgba(0, 15, 110, 0.38);
+  }
+}
+
+.liquid-glass-scope[data-theme="light"] {
+  animation: none;
+}
+
+.liquid-glass-scope {
+  animation: sidebar-aurora 60s ease-in-out infinite alternate;
+}
+
+/* Film grain / noise overlay — matches the prototype's single ::after layer.
+   Previously this rule combined the grain with a bottom-right vignette, but the
+   prototype's cascade discards the vignette (duplicate `body::after` selectors),
+   so only the grain is actually rendered. Keep it grain-only here too. */
+.liquid-glass-scope::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.liquid-glass-scope .mono {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.liquid-glass-scope .dim {
+  color: var(--dim);
+}
+.liquid-glass-scope .ok {
+  color: var(--ok);
+}
+.liquid-glass-scope .bad {
+  color: var(--bad);
+}
+.liquid-glass-scope .warn {
+  color: var(--warn);
+}
+
+.liquid-glass-scope button {
+  font: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ============================================================
+   Glass primitive
+   ============================================================ */
+.lg-glass {
+  position: relative;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-md);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.25) inset,
+    0 20px 60px -20px rgba(0, 0, 0, 0.55);
+}
+.lg-glass-raised {
+  background: var(--glass-2);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid var(--glass-stroke-2);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+    0 30px 80px -24px rgba(0, 0, 0, 0.65);
+}
+.lg-glass::before,
+.lg-glass-raised::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.03) 14%,
+    rgba(255, 255, 255, 0) 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+.liquid-glass-scope.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  padding: 16px;
+  gap: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .liquid-glass-scope.app {
+    transition:
+      grid-template-columns 600ms cubic-bezier(0.22, 1, 0.36, 1),
+      gap 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* Immersive mode: sidebar column collapses. Used by the About page. */
+.liquid-glass-scope.app.is-immersive {
+  grid-template-columns: 0 1fr;
+  gap: 0;
+}
+
+.liquid-glass-scope.app.is-logo-morphing {
+  pointer-events: none;
+  transition: none !important;
+}
+
+/* ---- Sidebar ---- */
+/* Sidebar shell styles live in sidebar-shell.css so the surface can evolve
+   independently from the rest of the liquid glass system. */
+
+/* ============================================================
+   Main
+   ============================================================ */
+.liquid-glass-scope .main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.liquid-glass-scope .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.liquid-glass-scope .btn-ghost:hover {
+  background: var(--glass-2);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.liquid-glass-scope .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #2a1a08;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset,
+    0 8px 22px -6px rgba(255, 160, 90, 0.55);
+  transition:
+    transform 0.1s,
+    box-shadow 0.15s;
+}
+.liquid-glass-scope .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 12px 28px -6px rgba(255, 160, 90, 0.65);
+}
+.liquid-glass-scope .btn-primary:active {
+  transform: translateY(0);
+}
+
+.liquid-glass-scope .btn-search-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+.liquid-glass-scope .btn-search-circle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.liquid-glass-scope .kbd-inline {
+  display: inline-block;
+  padding: 1px 6px;
+  min-width: 16px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================
+   Overview
+   ============================================================ */
+.liquid-glass-scope .overview {
+  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.liquid-glass-scope .page-title {
+  font-family: "Fraunces", var(--display);
+  font-size: clamp(26px, 2.5vw, 30px);
+  font-weight: 400;
+  font-variation-settings:
+    "opsz" 96,
+    "wght" 390,
+    "SOFT" 20;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.liquid-glass-scope .page-sub {
+  max-width: min(76ch, 100%);
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.liquid-glass-scope .page-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+.liquid-glass-scope .page-metric-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.035)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 8px 18px -16px rgba(0, 0, 0, 0.65);
+  color: var(--text-2);
+}
+.liquid-glass-scope .page-metric-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.liquid-glass-scope .page-metric-value {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.liquid-glass-scope .page-metric-chip.accent {
+  border-color: rgba(255, 184, 112, 0.24);
+  background: rgba(255, 184, 112, 0.07);
+}
+.liquid-glass-scope .page-metric-chip.accent .page-metric-value {
+  color: var(--accent-2);
+}
+.liquid-glass-scope .page-metric-chip.ok {
+  border-color: rgba(127, 227, 161, 0.22);
+  background: rgba(127, 227, 161, 0.07);
+}
+.liquid-glass-scope .page-metric-chip.ok .page-metric-value {
+  color: var(--ok);
+}
+.liquid-glass-scope .page-metric-chip.warn {
+  border-color: rgba(255, 212, 107, 0.22);
+  background: rgba(255, 212, 107, 0.07);
+}
+.liquid-glass-scope .page-metric-chip.warn .page-metric-value {
+  color: var(--warn);
+}
+.liquid-glass-scope .page-metric-chip.bad {
+  border-color: rgba(255, 138, 131, 0.22);
+  background: rgba(255, 138, 131, 0.07);
+}
+.liquid-glass-scope .page-metric-chip.bad .page-metric-value {
+  color: var(--bad);
+}
+
+.liquid-glass-scope .stat-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.liquid-glass-scope .overview-stat-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.liquid-glass-scope .glass-place-block {
+  animation: glass-place-in 0.34s cubic-bezier(0.2, 0.9, 0.24, 1) backwards;
+  animation-delay: var(--glass-place-delay, 0ms);
+  transform-origin: center top;
+  will-change: opacity, transform, filter;
+}
+.liquid-glass-scope .glass-place-nested {
+  animation-duration: 0.28s;
+}
+@keyframes glass-place-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.988);
+    filter: blur(2px);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) scale(1.002);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope .glass-place-block {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+.liquid-glass-scope .data-fill {
+  width: var(--data-reveal-width, 100%);
+  transform-origin: left center;
+  animation: data-fill-reveal 0.58s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--data-reveal-delay, 0ms);
+}
+.liquid-glass-scope .data-rise {
+  height: var(--data-reveal-height, 100%);
+  transform-origin: bottom center;
+  animation: data-rise-reveal 0.58s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--data-reveal-delay, 0ms);
+}
+.liquid-glass-scope .data-row-in {
+  animation: data-row-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--data-reveal-delay, 0ms);
+}
+.liquid-glass-scope .data-line-draw {
+  transform-origin: left center;
+  animation: data-fill-reveal 0.52s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--data-reveal-delay, 0ms);
+}
+.liquid-glass-scope .data-dot-pop {
+  transform-origin: center;
+  animation: data-dot-pop 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--data-reveal-delay, 0ms);
+}
+@keyframes data-fill-reveal {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes data-rise-reveal {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes data-row-in {
+  from {
+    transform: translate3d(0, 5px, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+@keyframes data-dot-pop {
+  from {
+    transform: scale(0.78);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope .data-fill,
+  .liquid-glass-scope .data-rise,
+  .liquid-glass-scope .data-row-in,
+  .liquid-glass-scope .data-line-draw,
+  .liquid-glass-scope .data-dot-pop {
+    animation: none !important;
+    animation-delay: 0ms !important;
+    transform: none !important;
+  }
+  .liquid-glass-scope .spark-running::after,
+  .liquid-glass-scope .agent-deep-card.is-degraded .agent-deep-health-pill,
+  .liquid-glass-scope .waterfall-dot,
+  .liquid-glass-scope .triage-empty-glyph {
+    animation: none !important;
+    animation-delay: 0ms !important;
+  }
+}
+.liquid-glass-scope .stat-card {
+  position: relative;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-md);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.25) inset,
+    0 18px 40px -22px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  text-align: left;
+  isolation: isolate;
+}
+.liquid-glass-scope .stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14),
+    transparent 45%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .stat-card > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .stat-card-live {
+  grid-column: span 2;
+  min-height: 142px;
+}
+.liquid-glass-scope .active-stat-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.liquid-glass-scope .active-stat-count {
+  line-height: 0.95;
+}
+.liquid-glass-scope .active-stat-context {
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 0.62em;
+  letter-spacing: -0.01em;
+}
+.liquid-glass-scope .stat-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .stat-value {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.liquid-glass-scope .stat-sub {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.liquid-glass-scope .stat-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.liquid-glass-scope .stat-bar-fill {
+  height: 100%;
+  width: var(--overview-bar-width, 0%);
+  background: linear-gradient(90deg, var(--ok), #b5f0c9);
+  box-shadow: 0 0 12px rgba(127, 227, 161, 0.5);
+  transform-origin: left center;
+  animation: overview-bar-reveal 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--overview-bar-delay, 0ms);
+  transition: width 0.4s;
+}
+
+.liquid-glass-scope .live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.liquid-glass-scope .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #aeb8d2;
+  box-shadow: 0 0 8px rgba(132, 153, 206, 0.4);
+}
+.liquid-glass-scope .live-indicator.is-live .live-dot {
+  animation: lg-pulse 1.6s ease-in-out infinite;
+}
+.liquid-glass-scope .live-indicator.is-idle .live-dot {
+  background: var(--dim);
+  box-shadow: none;
+}
+@keyframes lg-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes overview-live-aura {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(2%, -1%, 0) scale(1.04);
+    opacity: 0.82;
+  }
+}
+@keyframes overview-bar-reveal {
+  from {
+    transform: scaleX(0);
+    opacity: 0.45;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.liquid-glass-scope .two-col {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+}
+
+.liquid-glass-scope .section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--text-2);
+  padding: 0 0 14px;
+  font-weight: 500;
+}
+.liquid-glass-scope .section-head .dim {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* agent health panel */
+.liquid-glass-scope .agent-health {
+  position: relative;
+  padding: 20px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.liquid-glass-scope .agent-health::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .agent-health > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .agent-health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.liquid-glass-scope .agent-card {
+  position: relative;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--r-sm);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+.liquid-glass-scope .agent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.liquid-glass-scope .agent-idx {
+  font-size: 10px;
+  color: var(--dim);
+}
+.liquid-glass-scope .agent-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.liquid-glass-scope .agent-warn {
+  margin-left: auto;
+  color: var(--bad);
+  font-weight: 700;
+  font-size: 11px;
+  background: var(--bad-dim);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.liquid-glass-scope .agent-stats {
+  display: flex;
+  gap: 20px;
+}
+.liquid-glass-scope .agent-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+.liquid-glass-scope .agent-stat-value {
+  font-size: 13px;
+  font-family: var(--mono);
+}
+.liquid-glass-scope .agent-stat-value.bad {
+  color: var(--bad);
+}
+.liquid-glass-scope .agent-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.liquid-glass-scope .agent-bar-fill {
+  height: 100%;
+  width: var(--overview-bar-width, 0%);
+  transform-origin: left center;
+  animation: overview-bar-reveal 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--overview-bar-delay, 0ms);
+  transition: width 0.4s;
+  border-radius: 2px;
+}
+
+/* throughput */
+.liquid-glass-scope .throughput {
+  position: relative;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.liquid-glass-scope .throughput::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .throughput > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .throughput-chart {
+  flex: 1;
+  min-height: 130px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 16px 0;
+}
+.liquid-glass-scope .throughput-bar-wrap {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.liquid-glass-scope .throughput-bar {
+  width: 100%;
+  height: var(--overview-bar-height, 0%);
+  background: linear-gradient(to top, rgba(255, 184, 112, 0.1), var(--accent));
+  border-radius: 4px 4px 2px 2px;
+  min-height: 4px;
+  box-shadow: 0 0 12px rgba(255, 184, 112, 0.25);
+  transform-origin: bottom center;
+  animation: overview-bar-rise 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--overview-bar-delay, 0ms);
+  transition: height 0.3s;
+}
+@keyframes overview-bar-rise {
+  from {
+    transform: scaleY(0);
+    opacity: 0.45;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+.liquid-glass-scope .throughput-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--dim);
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+   Run list (Overview compact table)
+   ============================================================ */
+.liquid-glass-scope .run-list {
+  position: relative;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.liquid-glass-scope .run-list::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 30%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .run-list > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .run-list .section-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.liquid-glass-scope .filter-count {
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.liquid-glass-scope .table {
+  display: flex;
+  flex-direction: column;
+}
+.liquid-glass-scope .table-head,
+.liquid-glass-scope .table-row {
+  display: grid;
+  grid-template-columns: 34px 96px minmax(0, 1fr) 180px 76px 80px 74px 92px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 20px;
+  min-width: 916px;
+}
+.liquid-glass-scope .table-head {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--mono);
+}
+.liquid-glass-scope .table-row {
+  position: relative;
+  text-align: left;
+  font-size: 12.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+  width: 100%;
+  overflow: hidden;
+}
+.liquid-glass-scope .table-row:last-child {
+  border-bottom: none;
+}
+.liquid-glass-scope .table-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .col-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.liquid-glass-scope .run-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.liquid-glass-scope .run-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .run-group {
+  position: relative;
+}
+.liquid-glass-scope .run-group:not(:last-child) > .table-row:last-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .run-group-header {
+  cursor: pointer;
+}
+/* Disclosure triangle that replaces the status dot on multi-repo group
+   headers. A 0×0 box with thick borders forms the triangle; it rotates
+   right→down when the group expands. Status tint mirrors the .status-* .dot
+   rules, but the glow uses filter: drop-shadow() (not box-shadow) since a
+   0×0 box has no area for box-shadow to trace. */
+.liquid-glass-scope .run-group-toggle-tri {
+  /* inline-block + zeroed line-height/font-size so the width/height:0
+     border-triangle is honored; as a plain inline element (the parent
+     .col-status is display:block) the line-height would inflate the box
+     into a vertical sliver instead of a triangle. */
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+  font-size: 0;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--dim);
+  transform-origin: 35% 50%;
+  transition: transform 0.18s ease;
+}
+.liquid-glass-scope .run-group.is-expanded .run-group-toggle-tri {
+  transform: rotate(90deg);
+}
+.liquid-glass-scope .run-group-toggle-tri.status-completed,
+.liquid-glass-scope .run-group-toggle-tri.status-merged {
+  border-left-color: var(--ok);
+  filter: drop-shadow(0 0 8px var(--ok));
+}
+.liquid-glass-scope .run-group-toggle-tri.status-running {
+  border-left-color: var(--running);
+  filter: drop-shadow(0 0 10px var(--running));
+  animation: lg-pulse 1.6s infinite;
+}
+.liquid-glass-scope .run-group-toggle-tri.status-failed {
+  border-left-color: var(--bad);
+  filter: drop-shadow(0 0 8px var(--bad));
+}
+.liquid-glass-scope .run-group-toggle-tri.status-waiting,
+.liquid-glass-scope .run-group-toggle-tri.status-blocked {
+  border-left-color: var(--warn);
+  filter: drop-shadow(0 0 8px rgba(255, 212, 107, 0.45));
+}
+.liquid-glass-scope .run-group-toggle-tri.status-queued {
+  border-left-color: var(--muted);
+}
+.liquid-glass-scope .run-group-toggle-tri.status-neutral,
+.liquid-glass-scope .run-group-toggle-tri.status-cancelled {
+  border-left-color: var(--dim);
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope .run-group-toggle-tri {
+    transition: none;
+  }
+}
+.liquid-glass-scope .run-group-ticket {
+  color: var(--text);
+}
+.liquid-glass-scope .run-group-branch-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+  max-width: 132px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .run-group-pipelines {
+  min-width: 0;
+}
+.liquid-glass-scope .stage-rings {
+  /* Mirror the child MiniPipeline track (width 180, 7 segments, 3px gap) so each
+     ring center lands on its corresponding pipeline-stage center. Rings fill the
+     first N of 7 columns, left-clustered. */
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  width: 180px;
+  align-items: center;
+}
+.liquid-glass-scope .stage-rings > svg {
+  justify-self: center;
+}
+.liquid-glass-scope .ring-mini-success {
+  stroke: var(--ok);
+}
+.liquid-glass-scope .ring-mini-running {
+  stroke: var(--running);
+  animation: lg-pulse 1.6s infinite;
+}
+.liquid-glass-scope .ring-mini-failed {
+  stroke: var(--bad);
+}
+.liquid-glass-scope .ring-mini-warning {
+  stroke: var(--warn);
+}
+.liquid-glass-scope .ring-mini-pending {
+  stroke: rgba(255, 255, 255, 0.13);
+}
+.liquid-glass-scope .stage-ring-ghost .ring-mini-pending {
+  /* Ghost placeholder rings pad the row to a fixed 7 slots (mirrors the
+     single-repo pipeline). Match the single-repo empty-stage colour (.mini-pending). */
+  stroke: rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .run-group-child-order {
+  color: var(--dim);
+}
+/* Expanded group reads as one continuous block: drop the internal separator
+   lines (header→first repo and repo→repo) so the header and its repos don't
+   look like separate runs. The group's outer-bottom border is kept by the
+   higher-specificity .run-group:not(:last-child) > .table-row:last-child rule
+   above, so the group stays bounded from adjacent runs. Collapsed groups are
+   untouched. Child rows keep the default 20px left padding (no extra indent)
+   so "repo N" / repo name align with the header's ticket / title columns. */
+.liquid-glass-scope .run-group.is-expanded .run-group-header,
+.liquid-glass-scope .run-group.is-expanded .run-group-child {
+  border-bottom: none;
+}
+.liquid-glass-scope .run-group-child-title-cell {
+  gap: 8px;
+}
+.liquid-glass-scope .run-group-repo-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.liquid-glass-scope .run-group-branch-chip {
+  max-width: 116px;
+}
+.liquid-glass-scope .run-status-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ok-dim);
+  border: 1px solid rgba(127, 227, 161, 0.2);
+  color: var(--ok);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .run-ticket-type-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  max-width: 92px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 214, 255, 0.22);
+  background: rgba(124, 214, 255, 0.1);
+  color: var(--accent);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-security {
+  border-color: rgba(255, 212, 107, 0.22);
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-defect {
+  border-color: rgba(255, 116, 116, 0.24);
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-story,
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-documentation {
+  border-color: rgba(127, 227, 161, 0.2);
+  background: var(--ok-dim);
+  color: var(--ok);
+}
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-retrofit {
+  border-color: rgba(124, 214, 255, 0.24);
+  background: rgba(124, 214, 255, 0.1);
+  color: var(--accent);
+}
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-other,
+.liquid-glass-scope .run-ticket-type-chip.ticket-type-unknown {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+.liquid-glass-scope .run-readiness-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 107, 0.22);
+  background: var(--warn-dim);
+  color: var(--warn);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .run-readiness-chip.readiness-needs_review {
+  border-color: rgba(255, 116, 116, 0.24);
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+.liquid-glass-scope .run-readiness-chip.readiness-with_risks {
+  border-color: rgba(124, 214, 255, 0.22);
+  background: rgba(124, 214, 255, 0.1);
+  color: var(--accent);
+}
+.liquid-glass-scope .run-attribution-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 107, 0.22);
+  background: var(--warn-dim);
+  color: var(--warn);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .run-attribution-chip.attribution-oneshot,
+.liquid-glass-scope .run-attribution-chip.attribution-unknown {
+  border-color: rgba(255, 116, 116, 0.24);
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+.liquid-glass-scope .run-attribution-chip.attribution-mixed {
+  border-color: rgba(255, 184, 112, 0.28);
+  background: rgba(255, 184, 112, 0.08);
+  color: var(--warn);
+}
+.liquid-glass-scope .table-empty {
+  padding: 32px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.liquid-glass-scope .row-status {
+  display: inline-flex;
+  align-items: center;
+}
+.liquid-glass-scope .row-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.liquid-glass-scope .status-merged .dot {
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+.liquid-glass-scope .status-completed .dot {
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+}
+.liquid-glass-scope .status-running .dot {
+  background: var(--running);
+  box-shadow: 0 0 10px var(--running);
+  animation: lg-pulse 1.6s infinite;
+}
+.liquid-glass-scope .status-failed .dot {
+  background: var(--bad);
+  box-shadow: 0 0 8px var(--bad);
+}
+.liquid-glass-scope .status-queued .dot {
+  background: var(--muted);
+}
+.liquid-glass-scope .status-waiting .dot {
+  background: var(--warn);
+  box-shadow: 0 0 8px rgba(255, 212, 107, 0.45);
+}
+.liquid-glass-scope .status-blocked .dot {
+  background: var(--warn);
+  box-shadow: 0 0 8px rgba(255, 212, 107, 0.45);
+}
+.liquid-glass-scope .status-neutral .dot {
+  background: var(--dim);
+}
+.liquid-glass-scope .status-cancelled .dot {
+  background: var(--dim);
+}
+
+.liquid-glass-scope .mini-pipe {
+  display: inline-flex;
+  gap: 3px;
+  width: var(--mini-pipeline-width, 120px);
+  height: 7px;
+}
+.liquid-glass-scope .mini-seg {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.liquid-glass-scope .mini-success {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(127, 227, 161, 0.4);
+}
+.liquid-glass-scope .mini-running {
+  background: var(--running);
+  box-shadow: 0 0 8px var(--running);
+  animation: lg-mini-pulse 1.6s infinite;
+}
+.liquid-glass-scope .mini-failed {
+  background: var(--bad);
+  box-shadow: 0 0 6px rgba(255, 138, 131, 0.4);
+}
+.liquid-glass-scope .mini-warning {
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(255, 212, 107, 0.36);
+}
+.liquid-glass-scope .mini-cancelled {
+  background: var(--dim);
+}
+.liquid-glass-scope .mini-pending {
+  background: rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .mini-running::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 70%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: lg-mini-token 1.85s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+@keyframes lg-mini-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes lg-mini-token {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.8;
+  }
+  78% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(170%);
+    opacity: 0;
+  }
+}
+/* ============================================================
+   Detail view (pipeline diagram + stage panel)
+   ============================================================ */
+.liquid-glass-scope .detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+/* Modal entrance — springy pop-in for the scroll container, plus a
+   staggered reveal on the three top-level detail blocks. Closing flips
+   the animation back out; JS owns the timing so React can unmount
+   once the exit completes. */
+.liquid-glass-scope .oneshot-modal-scroll {
+  animation: lg-modal-in 0.26s cubic-bezier(0.32, 1.25, 0.6, 1) both;
+}
+.liquid-glass-scope .oneshot-modal-scroll.closing {
+  animation: lg-modal-out 0.18s ease-in both;
+}
+.liquid-glass-scope .oneshot-modal-scroll .detail > .detail-hero {
+  animation: lg-modal-in 0.28s cubic-bezier(0.32, 1.25, 0.6, 1) 0ms both;
+}
+.liquid-glass-scope .oneshot-modal-scroll .detail > .pipeline-section {
+  animation: lg-modal-in 0.32s cubic-bezier(0.32, 1.25, 0.6, 1) 60ms both;
+}
+.liquid-glass-scope .oneshot-modal-scroll .detail > .stage-panel {
+  animation: lg-modal-in 0.34s cubic-bezier(0.32, 1.25, 0.6, 1) 120ms both;
+}
+@keyframes lg-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes lg-modal-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+/* Crossfade body content when the selected stage changes. The wrapper
+   is keyed on the selected stage in StagePanel.tsx so React remounts
+   it and the animation plays fresh. */
+.liquid-glass-scope .stage-panel-body {
+  animation: lg-panel-swap 0.16s ease-out both;
+}
+@keyframes lg-panel-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.liquid-glass-scope .detail-hero > .detail-hero-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  z-index: 2;
+}
+
+.liquid-glass-scope .btn-ghost.cpdev-copy {
+  padding: 4px 10px;
+}
+
+/* ============================================================
+   Error surface — single source of truth for failure rendering
+   ============================================================ */
+.liquid-glass-scope .error-surface {
+  position: relative;
+  padding: 22px 24px 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.liquid-glass-scope .error-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07),
+    transparent 30%
+  );
+  pointer-events: none;
+}
+.liquid-glass-scope .error-surface > * {
+  position: relative;
+  z-index: 1;
+}
+/* Attribution variants share the neutral surface; only the kicker colors differ. */
+.liquid-glass-scope .error-surface.attribution-ticket .error-surface-kicker {
+  color: var(--warn);
+}
+.liquid-glass-scope .error-surface.attribution-mixed .error-surface-kicker {
+  color: var(--warn);
+}
+.liquid-glass-scope .error-owner-copy {
+  margin: -4px 0 14px;
+  max-width: 780px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.liquid-glass-scope .retry-pending-surface {
+  position: relative;
+  padding: 20px 22px 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.liquid-glass-scope .retry-pending-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.liquid-glass-scope .retry-pending-kicker {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--warn);
+  opacity: 0.9;
+}
+.liquid-glass-scope .retry-pending-heading {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+.liquid-glass-scope .retry-pending-body {
+  margin: 0 0 14px;
+  max-width: 780px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.liquid-glass-scope .error-surface-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .error-surface-titlebar {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .error-surface-kicker {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bad);
+  opacity: 0.85;
+}
+.liquid-glass-scope .error-surface-timing {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.liquid-glass-scope .error-retry-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.liquid-glass-scope .error-retry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 31px;
+  padding: 6px 10px;
+  border-radius: var(--r-xs);
+  background: rgba(255, 138, 131, 0.1);
+  border: 1px solid rgba(255, 138, 131, 0.28);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+}
+.liquid-glass-scope .error-retry-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 138, 131, 0.15);
+  border-color: rgba(255, 138, 131, 0.38);
+}
+.liquid-glass-scope .error-retry-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+.liquid-glass-scope .error-retry-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.liquid-glass-scope .error-retry-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.liquid-glass-scope .error-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .error-code-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--r-xs);
+  background: rgba(255, 138, 131, 0.2);
+  border: 1px solid var(--bad-border);
+  color: var(--bad);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.liquid-glass-scope .error-heading {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+.liquid-glass-scope .error-body {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 780px;
+  margin: 0 0 14px;
+}
+.liquid-glass-scope .error-context {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--r-xs);
+  margin-bottom: 16px;
+}
+.liquid-glass-scope .error-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .error-retry-message {
+  margin-top: 10px;
+  color: var(--bad);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .liquid-glass-scope .error-surface-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .liquid-glass-scope .error-retry-group {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.liquid-glass-scope .raw-toggle {
+  margin-top: 14px;
+}
+.liquid-glass-scope .raw-toggle > summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 0;
+  user-select: none;
+}
+.liquid-glass-scope .raw-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+.liquid-glass-scope .raw-toggle > summary::before {
+  content: "▸ ";
+  display: inline-block;
+}
+.liquid-glass-scope .raw-toggle[open] > summary::before {
+  content: "▾ ";
+}
+.liquid-glass-scope .raw-toggle pre {
+  margin: 4px 0 0;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: var(--code-bg);
+  border: 1px solid var(--glass-stroke);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-2);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+}
+
+.liquid-glass-scope .detail-hero {
+  position: relative;
+  padding: 28px 28px 24px;
+  /* Solid surface base matches .pipeline-section / .stage-panel so the
+     hero reads as the same material family rather than a translucent
+     floating island. The warm radial glow still rides on top. */
+  background:
+    radial-gradient(
+      80% 80% at 0% 0%,
+      rgba(255, 184, 112, 0.12),
+      transparent 55%
+    ),
+    var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-xl);
+  box-shadow: 0 1px 0 var(--glass-inner-hi) inset;
+  overflow: hidden;
+}
+.liquid-glass-scope .detail-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    transparent 30%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.liquid-glass-scope .detail-hero > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .detail-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  margin-bottom: 10px;
+  color: var(--text-2);
+  flex-wrap: wrap;
+  padding-right: 430px; /* clear the absolutely-positioned hero-actions cluster */
+}
+.liquid-glass-scope .detail-title {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 0 0 18px;
+  text-wrap: pretty;
+  max-width: 900px;
+}
+.liquid-glass-scope .detail-meta-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .meta-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-sm);
+  min-width: 110px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+.liquid-glass-scope .meta-chip-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .meta-chip-value {
+  font-size: 13px;
+  color: var(--text);
+}
+.liquid-glass-scope .ticket-type-editor {
+  min-width: 150px;
+}
+.liquid-glass-scope .ticket-type-select {
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 24px 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+.liquid-glass-scope .ticket-type-select:disabled {
+  color: var(--muted);
+  opacity: 0.75;
+}
+.liquid-glass-scope .ticket-type-jira {
+  font-size: 10px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.liquid-glass-scope .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  font-family: var(--mono);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .status-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.liquid-glass-scope .status-pill.status-merged {
+  background: var(--ok-dim);
+  color: var(--ok);
+}
+.liquid-glass-scope .status-pill.status-completed {
+  background: var(--ok-dim);
+  color: var(--ok);
+}
+.liquid-glass-scope .status-pill.status-running {
+  background: var(--running-dim);
+  color: var(--running);
+}
+.liquid-glass-scope .status-pill.status-failed {
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+.liquid-glass-scope .status-pill.status-queued {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+.liquid-glass-scope .status-pill.status-waiting {
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+.liquid-glass-scope .status-pill.status-blocked {
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+.liquid-glass-scope .status-pill.status-neutral {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dim);
+}
+.liquid-glass-scope .status-pill.status-cancelled {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dim);
+}
+
+/* pipeline */
+.liquid-glass-scope .pipeline-section {
+  position: relative;
+  padding: 24px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-xl);
+  box-shadow: 0 1px 0 var(--glass-inner-hi) inset;
+  overflow: hidden;
+}
+.liquid-glass-scope .pipeline-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 40%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.liquid-glass-scope .pipeline-section > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .section-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 20px;
+}
+.liquid-glass-scope .section-label .dim {
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--dim);
+}
+
+.liquid-glass-scope .pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  /* overflow-x: auto enables horizontal scroll for long pipelines on narrow
+     viewports. The browser silently upgrades overflow-y to auto whenever
+     overflow-x is non-visible, which clips the 1px hover lift on stage
+     cards. Padding + negative margin carve out a 2px vertical buffer so
+     the lift (and the selected card's 3px glow ring) have room to breathe
+     without altering the visual baseline. */
+  padding-block: 4px;
+  margin-block: -4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.liquid-glass-scope .pipeline::-webkit-scrollbar {
+  display: none;
+}
+
+/* stage panel */
+.liquid-glass-scope .stage-panel {
+  position: relative;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.liquid-glass-scope .stage-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 30%
+  );
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.liquid-glass-scope .stage-panel > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .stage-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.liquid-glass-scope .stage-panel-kicker {
+  font-size: 11px;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--text-2);
+}
+.liquid-glass-scope .stage-panel-title {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.liquid-glass-scope .stage-panel-stats {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.liquid-glass-scope .stage-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.liquid-glass-scope .stage-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .stage-stat-value {
+  font-size: 14px;
+  font-family: var(--mono);
+}
+.liquid-glass-scope .stage-stat-value.model {
+  max-width: 108px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .stage-stat-value.bad {
+  color: var(--bad);
+}
+.liquid-glass-scope .stage-stat-value.warn {
+  color: var(--warn);
+}
+.liquid-glass-scope .stage-stat-value.ok {
+  color: var(--ok);
+}
+
+.liquid-glass-scope .stage-evidence-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+.liquid-glass-scope .stage-evidence-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.liquid-glass-scope .stage-toggle {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+  border-radius: var(--r-sm);
+  padding: 5px 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.liquid-glass-scope .stage-toggle:hover {
+  border-color: rgba(255, 184, 112, 0.4);
+  color: var(--text);
+}
+.liquid-glass-scope .timeline-warning {
+  padding: 10px 24px;
+  color: var(--warn);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.liquid-glass-scope .stage-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.liquid-glass-scope .stage-summary-chip {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 11.5px;
+  padding: 5px 8px;
+}
+
+.liquid-glass-scope .stage-logs {
+  padding: 14px 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.25);
+}
+.liquid-glass-scope .log-line {
+  display: grid;
+  grid-template-columns: 44px 56px 1fr;
+  gap: 12px;
+  padding: 3px 24px;
+  line-height: 1.55;
+}
+.liquid-glass-scope .log-line:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.liquid-glass-scope .log-ts {
+  color: var(--dim);
+  font-size: 10.5px;
+  text-align: right;
+}
+.liquid-glass-scope .log-level {
+  font-size: 10.5px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.liquid-glass-scope .log-level-info {
+  color: var(--muted);
+}
+.liquid-glass-scope .log-level-ok {
+  color: var(--ok);
+}
+.liquid-glass-scope .log-level-warn {
+  color: var(--warn);
+}
+.liquid-glass-scope .log-level-err {
+  color: var(--bad);
+}
+.liquid-glass-scope .log-level-res {
+  color: var(--accent);
+}
+.liquid-glass-scope .log-level-dim {
+  color: var(--dim);
+}
+.liquid-glass-scope .log-msg {
+  color: var(--text-2);
+}
+.liquid-glass-scope .log-ok .log-msg {
+  color: var(--text);
+}
+.liquid-glass-scope .log-err .log-msg {
+  color: #ffc1bd;
+}
+.liquid-glass-scope .log-meta {
+  display: block;
+  color: var(--dim);
+  font-size: 10.5px;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   Command palette
+   ============================================================ */
+.liquid-glass-scope .palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+  background: rgba(5, 6, 10, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: lg-fade-in 0.15s ease-out;
+}
+@keyframes lg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.liquid-glass-scope .palette {
+  position: relative;
+  width: min(680px, 92vw);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-xl);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+    0 40px 120px -20px rgba(0, 0, 0, 0.7);
+  animation: lg-pop-in 0.2s cubic-bezier(0.34, 1.3, 0.6, 1);
+}
+.liquid-glass-scope .palette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+@keyframes lg-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.liquid-glass-scope .palette > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .palette-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .palette-prompt {
+  color: var(--accent);
+  font-size: 12px;
+}
+.liquid-glass-scope .palette-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+.liquid-glass-scope .palette-input::placeholder {
+  color: var(--dim);
+}
+.liquid-glass-scope .palette-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px;
+}
+.liquid-glass-scope .palette-empty {
+  padding: 32px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.liquid-glass-scope .palette-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  padding: 12px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 11px;
+}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.liquid-glass-scope .lg-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-family: var(--mono);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 20px 50px -10px rgba(0, 0, 0, 0.5);
+  animation: lg-slide-in 0.25s cubic-bezier(0.34, 1.3, 0.6, 1);
+  z-index: 60;
+}
+.liquid-glass-scope .lg-toast-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+@keyframes lg-slide-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   Generic view wrapper (Runs / Agents / Queue)
+   ============================================================ */
+.liquid-glass-scope .view {
+  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.liquid-glass-scope .view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 6px;
+  gap: clamp(18px, 4vw, 48px);
+}
+.liquid-glass-scope .view-header-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 780px;
+}
+.liquid-glass-scope .page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+.liquid-glass-scope .analytics-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .cost-report-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 34px;
+  min-width: 0;
+}
+.liquid-glass-scope .cost-report-select-shell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 172px;
+}
+.liquid-glass-scope .cost-report-select {
+  width: 100%;
+  min-width: 172px;
+  height: 36px;
+  padding: 0 34px 0 15px;
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+}
+.liquid-glass-scope .cost-report-select:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.34);
+}
+.liquid-glass-scope .cost-report-select:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.liquid-glass-scope .cost-report-select-icon {
+  position: absolute;
+  right: 12px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+.liquid-glass-scope .cost-report-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  min-width: 82px;
+  padding: 0 15px;
+  border-radius: 999px;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.liquid-glass-scope .cost-report-link:hover {
+  background: rgba(0, 0, 0, 0.34);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  transform: translateY(-1px);
+}
+.liquid-glass-scope .cost-report-link:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.liquid-glass-scope .analytics-range-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+.liquid-glass-scope .analytics-range-option {
+  min-width: 42px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+.liquid-glass-scope .analytics-range-option:hover {
+  color: var(--text);
+}
+.liquid-glass-scope .analytics-range-option.active {
+  color: var(--text);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0.08)
+  );
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+}
+.liquid-glass-scope .page-actions .btn-primary {
+  border: 1px solid rgba(255, 215, 168, 0.56);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 211, 155, 0.96),
+    rgba(232, 151, 78, 0.94)
+  );
+  color: #211306;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.42) inset,
+    0 -1px 0 rgba(80, 42, 12, 0.22) inset,
+    0 8px 18px -11px rgba(255, 184, 112, 0.48),
+    0 14px 30px -22px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.1s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.liquid-glass-scope .page-actions .btn-primary:hover {
+  border-color: rgba(255, 226, 188, 0.68);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 218, 169, 0.98),
+    rgba(239, 162, 90, 0.96)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -1px 0 rgba(80, 42, 12, 0.2) inset,
+    0 10px 22px -12px rgba(255, 184, 112, 0.55),
+    0 16px 34px -22px rgba(0, 0, 0, 0.64);
+}
+
+/* ============================================================
+   Runs view
+   ============================================================ */
+.liquid-glass-scope .runs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-md);
+  box-shadow: 0 1px 0 var(--glass-inner-hi) inset;
+}
+.liquid-glass-scope .runs-section-tabs {
+  flex: 0 0 auto;
+}
+.liquid-glass-scope .artifact-table .table-head,
+.liquid-glass-scope .artifact-table .table-row {
+  grid-template-columns:
+    96px 118px minmax(220px, 1fr)
+    120px 92px 118px 126px 92px;
+  min-width: 1020px;
+}
+.liquid-glass-scope .warn-text {
+  color: var(--warn);
+}
+.liquid-glass-scope .artifact-run-modal {
+  width: min(920px, 100%);
+  max-height: min(88dvh, calc(100dvh - 32px));
+  overflow: auto;
+  outline: none;
+}
+.liquid-glass-scope .artifact-run-detail {
+  background: var(--panel-bg);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.liquid-glass-scope .artifact-run-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.liquid-glass-scope .artifact-run-detail-head h2 {
+  margin: 4px 0 6px;
+  font-size: 28px;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .artifact-run-detail-head p {
+  margin: 0;
+  color: var(--text-2);
+}
+.liquid-glass-scope .artifact-run-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.liquid-glass-scope .artifact-run-metrics > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-sm);
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .artifact-run-metrics > div strong {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.liquid-glass-scope .artifact-run-detail h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .artifact-ticket-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.liquid-glass-scope .artifact-ticket-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.liquid-glass-scope .artifact-ticket-row:last-child {
+  border-bottom: none;
+}
+.liquid-glass-scope .artifact-ticket-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.liquid-glass-scope .artifact-ticket-row span {
+  color: var(--text-2);
+}
+.liquid-glass-scope .artifact-ticket-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.liquid-glass-scope .artifact-ticket-actions a {
+  color: var(--accent);
+}
+.liquid-glass-scope .artifact-run-summary {
+  margin: 0;
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.liquid-glass-scope .search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.liquid-glass-scope .search-field:focus-within {
+  border-color: rgba(255, 184, 112, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 184, 112, 0.1);
+}
+.liquid-glass-scope .search-icon {
+  color: var(--muted);
+  font-size: 13px;
+}
+.liquid-glass-scope .search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: var(--sans);
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.liquid-glass-scope .search-input::placeholder {
+  color: var(--dim);
+}
+.liquid-glass-scope .search-clear {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.liquid-glass-scope .search-clear:hover {
+  color: var(--text);
+}
+.liquid-glass-scope .runs-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Consume the toolbar's free space on the left so the capped search
+     field stays left-anchored. Without this, space-between splits the
+     slack on both sides of the search field, making it drift right when
+     the filter cluster shrinks (e.g. Artifact mode's lone dropdown). */
+  margin-left: auto;
+}
+.liquid-glass-scope .filter-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  text-transform: capitalize;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.liquid-glass-scope .filter-tab:hover {
+  color: var(--text);
+}
+.liquid-glass-scope .filter-tab.active {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0.08)
+  );
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+}
+.liquid-glass-scope .select-field {
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 11.5px;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.liquid-glass-scope .select-field:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+/* ============================================================
+   Agents view (deep cards)
+   ============================================================ */
+.liquid-glass-scope .agents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.liquid-glass-scope .agent-deep-card {
+  position: relative;
+  padding: 20px;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-md);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 18px 40px -24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+.liquid-glass-scope .agent-deep-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .agent-deep-card > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .agent-deep-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.liquid-glass-scope .agent-deep-idx {
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .agent-deep-name {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+  flex: 1;
+}
+.liquid-glass-scope .agent-deep-health-pill {
+  font-size: 10.5px;
+  font-family: var(--mono);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .agent-deep-health-pill.ok {
+  background: var(--ok-dim);
+  color: var(--ok);
+}
+.liquid-glass-scope .agent-deep-health-pill.warn {
+  background: var(--warn-dim);
+  color: var(--warn);
+}
+.liquid-glass-scope .agent-deep-health-pill.bad {
+  background: var(--bad-dim);
+  color: var(--bad);
+}
+
+.liquid-glass-scope .agent-deep-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.liquid-glass-scope .agent-deep-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--r-xs);
+}
+.liquid-glass-scope .agent-deep-stat-value {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.liquid-glass-scope .agent-deep-stat-value.bad {
+  color: var(--bad);
+}
+.liquid-glass-scope .agent-deep-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.liquid-glass-scope .agent-deep-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 48px;
+  padding: 4px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .spark-bar-wrap {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.liquid-glass-scope .spark-bar {
+  position: relative;
+  width: 100%;
+  min-height: 4px;
+  border-radius: 2px 2px 0 0;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  transition: background 0.2s;
+}
+.liquid-glass-scope .spark-success {
+  background: linear-gradient(180deg, var(--ok), rgba(127, 227, 161, 0.5));
+  box-shadow: 0 0 8px rgba(127, 227, 161, 0.25);
+}
+.liquid-glass-scope .spark-failed {
+  background: linear-gradient(180deg, var(--bad), rgba(255, 138, 131, 0.5));
+  box-shadow: 0 0 8px rgba(255, 138, 131, 0.25);
+}
+.liquid-glass-scope .spark-warning {
+  background: linear-gradient(180deg, var(--warn), rgba(255, 184, 112, 0.46));
+  box-shadow: 0 0 8px rgba(255, 184, 112, 0.24);
+}
+.liquid-glass-scope .spark-no_action {
+  background: linear-gradient(180deg, var(--muted), rgba(157, 170, 188, 0.35));
+}
+.liquid-glass-scope .spark-running {
+  background: linear-gradient(
+    180deg,
+    var(--running),
+    rgba(114, 184, 255, 0.52)
+  );
+  box-shadow: 0 0 8px var(--running-dim);
+}
+.liquid-glass-scope .spark-running::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  height: 45%;
+  margin-top: auto;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.42));
+  animation: data-spark-scan 1.9s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.liquid-glass-scope .agent-deep-card.is-degraded .agent-deep-health-pill {
+  animation: data-pill-breathe 2.8s ease-in-out infinite;
+}
+@keyframes data-spark-scan {
+  0% {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.7;
+  }
+  74% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-160%);
+    opacity: 0;
+  }
+}
+@keyframes data-pill-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 12px -6px currentColor;
+  }
+}
+
+/* ============================================================
+   Queue board (kanban)
+   ============================================================ */
+.liquid-glass-scope .queue-board {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr 1fr;
+  gap: 14px;
+  align-items: flex-start;
+}
+.liquid-glass-scope .queue-col {
+  position: relative;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-md);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 18px 40px -24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  min-height: 220px;
+}
+.liquid-glass-scope .queue-col::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .queue-col > * {
+  position: relative;
+  z-index: 1;
+}
+.liquid-glass-scope .queue-col-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.liquid-glass-scope .queue-col-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.liquid-glass-scope .queue-dot-accent {
+  background: var(--running);
+  box-shadow: 0 0 10px var(--running);
+  animation: lg-pulse 1.6s infinite;
+}
+.liquid-glass-scope .queue-dot-warn {
+  background: var(--warn);
+  box-shadow: 0 0 8px rgba(235, 182, 83, 0.45);
+}
+.liquid-glass-scope .queue-dot-muted {
+  background: var(--muted);
+}
+.liquid-glass-scope .queue-dot-dim {
+  background: var(--dim);
+}
+.liquid-glass-scope .queue-col-title {
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  letter-spacing: -0.01em;
+}
+.liquid-glass-scope .queue-col-count {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .queue-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+.liquid-glass-scope .queue-empty {
+  padding: 28px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px dashed rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-xs);
+}
+.liquid-glass-scope .queue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-xs);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+  cursor: pointer;
+}
+.liquid-glass-scope .queue-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+.liquid-glass-scope .queue-card.live {
+  border-color: rgba(255, 184, 112, 0.25);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 184, 112, 0.06),
+    rgba(255, 255, 255, 0.025)
+  );
+}
+.liquid-glass-scope .queue-card.compact {
+  padding: 10px 14px;
+  gap: 4px;
+}
+.liquid-glass-scope .queue-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.liquid-glass-scope .queue-card-ticket {
+  font-size: 11px;
+}
+.liquid-glass-scope .queue-card-title {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .queue-card-foot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10.5px;
+}
+
+/* ============================================================
+   Pagination footer (inline, replaces floating pill)
+   ============================================================ */
+.liquid-glass-scope .inline-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.liquid-glass-scope .inline-pager-controls {
+  display: flex;
+  gap: 8px;
+}
+.liquid-glass-scope .inline-pager button[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   Glass card frame
+   ============================================================ */
+.liquid-glass-scope .os-card-glass {
+  position: relative;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.25) inset,
+    0 20px 60px -24px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.liquid-glass-scope .os-card-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.02) 18%,
+    rgba(255, 255, 255, 0) 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+.liquid-glass-scope .os-card-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   Analytics tabs — Throughput / Costs / Statistics
+   ============================================================ */
+.liquid-glass-scope .tempo-hero,
+.liquid-glass-scope .ledger-hero,
+.liquid-glass-scope .tempo-horizon,
+.liquid-glass-scope .tempo-waterfall,
+.liquid-glass-scope .ledger-ladder,
+.liquid-glass-scope .ledger-leaderboard,
+.liquid-glass-scope .triage-empty,
+.liquid-glass-scope .triage-card,
+.liquid-glass-scope .stats-hero,
+.liquid-glass-scope .stats-metrics,
+.liquid-glass-scope .stats-bottlenecks,
+.liquid-glass-scope .stats-repo-status,
+.liquid-glass-scope .stats-ticket-quality,
+.liquid-glass-scope .stats-self-fix,
+.liquid-glass-scope .stats-insight-card,
+.liquid-glass-scope .stats-actions {
+  position: relative;
+  background: var(--panel-bg);
+  backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--r-lg);
+  box-shadow:
+    0 1px 0 var(--glass-inner-hi) inset,
+    0 20px 60px -28px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.liquid-glass-scope .tempo-hero::before,
+.liquid-glass-scope .ledger-hero::before,
+.liquid-glass-scope .tempo-horizon::before,
+.liquid-glass-scope .tempo-waterfall::before,
+.liquid-glass-scope .ledger-ladder::before,
+.liquid-glass-scope .ledger-leaderboard::before,
+.liquid-glass-scope .triage-empty::before,
+.liquid-glass-scope .triage-card::before,
+.liquid-glass-scope .stats-hero::before,
+.liquid-glass-scope .stats-metrics::before,
+.liquid-glass-scope .stats-bottlenecks::before,
+.liquid-glass-scope .stats-repo-status::before,
+.liquid-glass-scope .stats-ticket-quality::before,
+.liquid-glass-scope .stats-self-fix::before,
+.liquid-glass-scope .stats-insight-card::before,
+.liquid-glass-scope .stats-actions::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    transparent 40%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.liquid-glass-scope .tempo-hero > *,
+.liquid-glass-scope .ledger-hero > *,
+.liquid-glass-scope .tempo-horizon > *,
+.liquid-glass-scope .tempo-waterfall > *,
+.liquid-glass-scope .ledger-ladder > *,
+.liquid-glass-scope .ledger-leaderboard > *,
+.liquid-glass-scope .triage-empty > *,
+.liquid-glass-scope .triage-card > *,
+.liquid-glass-scope .stats-hero > *,
+.liquid-glass-scope .stats-metrics > *,
+.liquid-glass-scope .stats-bottlenecks > *,
+.liquid-glass-scope .stats-repo-status > *,
+.liquid-glass-scope .stats-ticket-quality > *,
+.liquid-glass-scope .stats-self-fix > *,
+.liquid-glass-scope .stats-insight-card > *,
+.liquid-glass-scope .stats-actions > * {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-glass-scope .tempo-hero,
+.liquid-glass-scope .ledger-hero,
+.liquid-glass-scope .tempo-horizon,
+.liquid-glass-scope .tempo-waterfall,
+.liquid-glass-scope .ledger-ladder,
+.liquid-glass-scope .ledger-leaderboard,
+.liquid-glass-scope .stats-hero,
+.liquid-glass-scope .stats-metrics,
+.liquid-glass-scope .stats-bottlenecks,
+.liquid-glass-scope .stats-repo-status,
+.liquid-glass-scope .stats-ticket-quality,
+.liquid-glass-scope .stats-self-fix,
+.liquid-glass-scope .stats-insight-card,
+.liquid-glass-scope .stats-actions {
+  padding: 22px;
+}
+
+.liquid-glass-scope .tempo-hero,
+.liquid-glass-scope .ledger-hero {
+  display: grid;
+  grid-template-columns: 1.25fr 0.85fr;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .ledger-hero {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: start;
+  column-gap: clamp(32px, 7vw, 112px);
+  row-gap: 12px;
+  padding: 20px 26px;
+}
+.liquid-glass-scope .tempo-hero-value,
+.liquid-glass-scope .ledger-hero-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 8px;
+}
+.liquid-glass-scope .ledger-hero-number-row {
+  justify-self: end;
+  justify-content: flex-end;
+  margin-top: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.liquid-glass-scope .tempo-hero-number,
+.liquid-glass-scope .ledger-hero-number {
+  font-family: var(--display);
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+.liquid-glass-scope .tempo-hero-label,
+.liquid-glass-scope .ledger-hero-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.liquid-glass-scope .tempo-hero-sub,
+.liquid-glass-scope .ledger-hero-decomp {
+  margin-top: 12px;
+  font-size: 11.5px;
+}
+.liquid-glass-scope .ledger-hero-decomp {
+  justify-self: end;
+  margin-top: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.liquid-glass-scope .tempo-delta,
+.liquid-glass-scope .ledger-delta {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+}
+.liquid-glass-scope .tempo-delta.up,
+.liquid-glass-scope .ledger-delta.up {
+  color: var(--ok);
+  background: rgba(127, 227, 161, 0.08);
+  border-color: rgba(127, 227, 161, 0.22);
+}
+.liquid-glass-scope .tempo-delta.down,
+.liquid-glass-scope .ledger-delta.down {
+  color: var(--bad);
+  background: rgba(255, 138, 131, 0.08);
+  border-color: rgba(255, 138, 131, 0.22);
+}
+.liquid-glass-scope .tempo-delta.flat,
+.liquid-glass-scope .ledger-delta.flat {
+  color: var(--accent-2);
+  background: rgba(116, 170, 255, 0.08);
+  border-color: rgba(116, 170, 255, 0.22);
+}
+.liquid-glass-scope .ledger-hero-rule {
+  width: 100%;
+  height: 1px;
+  align-self: center;
+  margin-top: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), transparent);
+}
+
+.liquid-glass-scope .tempo-rail {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .tempo-rail-head {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .tempo-rail-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.liquid-glass-scope .tempo-tick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.liquid-glass-scope .tempo-tick-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.liquid-glass-scope .tempo-tick-value {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.liquid-glass-scope .tempo-horizon,
+.liquid-glass-scope .tempo-waterfall,
+.liquid-glass-scope .ledger-leaderboard {
+  margin-top: 14px;
+}
+.liquid-glass-scope .tempo-horizon-strip {
+  display: grid;
+  grid-template-columns: repeat(48, minmax(0, 1fr));
+  gap: 4px;
+  align-items: end;
+  height: 160px;
+}
+.liquid-glass-scope .tempo-horizon-col,
+.liquid-glass-scope .triage-spark-col {
+  display: flex;
+  align-items: end;
+  height: 100%;
+}
+.liquid-glass-scope .tempo-horizon-bar,
+.liquid-glass-scope .triage-spark-bar {
+  width: 100%;
+  border-radius: 999px 999px 3px 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(116, 170, 255, 0.95),
+    rgba(116, 170, 255, 0.28)
+  );
+  box-shadow: 0 0 12px rgba(116, 170, 255, 0.2);
+}
+.liquid-glass-scope .tempo-horizon-axis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 10.5px;
+}
+.liquid-glass-scope .tempo-horizon-axis span:last-child {
+  text-align: right;
+}
+
+.liquid-glass-scope .waterfall-rows,
+.liquid-glass-scope .top-runs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.liquid-glass-scope .ladder-rows {
+  display: grid;
+  grid-template-columns:
+    minmax(96px, 130px)
+    minmax(56px, 1fr)
+    minmax(64px, max-content)
+    minmax(72px, max-content);
+  row-gap: 10px;
+  column-gap: 12px;
+  align-items: center;
+}
+.liquid-glass-scope .waterfall-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 140px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.liquid-glass-scope .ladder-column-head,
+.liquid-glass-scope .ladder-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  column-gap: 12px;
+  align-items: center;
+}
+.liquid-glass-scope .ladder-column-head {
+  margin-top: -2px;
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.liquid-glass-scope .ladder-row-extra {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  margin-top: -4px;
+}
+.liquid-glass-scope .waterfall-row {
+  grid-template-columns:
+    minmax(110px, 140px)
+    minmax(0, 1fr)
+    auto
+    minmax(84px, auto);
+}
+.liquid-glass-scope .waterfall-label,
+.liquid-glass-scope .ladder-label {
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.liquid-glass-scope .ladder-label .mono,
+.liquid-glass-scope .waterfall-ratio,
+.liquid-glass-scope .waterfall-counts,
+.liquid-glass-scope .ladder-value {
+  font-size: 11px;
+}
+.liquid-glass-scope .ladder-metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.liquid-glass-scope .ladder-metric-value {
+  font-size: 12.5px;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--text);
+}
+.liquid-glass-scope .waterfall-track,
+.liquid-glass-scope .ladder-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.liquid-glass-scope .waterfall-fill,
+.liquid-glass-scope .ladder-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(116, 170, 255, 0.95),
+    rgba(178, 148, 255, 0.95)
+  );
+  box-shadow: 0 0 14px rgba(116, 170, 255, 0.22);
+}
+.liquid-glass-scope .waterfall-row.bottleneck .waterfall-fill {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 138, 131, 0.95),
+    rgba(255, 184, 112, 0.95)
+  );
+  box-shadow: 0 0 14px rgba(255, 138, 131, 0.24);
+}
+.liquid-glass-scope .ladder-row.heavy .ladder-fill {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 184, 112, 0.95),
+    rgba(255, 138, 131, 0.95)
+  );
+  box-shadow: 0 0 14px rgba(255, 184, 112, 0.22);
+}
+.liquid-glass-scope .waterfall-dot {
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--bad);
+  box-shadow: 0 0 10px rgba(255, 138, 131, 0.55);
+  animation: data-bottleneck-pulse 1.8s ease-in-out infinite;
+}
+@keyframes data-bottleneck-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    box-shadow: 0 0 8px rgba(255, 138, 131, 0.42);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(255, 138, 131, 0.65);
+  }
+}
+.liquid-glass-scope .waterfall-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 138, 131, 0.08);
+  border: 1px solid rgba(255, 138, 131, 0.18);
+}
+.liquid-glass-scope .waterfall-callout-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bad);
+}
+.liquid-glass-scope .waterfall-callout-text {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.liquid-glass-scope .ledger-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.liquid-glass-scope .ladder-provider {
+  font-size: 10px;
+}
+.liquid-glass-scope .model-price-strip {
+  grid-column: 2 / -1;
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--text-2);
+}
+.liquid-glass-scope .model-price-strip.unavailable {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.liquid-glass-scope .model-price-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.liquid-glass-scope .model-price-label {
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.liquid-glass-scope .model-price-value {
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+}
+.liquid-glass-scope .ladder-empty {
+  padding: 14px 0 4px;
+  font-size: 12px;
+}
+.liquid-glass-scope .top-run-row {
+  display: grid;
+  grid-template-columns: 34px minmax(88px, auto) minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-sm);
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.liquid-glass-scope .top-run-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .top-run-rank,
+.liquid-glass-scope .top-run-jira,
+.liquid-glass-scope .top-run-tok,
+.liquid-glass-scope .top-run-cost {
+  font-size: 11px;
+}
+.liquid-glass-scope .top-run-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.liquid-glass-scope .triage-empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 280px;
+  text-align: center;
+  padding: 28px;
+}
+.liquid-glass-scope .triage-empty-glyph {
+  font-size: 28px;
+  color: var(--ok);
+  text-shadow: 0 0 18px rgba(127, 227, 161, 0.35);
+  animation: data-clean-breathe 3.2s ease-in-out infinite;
+}
+@keyframes data-clean-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    text-shadow: 0 0 12px rgba(127, 227, 161, 0.24);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 18px rgba(127, 227, 161, 0.36);
+  }
+}
+.liquid-glass-scope .triage-empty-title {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.liquid-glass-scope .triage-empty-sub {
+  font-size: 12px;
+}
+.liquid-glass-scope .triage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.liquid-glass-scope .triage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  padding: 18px;
+  text-align: left;
+  color: var(--text);
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.liquid-glass-scope .triage-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.liquid-glass-scope .triage-card-head,
+.liquid-glass-scope .triage-card-keys,
+.liquid-glass-scope .triage-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .triage-card-code,
+.liquid-glass-scope .triage-card-count,
+.liquid-glass-scope .triage-key-chip,
+.liquid-glass-scope .triage-key-more {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .triage-card-code,
+.liquid-glass-scope .triage-key-chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+}
+.liquid-glass-scope .triage-card-headline {
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+.liquid-glass-scope .triage-card-footer-label {
+  min-width: 88px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .triage-stage-row {
+  display: flex;
+  gap: 6px;
+}
+.liquid-glass-scope .triage-stage-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+}
+.liquid-glass-scope .triage-stage-dot.on {
+  border-color: rgba(255, 138, 131, 0.22);
+  background: rgba(255, 138, 131, 0.08);
+}
+.liquid-glass-scope .triage-stage-letter {
+  font-size: 10px;
+  color: var(--text-2);
+}
+.liquid-glass-scope .triage-spark {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 4px;
+  align-items: end;
+  width: 100%;
+  height: 64px;
+}
+.liquid-glass-scope .triage-spark-bar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 138, 131, 0.92),
+    rgba(255, 138, 131, 0.25)
+  );
+  box-shadow: 0 0 10px rgba(255, 138, 131, 0.18);
+}
+
+.liquid-glass-scope .stats-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .stats-hero h2 {
+  margin: 8px 0 0;
+  max-width: 820px;
+  font-size: 26px;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .stats-score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.liquid-glass-scope .stats-score-grid > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-score-grid span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .stats-score-grid strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.liquid-glass-scope .stats-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .stats-metric {
+  min-width: 0;
+}
+.liquid-glass-scope .stats-metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.liquid-glass-scope .stats-delta {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-delta.up {
+  color: var(--ok);
+  background: rgba(127, 227, 161, 0.08);
+  border-color: rgba(127, 227, 161, 0.2);
+}
+.liquid-glass-scope .stats-delta.down {
+  color: var(--bad);
+  background: rgba(255, 138, 131, 0.08);
+  border-color: rgba(255, 138, 131, 0.2);
+}
+.liquid-glass-scope .stats-delta.flat {
+  color: var(--accent-2);
+  background: rgba(116, 170, 255, 0.08);
+  border-color: rgba(116, 170, 255, 0.2);
+}
+.liquid-glass-scope .stats-bottlenecks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .stats-bottlenecks-head h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .stats-bottlenecks-head p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.liquid-glass-scope .stats-bottleneck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.liquid-glass-scope .stats-bottleneck-row {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.45fr)
+    minmax(190px, 0.75fr)
+    minmax(150px, 0.55fr)
+    minmax(140px, 0.55fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-bottleneck-row.high {
+  border-color: rgba(255, 138, 131, 0.22);
+  background: rgba(255, 138, 131, 0.045);
+}
+.liquid-glass-scope .stats-bottleneck-row.medium {
+  border-color: rgba(255, 206, 116, 0.18);
+}
+.liquid-glass-scope .stats-bottleneck-main,
+.liquid-glass-scope .stats-bottleneck-metrics,
+.liquid-glass-scope .stats-bottleneck-pass {
+  min-width: 0;
+}
+.liquid-glass-scope .stats-bottleneck-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.liquid-glass-scope .stats-bottleneck-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.liquid-glass-scope .stats-bottleneck-title-line strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .stats-bottleneck-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-bottleneck-chip.bad {
+  color: var(--bad);
+  background: rgba(255, 138, 131, 0.08);
+  border-color: rgba(255, 138, 131, 0.22);
+}
+.liquid-glass-scope .stats-bottleneck-chip.warn {
+  color: var(--accent-2);
+  background: rgba(255, 206, 116, 0.1);
+  border-color: rgba(255, 206, 116, 0.25);
+}
+.liquid-glass-scope .stats-bottleneck-chip.dim {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .stats-bottleneck-main p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.liquid-glass-scope .stats-bottleneck-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.liquid-glass-scope .stats-bottleneck-tags span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.liquid-glass-scope .stats-bottleneck-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 8px;
+  font-size: 10.5px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .stats-bottleneck-pass {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+}
+.liquid-glass-scope .stats-bottleneck-row .stats-examples {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+.liquid-glass-scope .stats-repo-status {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .stats-repo-status-head h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .stats-repo-status-head p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.liquid-glass-scope .stats-repo-table {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.liquid-glass-scope .stats-repo-row {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.4fr)
+    minmax(180px, 0.8fr)
+    minmax(150px, 0.7fr)
+    minmax(140px, 0.7fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-repo-row.blocked,
+.liquid-glass-scope .stats-repo-row.unresolved {
+  border-color: rgba(255, 138, 131, 0.22);
+  background: rgba(255, 138, 131, 0.045);
+}
+.liquid-glass-scope .stats-repo-row.watch {
+  border-color: rgba(255, 206, 116, 0.18);
+}
+.liquid-glass-scope .stats-repo-main,
+.liquid-glass-scope .stats-repo-pass,
+.liquid-glass-scope .stats-repo-counts {
+  min-width: 0;
+}
+.liquid-glass-scope .stats-repo-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.liquid-glass-scope .stats-repo-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.liquid-glass-scope .stats-repo-title-line strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .stats-repo-status-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-repo-status-chip.ok {
+  color: var(--ok);
+  background: rgba(127, 227, 161, 0.08);
+  border-color: rgba(127, 227, 161, 0.2);
+}
+.liquid-glass-scope .stats-repo-status-chip.warn {
+  color: var(--accent-2);
+  background: rgba(255, 206, 116, 0.1);
+  border-color: rgba(255, 206, 116, 0.25);
+}
+.liquid-glass-scope .stats-repo-status-chip.bad {
+  color: var(--bad);
+  background: rgba(255, 138, 131, 0.08);
+  border-color: rgba(255, 138, 131, 0.22);
+}
+.liquid-glass-scope .stats-repo-status-chip.dim {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .stats-repo-main p,
+.liquid-glass-scope .stats-repo-attribution {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.liquid-glass-scope .stats-repo-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 8px;
+  font-size: 10.5px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .stats-repo-pass {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+}
+.liquid-glass-scope .stats-repo-row .stats-examples {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+.liquid-glass-scope .stats-ticket-quality {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.liquid-glass-scope .stats-ticket-quality-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 16px;
+  align-items: start;
+}
+.liquid-glass-scope .stats-ticket-quality h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .stats-ticket-quality p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.liquid-glass-scope .stats-quality-callout,
+.liquid-glass-scope .stats-quality-recommendation {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 206, 116, 0.08);
+  border: 1px solid rgba(255, 206, 116, 0.18);
+}
+.liquid-glass-scope .stats-quality-callout strong {
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-readiness-bar {
+  display: flex;
+  width: 100%;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-readiness-segment {
+  min-width: 8px;
+}
+.liquid-glass-scope .stats-readiness-segment.strong,
+.liquid-glass-scope .stats-readiness-dot.strong {
+  background: #7fe3a1;
+}
+.liquid-glass-scope .stats-readiness-segment.adequate,
+.liquid-glass-scope .stats-readiness-dot.adequate {
+  background: #74aaff;
+}
+.liquid-glass-scope .stats-readiness-segment.weak,
+.liquid-glass-scope .stats-readiness-dot.weak {
+  background: #ffce74;
+}
+.liquid-glass-scope .stats-readiness-segment.missing_description,
+.liquid-glass-scope .stats-readiness-dot.missing_description {
+  background: #ff8a83;
+}
+.liquid-glass-scope .stats-readiness-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--text-2);
+  font-size: 11px;
+}
+.liquid-glass-scope .stats-readiness-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.liquid-glass-scope .stats-readiness-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.liquid-glass-scope .stats-quality-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: 14px;
+}
+.liquid-glass-scope .stats-quality-panel {
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-quality-panel-title {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+.liquid-glass-scope .stats-quality-table,
+.liquid-glass-scope .stats-missing-signal-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.liquid-glass-scope .stats-quality-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 56px minmax(90px, 0.9fr) 92px;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-inline-bar {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-inline-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #74aaff, #7fe3a1);
+}
+.liquid-glass-scope .stats-template-fit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.liquid-glass-scope .stats-template-fit-item {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 9px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+}
+.liquid-glass-scope .stats-template-fit-item span,
+.liquid-glass-scope .stats-template-fit-item strong {
+  overflow-wrap: anywhere;
+}
+.liquid-glass-scope .stats-missing-signal-panel {
+  margin-top: 0;
+}
+.liquid-glass-scope .stats-missing-signal-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(100px, 0.5fr) 72px minmax(
+      180px,
+      1fr
+    );
+  gap: 10px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-missing-signal-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.liquid-glass-scope .stats-missing-signal-row > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.liquid-glass-scope .stats-inline-bar.impact i {
+  background: linear-gradient(90deg, #ffce74, #ff8a83);
+}
+.liquid-glass-scope .stats-impact-sig {
+  color: var(--bad);
+}
+.liquid-glass-scope .stats-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.liquid-glass-scope .stats-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-hero-badge.ok {
+  color: var(--ok);
+  background: rgba(127, 227, 161, 0.08);
+  border-color: rgba(127, 227, 161, 0.2);
+}
+.liquid-glass-scope .stats-hero-badge.warn {
+  color: var(--accent-2);
+  background: rgba(255, 206, 116, 0.1);
+  border-color: rgba(255, 206, 116, 0.25);
+}
+.liquid-glass-scope .stats-hero-badge.dim {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+.liquid-glass-scope .stats-missing-signal-noisy {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-missing-signal-noisy summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+.liquid-glass-scope .stats-missing-signal-noisy[open] summary {
+  margin-bottom: 6px;
+}
+.liquid-glass-scope .stats-attribution {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.liquid-glass-scope .stats-attribution-head h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.liquid-glass-scope .stats-attribution-head p {
+  margin: 0;
+  font-size: 12.5px;
+}
+.liquid-glass-scope .stats-attribution-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  gap: 2px;
+}
+.liquid-glass-scope .stats-attribution-segment {
+  height: 100%;
+  transition: width 0.25s ease;
+}
+.liquid-glass-scope .stats-attribution-segment.oneshot,
+.liquid-glass-scope .stats-attribution-dot.oneshot {
+  background: rgba(255, 138, 131, 0.85);
+}
+.liquid-glass-scope .stats-attribution-segment.ticket,
+.liquid-glass-scope .stats-attribution-dot.ticket {
+  background: rgba(255, 206, 116, 0.85);
+}
+.liquid-glass-scope .stats-attribution-segment.mixed,
+.liquid-glass-scope .stats-attribution-dot.mixed {
+  background: rgba(116, 170, 255, 0.85);
+}
+.liquid-glass-scope .stats-attribution-segment.unknown,
+.liquid-glass-scope .stats-attribution-dot.unknown {
+  background: rgba(170, 170, 170, 0.5);
+}
+.liquid-glass-scope .stats-attribution-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-attribution-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.liquid-glass-scope .stats-attribution-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.liquid-glass-scope .stats-attribution-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.liquid-glass-scope .stats-attribution-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(60px, auto) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12.5px;
+}
+.liquid-glass-scope .stats-attribution-row strong {
+  margin-right: 6px;
+}
+.liquid-glass-scope .stats-attribution-note {
+  margin: 0;
+  font-size: 11.5px;
+}
+.liquid-glass-scope .stats-self-fix {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+.liquid-glass-scope .stats-self-fix-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.liquid-glass-scope .stats-self-fix-head p {
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+.liquid-glass-scope .stats-self-fix-error {
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 138, 131, 0.22);
+  background: rgba(255, 138, 131, 0.08);
+  color: var(--bad);
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-self-fix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.liquid-glass-scope .stats-self-fix-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+.liquid-glass-scope .stats-self-fix-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.liquid-glass-scope .stats-self-fix-title-line strong {
+  font-size: 13px;
+}
+.liquid-glass-scope .stats-self-fix-main p {
+  margin: 5px 0 8px;
+  font-size: 12px;
+}
+.liquid-glass-scope .stats-self-fix-status {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.06);
+}
+.liquid-glass-scope .stats-self-fix-status.eligible {
+  color: var(--warn);
+}
+.liquid-glass-scope .stats-self-fix-status.ticket_created,
+.liquid-glass-scope .stats-self-fix-status.duplicate,
+.liquid-glass-scope .stats-self-fix-status.run_requested {
+  color: var(--ok);
+}
+.liquid-glass-scope .stats-self-fix-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 220px;
+}
+.liquid-glass-scope .stats-self-fix-actions button,
+.liquid-glass-scope .stats-self-fix-link {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.liquid-glass-scope .stats-self-fix-actions button:hover:not(:disabled),
+.liquid-glass-scope .stats-self-fix-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.liquid-glass-scope .stats-self-fix-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.liquid-glass-scope .stats-balanced-examples {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.liquid-glass-scope .stats-balanced-examples .stats-examples {
+  margin-top: 0;
+}
+.liquid-glass-scope .stats-quality-footer {
+  font-size: 11px;
+}
+.liquid-glass-scope .stats-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.liquid-glass-scope .stats-section-label {
+  margin: 0 0 10px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.liquid-glass-scope .stats-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.liquid-glass-scope .stats-insight-card {
+  min-height: 170px;
+}
+.liquid-glass-scope .stats-insight-card.good {
+  border-color: rgba(127, 227, 161, 0.18);
+}
+.liquid-glass-scope .stats-insight-card.bad {
+  border-color: rgba(255, 138, 131, 0.18);
+}
+.liquid-glass-scope .stats-insight-card h3 {
+  margin: 8px 0;
+  font-size: 18px;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .stats-insight-card p {
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.liquid-glass-scope .stats-insight-meta,
+.liquid-glass-scope .stats-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.liquid-glass-scope .stats-insight-meta {
+  font-size: 10px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.liquid-glass-scope .stats-examples {
+  margin-top: 12px;
+}
+.liquid-glass-scope .stats-example-button {
+  color: var(--text);
+  cursor: pointer;
+}
+.liquid-glass-scope .stats-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+.liquid-glass-scope .stats-action-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.liquid-glass-scope .stats-action-row.high {
+  border-color: rgba(255, 138, 131, 0.22);
+}
+.liquid-glass-scope .stats-action-priority {
+  align-self: start;
+  width: max-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.06);
+}
+.liquid-glass-scope .stats-action-title {
+  font-size: 13px;
+  color: var(--text);
+}
+.liquid-glass-scope .stats-action-summary {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* ============================================================
+   Responsive — breakpoint scale: 768 / 1024 / 1280
+   ============================================================ */
+@media (max-width: 1280px) {
+  .liquid-glass-scope .agents-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .liquid-glass-scope .queue-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .liquid-glass-scope .two-col {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .tempo-hero,
+  .liquid-glass-scope .ledger-hero,
+  .liquid-glass-scope .ledger-two-col,
+  .liquid-glass-scope .triage-grid,
+  .liquid-glass-scope .stats-hero,
+  .liquid-glass-scope .stats-metrics,
+  .liquid-glass-scope .stats-bottleneck-row,
+  .liquid-glass-scope .stats-repo-row,
+  .liquid-glass-scope .stats-self-fix-row,
+  .liquid-glass-scope .stats-ticket-quality-head,
+  .liquid-glass-scope .stats-quality-grid,
+  .liquid-glass-scope .stats-two-col {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .stats-self-fix-actions {
+    min-width: 0;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .liquid-glass-scope .ledger-hero {
+    row-gap: 14px;
+  }
+  .liquid-glass-scope .ledger-hero-number-row,
+  .liquid-glass-scope .ledger-hero-decomp {
+    justify-self: start;
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+  }
+  .liquid-glass-scope .ledger-hero-decomp {
+    grid-row: 3;
+  }
+  .liquid-glass-scope .ledger-hero-rule {
+    grid-row: 4;
+  }
+  .liquid-glass-scope .stat-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .liquid-glass-scope .agent-health-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .liquid-glass-scope .detail-hero > .detail-hero-actions {
+    position: static;
+    margin-bottom: 14px;
+    max-width: 100%;
+  }
+  .liquid-glass-scope .detail-kicker {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .liquid-glass-scope.app {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .view-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 2px;
+  }
+  .liquid-glass-scope .view-header-copy {
+    max-width: none;
+  }
+  .liquid-glass-scope .page-title {
+    font-size: 26px;
+  }
+  .liquid-glass-scope .page-sub {
+    max-width: 100%;
+  }
+  .liquid-glass-scope .page-metrics {
+    gap: 6px;
+  }
+  .liquid-glass-scope .page-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0;
+  }
+  .liquid-glass-scope .runs-toolbar {
+    flex-wrap: wrap;
+  }
+  .liquid-glass-scope .search-field {
+    max-width: none;
+    width: 100%;
+  }
+  .liquid-glass-scope .runs-filters {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .liquid-glass-scope .palette {
+    width: min(92vw, 680px);
+  }
+  .liquid-glass-scope .palette-foot {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .liquid-glass-scope .agent-deep-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .liquid-glass-scope .tempo-hero,
+  .liquid-glass-scope .ledger-hero,
+  .liquid-glass-scope .tempo-horizon,
+  .liquid-glass-scope .tempo-waterfall,
+  .liquid-glass-scope .ledger-ladder,
+  .liquid-glass-scope .ledger-leaderboard,
+  .liquid-glass-scope .triage-card,
+  .liquid-glass-scope .triage-empty,
+  .liquid-glass-scope .stats-bottlenecks,
+  .liquid-glass-scope .stats-repo-status,
+  .liquid-glass-scope .stats-ticket-quality {
+    padding: 18px;
+  }
+  .liquid-glass-scope .stats-bottleneck-row .stats-examples,
+  .liquid-glass-scope .stats-repo-row .stats-examples {
+    justify-content: flex-start;
+  }
+  .liquid-glass-scope .stats-quality-row,
+  .liquid-glass-scope .stats-missing-signal-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .liquid-glass-scope .stats-template-fit-grid {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .tempo-rail-body {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .waterfall-row {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .ladder-rows {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 14px;
+    column-gap: 12px;
+  }
+  .liquid-glass-scope .ladder-column-head,
+  .liquid-glass-scope .ladder-row {
+    grid-template-columns: subgrid;
+  }
+  .liquid-glass-scope .ladder-column-head {
+    margin-top: 0;
+  }
+  .liquid-glass-scope .ladder-column-spacer {
+    display: none;
+  }
+  .liquid-glass-scope .ladder-label,
+  .liquid-glass-scope .ladder-track {
+    grid-column: 1 / -1;
+  }
+  .liquid-glass-scope .ladder-row-extra,
+  .liquid-glass-scope .model-price-strip {
+    grid-column: 1 / -1;
+  }
+  .liquid-glass-scope .model-price-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .liquid-glass-scope .model-price-strip.unavailable {
+    display: block;
+  }
+  .liquid-glass-scope .model-price-pill {
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .liquid-glass-scope .ladder-metric {
+    min-width: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .liquid-glass-scope .ladder-metric:last-child {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .liquid-glass-scope .top-run-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+  .liquid-glass-scope .top-run-jira,
+  .liquid-glass-scope .top-run-tok,
+  .liquid-glass-scope .top-run-cost {
+    grid-column: 2;
+  }
+  .liquid-glass-scope .agent-health-grid {
+    grid-template-columns: 1fr;
+  }
+  .liquid-glass-scope .detail-hero > .detail-hero-actions {
+    justify-content: flex-start;
+  }
+  .liquid-glass-scope .detail-title {
+    font-size: 24px;
+  }
+  .liquid-glass-scope .detail-meta-row {
+    gap: 8px;
+  }
+  .liquid-glass-scope .stage-panel-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .liquid-glass-scope .stage-panel-stats {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 14px;
+  }
+  .liquid-glass-scope .log-line {
+    grid-template-columns: 34px 44px 1fr;
+    padding: 4px 16px;
+  }
+}
+
+/* ============================================================
+   Reduced motion — halt ambient drift & card arrival glow
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope,
+  .liquid-glass-scope *,
+  .liquid-glass-scope *::before,
+  .liquid-glass-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   Light theme — opt-in via data-theme="light" on .liquid-glass-scope
+   Token override block. Spec Factory-aligned purple-and-white design
+   language: white surfaces, purple accent (#6251ac), deep-indigo
+   sidebar, faint lavender/teal radial wash on white app-bg.
+   Status colors are deepened for AA contrast on white surfaces.
+   ============================================================ */
+.liquid-glass-scope[data-theme="light"] {
+  /* Surfaces — white, not warm paper */
+  --surface-1: #ffffff;
+  --surface-2: #f7f8fb;
+  --surface-3: #eef3f8;
+  --surface-stroke: rgba(83, 75, 124, 0.14);
+  --surface-stroke-2: rgba(83, 75, 124, 0.24);
+
+  /* Text — purple-charcoal */
+  --text: #27233c;
+  --text-2: #3a3550;
+  --muted: #676974;
+  --dim: #808182;
+
+  /* Accent — Spec Factory purple */
+  --accent: #6251ac;
+  --accent-2: #7d6fd0;
+  --accent-dim: rgba(98, 81, 172, 0.14);
+
+  /* Status — deepened so pills + text pass 4.5:1 on white surfaces */
+  --running: #2867c8;
+  --running-2: #4d8ce0;
+  --running-dim: rgba(40, 103, 200, 0.14);
+
+  --ok: #1f8a4f;
+  --ok-dim: rgba(31, 138, 79, 0.14);
+  --bad: #c43a32;
+  --bad-dim: rgba(196, 58, 50, 0.12);
+  --warn: #a36b00;
+  --warn-dim: rgba(163, 107, 0, 0.14);
+
+  --primary: #6251ac;
+
+  /* Alpha derivatives recalc against the new accent/bad. */
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-strong: color-mix(in srgb, var(--accent) 36%, transparent);
+  --bad-border: color-mix(in srgb, var(--bad) 26%, transparent);
+
+  /* Modal + panel chrome — purple-tinted, not warm black */
+  --modal-overlay: rgba(39, 35, 60, 0.34);
+  --sweep-highlight: rgba(0, 0, 0, 0.1);
+  --code-bg: rgba(83, 75, 124, 0.05);
+  --deploy-grey: rgba(0, 0, 0, 0.1);
+  --pill-on-completed: #ffffff;
+
+  /* Glass panels — flip to translucent white with purple-grey tint */
+  --panel-bg: rgba(255, 255, 255, 0.92);
+  --glass-1: rgba(83, 75, 124, 0.04);
+  --glass-2: rgba(83, 75, 124, 0.06);
+  --glass-3: rgba(83, 75, 124, 0.1);
+  --glass-stroke: rgba(83, 75, 124, 0.1);
+  --glass-stroke-2: rgba(83, 75, 124, 0.16);
+  --glass-inner-hi: rgba(255, 255, 255, 0.7);
+  --glass-inner-lo: rgba(0, 0, 0, 0.06);
+
+  /* Sidebar rail — flat Spec Factory purple without aurora/bokeh layers.
+     White text still passes AA on #3b2697 (~6.5:1). */
+  --sidebar-shell-bg: #3b2697;
+  --sidebar-shell-stroke: rgba(255, 255, 255, 0.32);
+
+  /* Divider/text rgbas — white-alpha on deep-indigo still passes AA. */
+  --sidebar-divider: rgba(255, 255, 255, 0.22);
+  --sidebar-tagline: rgba(255, 255, 255, 0.78);
+  --sidebar-section-label: rgba(255, 255, 255, 0.55);
+  --sidebar-nav-text: rgba(255, 255, 255, 0.94);
+  --sidebar-nav-icon: rgba(255, 255, 255, 0.82);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.18);
+  --sidebar-active-stroke: rgba(255, 255, 255, 0.32);
+  --sidebar-count-bg: rgba(255, 255, 255, 0.18);
+  --sidebar-count-stroke: rgba(255, 255, 255, 0.22);
+  --sidebar-chip-bg: rgba(255, 255, 255, 0.14);
+  --sidebar-chip-stroke: rgba(255, 255, 255, 0.2);
+
+  /* Page background — white base with faint lavender/teal radial wash */
+  --app-bg:
+    radial-gradient(
+      88% 118% at -8% 8%,
+      rgba(98, 81, 172, 0.06) 0%,
+      transparent 48%
+    ),
+    radial-gradient(
+      62% 86% at 4% 84%,
+      rgba(68, 200, 189, 0.05) 0%,
+      transparent 54%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fbfaff 62%, #f4f6fb 100%);
+  background: var(--app-bg);
+  background-attachment: fixed, fixed, fixed;
+}
+
+/* Soften the viewport ambient blobs under light theme so they read
+   as a faint purple/teal haze instead of saturated cobalt smears. */
+.liquid-glass-scope[data-theme="light"]::before {
+  background:
+    radial-gradient(
+      40% 48% at 15% 18%,
+      rgba(98, 81, 172, 0.08) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      34% 40% at 8% 52%,
+      rgba(122, 96, 200, 0.06) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      32% 38% at 24% 74%,
+      rgba(68, 200, 189, 0.05) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      28% 34% at 35% 10%,
+      rgba(125, 111, 208, 0.06) 0%,
+      transparent 60%
+    );
+  filter: saturate(0.9);
+}
+
+/* Film grain — overlay blend washes white on light. Switch to multiply
+   so the grain reads as paper texture. */
+.liquid-glass-scope[data-theme="light"]::after {
+  mix-blend-mode: multiply;
+  opacity: 0.08;
+}
+
+/* Glass primitive highlight — overlay blend inverts polarity on light
+   surfaces. soft-light keeps the gloss reading as light, not dark. */
+.liquid-glass-scope[data-theme="light"] .lg-glass::before,
+.liquid-glass-scope[data-theme="light"] .lg-glass-raised::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.08) 14%,
+    rgba(255, 255, 255, 0) 40%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* ── Selector-specific overrides for surfaces that hardcode white-alpha ─
+   These are the high-impact ones — main controls, tables, panels, modal,
+   pipeline. We only touch lines that would render invisible-on-paper
+   without these overrides. */
+.liquid-glass-scope[data-theme="light"] .btn-ghost {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .btn-ghost:hover {
+  background: rgba(83, 75, 124, 0.07);
+  border-color: rgba(83, 75, 124, 0.18);
+}
+.liquid-glass-scope[data-theme="light"] .btn-search-circle {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+.liquid-glass-scope[data-theme="light"] .btn-search-circle:hover {
+  background: rgba(83, 75, 124, 0.08);
+  border-color: rgba(83, 75, 124, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .kbd-inline {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.14);
+}
+
+/* btn-primary — white text + purple shadow for Spec Factory identity. */
+.liquid-glass-scope[data-theme="light"] .btn-primary {
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset,
+    0 8px 22px -6px rgba(98, 81, 172, 0.35);
+}
+
+/* page-actions btn-primary — dedicated purple gradient in light mode;
+   the base/dark orange rule (2624-2654) is left intact for dark mode. */
+.liquid-glass-scope[data-theme="light"] .page-actions .btn-primary {
+  border: 1px solid rgba(98, 81, 172, 0.5);
+  background: linear-gradient(180deg, #7d6fd0, #6251ac);
+  color: #ffffff;
+  box-shadow:
+    0 8px 18px -11px rgba(98, 81, 172, 0.5),
+    0 14px 30px -22px rgba(39, 35, 60, 0.4);
+}
+.liquid-glass-scope[data-theme="light"] .page-actions .btn-primary:hover {
+  background: linear-gradient(180deg, #8a7cda, #6c5cbb);
+}
+
+/* Tables, log lines, panels, status pills */
+.liquid-glass-scope[data-theme="light"] .table-row {
+  border-bottom-color: rgba(83, 75, 124, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .table-row:hover {
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .run-group:not(:last-child) > .table-row:last-child {
+  border-bottom-color: rgba(83, 75, 124, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .run-group-branch-chip {
+  background: rgba(83, 75, 124, 0.045);
+  border-color: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .log-line:hover {
+  background: rgba(83, 75, 124, 0.04);
+}
+
+/* DetailModal stage-panel — log viewer band + error-context pill.
+   Black-alpha slabs in dark mode become muddy on cream; flip to
+   tan recesses with paper-pressed inset. */
+.liquid-glass-scope[data-theme="light"] .stage-logs {
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .error-context {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+/* Error log lines — pink hardcoded for dark band; theme-aware in light. */
+.liquid-glass-scope[data-theme="light"] .log-err .log-msg {
+  color: var(--bad);
+}
+
+.liquid-glass-scope[data-theme="light"] .status-pill.status-queued {
+  background: rgba(83, 75, 124, 0.06);
+  color: var(--muted);
+}
+.liquid-glass-scope[data-theme="light"] .status-pill.status-neutral {
+  background: rgba(83, 75, 124, 0.05);
+  color: var(--dim);
+}
+.liquid-glass-scope[data-theme="light"] .status-pill.status-cancelled {
+  background: rgba(83, 75, 124, 0.05);
+  color: var(--dim);
+}
+
+/* Pipeline-section cap (light theme) — kept because the section
+   wrapper still uses .pipeline-section. The Stream pipeline owns its
+   own light-mode rules in streamPipeline.css. */
+.liquid-glass-scope[data-theme="light"] .pipeline-section::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    transparent 40%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* Generic "white-alpha overlay" patterns used by stat cards, panels,
+   chrome strokes. We use a high-specificity attribute selector and
+   target the few inline-rgba selectors that would otherwise vanish. */
+.liquid-glass-scope[data-theme="light"] .mini-pending {
+  background: rgba(83, 75, 124, 0.05);
+}
+.liquid-glass-scope[data-theme="light"] .ring-mini-pending {
+  stroke: rgba(83, 75, 124, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .stage-ring-ghost .ring-mini-pending {
+  stroke: rgba(83, 75, 124, 0.05);
+}
+
+/* Code blocks (dark inline rgba(0,0,0,...)) — too dark on paper. */
+.liquid-glass-scope[data-theme="light"] pre,
+.liquid-glass-scope[data-theme="light"] code {
+  background: var(--code-bg);
+  color: var(--text);
+}
+
+/* Modal surfaces */
+.liquid-glass-scope[data-theme="light"] .modal-content,
+.liquid-glass-scope[data-theme="light"] .oneshot-modal-scroll {
+  color: var(--text);
+}
+
+/* Heavy-black inset surfaces — these read as muddy grey blocks on warm
+   paper. Flip to a soft tan recess so the affordance still reads as
+   "depressed inside the card" without smothering the foreground. */
+.liquid-glass-scope[data-theme="light"] .agent-deep-stat,
+.liquid-glass-scope[data-theme="light"] .filter-tabs,
+.liquid-glass-scope[data-theme="light"] .select-field {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .agent-deep-stat {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Runs toolbar — search field + active filter pill in light theme.
+   Dark-mode chrome uses heavy-black slab + white-alpha pill which both
+   fail on white. Search field becomes a soft purple-tinted recessed capsule
+   with a purple focus ring. Active filter pill picks up the brand purple
+   so the selected state pops against the neutral container. */
+.liquid-glass-scope[data-theme="light"] .search-field {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+.liquid-glass-scope[data-theme="light"] .search-field:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .filter-tab.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* Analytics range selector (24h / 7d / 30d / All) — same dark-slab +
+   white-active-pill issue as the Runs filter group. Soft purple-tinted
+   container, purple-accent active option. */
+.liquid-glass-scope[data-theme="light"] .analytics-range-control {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-actions {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-select {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-select:hover {
+  background: color-mix(in srgb, var(--accent) 8%, white);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-select-icon {
+  color: var(--text-2);
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-link {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(83, 75, 124, 0.1);
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .cost-report-link:hover {
+  background: color-mix(in srgb, var(--accent) 12%, white);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .analytics-range-option.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent) inset;
+}
+
+/* Log-stream shell (light theme). */
+.liquid-glass-scope[data-theme="light"] .log-stream {
+  background: rgba(83, 75, 124, 0.04);
+}
+
+/* Small chip-like rounded controls that hardcoded rgba(0,0,0,0.28) */
+.liquid-glass-scope[data-theme="light"] .segmented-control,
+.liquid-glass-scope[data-theme="light"] .pager,
+.liquid-glass-scope[data-theme="light"] .toolbar-pill {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.1);
+}
+
+/* Inline pager footer — light-theme override (base uses near-invisible white alpha). */
+.liquid-glass-scope[data-theme="light"] .inline-pager {
+  background: rgba(20, 16, 10, 0.04);
+  border-top-color: rgba(20, 16, 10, 0.1);
+}
+
+/* Agents grid cards — boost border weight a touch so cards separate
+   cleanly from the white/lavender page surround. */
+.liquid-glass-scope[data-theme="light"] .agent-deep-card {
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 12px 24px -22px rgba(83, 75, 124, 0.2);
+}
+
+/* Health pills (ok/warn/bad) — slight bg deepening so the colored fill
+   reads against paper without becoming muddy. */
+.liquid-glass-scope[data-theme="light"] .agent-deep-health-pill.ok {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .agent-deep-health-pill.warn {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .agent-deep-health-pill.bad {
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
+}
+
+/* Table rows — page Active Runs needs row separators that read on paper */
+.liquid-glass-scope[data-theme="light"] .table-head {
+  border-bottom-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .table-row:not(:last-child) {
+  border-bottom-color: rgba(83, 75, 124, 0.07);
+}
+
+/* Command palette — backdrop, panel, foot. Hardcoded white-on-glass tints
+   in dark mode become invisible on white; flip to a frosted-white
+   panel with a purple-tinted recess foot. Backdrop uses the purple-grey
+   overlay token so the page behind dims softly. */
+.liquid-glass-scope[data-theme="light"] .palette-backdrop {
+  background: var(--modal-overlay);
+}
+.liquid-glass-scope[data-theme="light"] .palette {
+  background: var(--panel-bg);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(83, 75, 124, 0.06) inset,
+    0 40px 80px -20px rgba(83, 75, 124, 0.3);
+}
+.liquid-glass-scope[data-theme="light"] .palette::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    transparent 40%
+  );
+  mix-blend-mode: soft-light;
+}
+.liquid-glass-scope[data-theme="light"] .palette-head {
+  border-bottom-color: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .palette-foot {
+  border-top-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.04);
+}
+
+/* ============================================================
+   Editorial elevation — applies to BOTH themes
+   POV: a typeset operations daybook. Fraunces carries the weight,
+   orange `--accent` is used like printer's red (a single tick of
+   emphasis, never branding). Colors flow from theme tokens; the
+   typography and chrome-stripping happen unconditionally so the
+   two themes share one voice.
+
+   `--rule` token below is the hairline-divider color, redefined
+   per theme just below this block.
+   ============================================================ */
+.liquid-glass-scope {
+  --rule: rgba(255, 255, 255, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] {
+  --rule: rgba(83, 75, 124, 0.12);
+}
+
+/* ── Page header: Fraunces serif title with a printer's tick ── */
+.liquid-glass-scope .page-title {
+  font-family: "Fraunces", var(--display);
+  font-size: clamp(28px, 2.6vw, 38px);
+  font-weight: 340;
+  font-variation-settings:
+    "opsz" 144,
+    "wght" 340,
+    "SOFT" 30;
+  letter-spacing: -0.018em;
+  line-height: 0.96;
+  color: var(--text);
+}
+.liquid-glass-scope .page-title::after {
+  content: ".";
+  color: var(--accent);
+  font-variation-settings:
+    "opsz" 144,
+    "wght" 900,
+    "SOFT" 30;
+  margin-left: 1px;
+}
+
+/* Subtitle: Fraunces italic, oldstyle figures, generous measure. */
+.liquid-glass-scope .page-sub {
+  font-family: "Fraunces", var(--display);
+  font-style: italic;
+  font-size: 14px;
+  font-variation-settings:
+    "opsz" 18,
+    "wght" 360;
+  font-feature-settings:
+    "onum" 1,
+    "ss01" 0;
+  line-height: 1.5;
+  margin-top: 10px;
+  max-width: 64ch;
+  color: var(--muted);
+}
+
+/* ── Page metric chips: keep the original pill chrome (defined in
+   the base rule above), but elevate the typography inside — Fraunces
+   italic label + tabular mono value. The pill returns ("total 73"),
+   only the label voice is editorial. ── */
+.liquid-glass-scope .page-metric-label {
+  font-family: "Fraunces", var(--display);
+  font-size: 11px;
+  font-variation-settings:
+    "opsz" 9,
+    "wght" 420;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.liquid-glass-scope .page-metric-value {
+  font-family: var(--mono);
+  font-feature-settings: "tnum" 1;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+/* Light theme: the base rule's white-alpha gradient/border is invisible
+   on warm paper. Mirror the same pill chrome with dark-alpha tints, and
+   reframe the color variants against the per-theme accent/ok/warn/bad
+   tokens (which were already deepened for AA on light). */
+.liquid-glass-scope[data-theme="light"] .page-metric-chip {
+  background: linear-gradient(
+    180deg,
+    rgba(83, 75, 124, 0.04),
+    rgba(83, 75, 124, 0.015)
+  );
+  border-color: rgba(83, 75, 124, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 4px 10px -8px rgba(83, 75, 124, 0.18);
+}
+.liquid-glass-scope[data-theme="light"] .page-metric-chip.accent {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .page-metric-chip.ok {
+  border-color: color-mix(in srgb, var(--ok) 28%, transparent);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .page-metric-chip.warn {
+  border-color: color-mix(in srgb, var(--warn) 32%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .page-metric-chip.bad {
+  border-color: color-mix(in srgb, var(--bad) 28%, transparent);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+}
+
+/* Costs page: bar tracks + model pricing pills.
+   Dark-mode chrome uses white-alpha which vanishes on warm paper.
+   Mirror with dark-alpha tints to restore presence on light surfaces. */
+.liquid-glass-scope[data-theme="light"] .ladder-track {
+  background: rgba(83, 75, 124, 0.06);
+}
+.liquid-glass-scope[data-theme="light"] .model-price-pill {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Costs page "Most expensive runs": each row is its own card.
+   Dark-mode chrome uses white-alpha (invisible on cream). Mirror with
+   dark-alpha tints so the cards read as paper-pressed on light. */
+.liquid-glass-scope[data-theme="light"] .top-run-row {
+  background: rgba(83, 75, 124, 0.03);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+.liquid-glass-scope[data-theme="light"] .top-run-row:hover {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.16);
+}
+
+/* ============================================================
+   Comprehensive light-mode chrome sweep
+   Catches white-alpha-on-cream regressions across all views.
+   All overrides additive, scoped to [data-theme="light"]; dark mode
+   untouched. Polarity-flip ::before highlights switched to soft-light. */
+
+/* Throughput — tempo-delta neutral pills + rail panel */
+.liquid-glass-scope[data-theme="light"] .tempo-delta,
+.liquid-glass-scope[data-theme="light"] .ledger-delta {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .tempo-rail {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Throughput — waterfall row track (sister to .ladder-track which
+   shares the rule but my earlier override only targeted ladder-track) */
+.liquid-glass-scope[data-theme="light"] .waterfall-track {
+  background: rgba(83, 75, 124, 0.06);
+}
+
+/* Throughput — top-rule hairline gradient on ledger-hero (decorative) */
+.liquid-glass-scope[data-theme="light"] .ledger-hero-rule {
+  background: linear-gradient(90deg, rgba(83, 75, 124, 0.18), transparent);
+}
+
+/* Statistics — narrative scorecard tiles (currently invisible on light) */
+.liquid-glass-scope[data-theme="light"] .stats-score-grid > div {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Statistics — bottleneck observation rows */
+.liquid-glass-scope[data-theme="light"] .stats-bottleneck-row {
+  background: rgba(83, 75, 124, 0.035);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Statistics — repo status rows */
+.liquid-glass-scope[data-theme="light"] .stats-repo-row {
+  background: rgba(83, 75, 124, 0.035);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Statistics — readiness distribution bar (top-of-section composite) */
+.liquid-glass-scope[data-theme="light"] .stats-readiness-bar {
+  background: rgba(83, 75, 124, 0.06);
+  border-color: rgba(83, 75, 124, 0.1);
+}
+
+/* Statistics — ticket-readiness sub-panels */
+.liquid-glass-scope[data-theme="light"] .stats-quality-panel {
+  background: rgba(83, 75, 124, 0.035);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Statistics — inline pass-rate bar tracks (multi-row reuse) */
+.liquid-glass-scope[data-theme="light"] .stats-inline-bar {
+  background: rgba(83, 75, 124, 0.08);
+}
+
+/* Overview — top-level agent list cards */
+.liquid-glass-scope[data-theme="light"] .agent-card {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Overlay-blend polarity fixes — ::before highlights that flip dark on
+   white surfaces. Switch to soft-light + white gradient. */
+.liquid-glass-scope[data-theme="light"] .stat-card::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55),
+    transparent 45%
+  );
+  mix-blend-mode: soft-light;
+}
+.liquid-glass-scope[data-theme="light"] .stage-panel::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    transparent 30%
+  );
+  mix-blend-mode: soft-light;
+}
+.liquid-glass-scope[data-theme="light"] .queue-col::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    transparent 40%
+  );
+  mix-blend-mode: soft-light;
+}
+.liquid-glass-scope[data-theme="light"] .os-card-glass::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.08) 18%,
+    rgba(255, 255, 255, 0) 40%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* Editorial-elevation panel highlights (the ::before gloss on every
+   panel card — leaderboard, ladder, hero, waterfall, etc.) — overlay
+   blend mode flips polarity on light. Switch to soft-light so the
+   highlight reads as a top-edge gloss, not a smudge. */
+.liquid-glass-scope[data-theme="light"] .tempo-hero::before,
+.liquid-glass-scope[data-theme="light"] .ledger-hero::before,
+.liquid-glass-scope[data-theme="light"] .tempo-horizon::before,
+.liquid-glass-scope[data-theme="light"] .tempo-waterfall::before,
+.liquid-glass-scope[data-theme="light"] .ledger-ladder::before,
+.liquid-glass-scope[data-theme="light"] .ledger-leaderboard::before,
+.liquid-glass-scope[data-theme="light"] .triage-empty::before,
+.liquid-glass-scope[data-theme="light"] .triage-card::before,
+.liquid-glass-scope[data-theme="light"] .stats-hero::before,
+.liquid-glass-scope[data-theme="light"] .stats-metrics::before,
+.liquid-glass-scope[data-theme="light"] .stats-bottlenecks::before,
+.liquid-glass-scope[data-theme="light"] .stats-repo-status::before,
+.liquid-glass-scope[data-theme="light"] .stats-ticket-quality::before,
+.liquid-glass-scope[data-theme="light"] .stats-self-fix::before,
+.liquid-glass-scope[data-theme="light"] .stats-insight-card::before,
+.liquid-glass-scope[data-theme="light"] .stats-actions::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    transparent 40%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* ── Section labels: Fraunces italic with a hairline rule.
+   Replaces the all-uppercase mono treatment. ── */
+.liquid-glass-scope .section-label {
+  font-family: "Fraunces", var(--display);
+  font-style: italic;
+  font-size: 13px;
+  font-variation-settings:
+    "opsz" 14,
+    "wght" 440;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-2);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 18px;
+}
+.liquid-glass-scope .section-label .dim {
+  color: var(--muted);
+}
+
+/* ── Tables: Fraunces italic head, tabular lining figures in rows,
+   Fraunces in the title column. ── */
+.liquid-glass-scope .table-head {
+  font-family: "Fraunces", var(--display);
+  font-size: 11.5px;
+  font-variation-settings:
+    "opsz" 10,
+    "wght" 420;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  border-bottom-color: var(--rule);
+}
+.liquid-glass-scope .table-row {
+  font-feature-settings: "tnum" 1;
+}
+/* Title column: pull the Fraunces voice into the row content */
+.liquid-glass-scope .table-row .row-title,
+.liquid-glass-scope .table-row .runs-row-title {
+  font-family: "Fraunces", var(--display);
+  font-size: 14px;
+  font-variation-settings:
+    "opsz" 14,
+    "wght" 420;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+
+/* ── Sidebar tagline: Fraunces small italic instead of uppercase mono.
+   The wordmark is already Fraunces; matching the tagline binds them. ── */
+.liquid-glass-scope .oneshot-tagline {
+  font-family: "Fraunces", var(--display);
+  font-size: 10px;
+  font-variation-settings:
+    "opsz" 9,
+    "wght" 380;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sidebar-tagline);
+}
+
+/* ── Agent card: section-label-like head treatment. Health pill
+   converts to the same dot+italic system as run statuses. ── */
+.liquid-glass-scope .agent-deep-health-pill {
+  background: none !important;
+  border: none !important;
+  padding: 0;
+  gap: 7px;
+  font-family: "Fraunces", var(--display);
+  font-size: 12px;
+  font-variation-settings:
+    "opsz" 12,
+    "wght" 440;
+  text-transform: lowercase;
+  letter-spacing: 0;
+}
+.liquid-glass-scope .agent-deep-health-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 6px;
+}
+.liquid-glass-scope .agent-deep-health-pill.ok::before {
+  background: var(--ok);
+}
+.liquid-glass-scope .agent-deep-health-pill.warn::before {
+  background: var(--warn);
+}
+.liquid-glass-scope .agent-deep-health-pill.bad::before {
+  background: var(--bad);
+}
+
+/* Agent card stat label: small Fraunces italic */
+.liquid-glass-scope .agent-deep-label {
+  font-family: "Fraunces", var(--display);
+  font-size: 10.5px;
+  font-variation-settings:
+    "opsz" 9,
+    "wght" 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.liquid-glass-scope .agent-deep-stat-value {
+  font-family: var(--mono);
+  font-feature-settings: "tnum" 1;
+}
+
+/* Agent group head ("agent 01 · Qualify") — Fraunces voice
+   so the agents grid reads like a typeset spread. */
+.liquid-glass-scope .agent-deep-name {
+  font-family: "Fraunces", var(--display);
+  font-variation-settings:
+    "opsz" 18,
+    "wght" 460;
+  letter-spacing: -0.005em;
+}
+.liquid-glass-scope .agent-deep-idx {
+  font-family: "Fraunces", var(--display);
+  font-feature-settings: "onum" 1;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+/* ── Modal title: Fraunces with the same printer's tick treatment ── */
+.liquid-glass-scope .detail-title {
+  font-family: "Fraunces", var(--display);
+  font-variation-settings:
+    "opsz" 96,
+    "wght" 360,
+    "SOFT" 30;
+  letter-spacing: -0.014em;
+  line-height: 1.05;
+}
+
+/* ── Card surfaces: replace floating shadows with a single hairline
+   "deckled" edge. Reads like trimmed paper, not floating glass. ── */
+.liquid-glass-scope[data-theme="light"] .glass-place-block,
+.liquid-glass-scope[data-theme="light"] .pipeline-section,
+.liquid-glass-scope[data-theme="light"] .lg-glass {
+  border-color: rgba(83, 75, 124, 0.1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 0 1px rgba(83, 75, 124, 0.02),
+    0 18px 32px -28px rgba(83, 75, 124, 0.18);
+}
+
+/* Subtle column-rule between sidebar and main, replicating the
+   spine of a bound notebook. */
+.liquid-glass-scope[data-theme="light"].app::after {
+  content: "";
+  position: fixed;
+  top: 16px;
+  bottom: 16px;
+  left: 270px;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(83, 75, 124, 0.06) 12%,
+    rgba(83, 75, 124, 0.06) 88%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .liquid-glass-scope[data-theme="light"].app::after {
+    transition: opacity 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.liquid-glass-scope[data-theme="light"].app.is-immersive::after,
+.liquid-glass-scope[data-theme="light"].app.is-logo-morphing::after {
+  opacity: 0;
+}
+
+/* ============================================================
+   Guide page (About.tsx) — light theme overrides
+
+   The Guide page ships its entire stylesheet inline in About.tsx
+   with hardcoded dark tokens (rgba(255,255,255,X) hairlines and
+   rgba(11,12,16,Y) opaque slabs). None of those have light-mode
+   counterparts. We mirror the existing chrome-sweep pattern:
+   opaque slabs become white recesses, white-alpha strokes become
+   purple-grey hairlines, and aurora/glow tints shift to purple/teal
+   so they match the Spec Factory purple-and-white identity.
+   Covers all three Guide sub-panels (Features, How-To, Tech Spec).
+   ============================================================ */
+
+/* ── Page wrapper — flip the hardcoded #000 background to white/lavender ── */
+.liquid-glass-scope[data-theme="light"] .about-view {
+  background:
+    radial-gradient(
+      88% 118% at -8% 8%,
+      rgba(98, 81, 172, 0.05) 0%,
+      transparent 48%
+    ),
+    radial-gradient(
+      62% 86% at 4% 84%,
+      rgba(68, 200, 189, 0.04) 0%,
+      transparent 54%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fbfaff 62%, #f4f6fb 100%);
+  box-shadow: inset 0 1px 0 rgba(83, 75, 124, 0.04);
+}
+
+/* ── Sticky tab bar (Features / How-To / Tech Spec / Changelog) ── */
+.liquid-glass-scope[data-theme="light"] .about-product-nav {
+  border-bottom-color: rgba(83, 75, 124, 0.12);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      rgba(56, 125, 255, 0.05) 52%,
+      rgba(31, 138, 79, 0.04)
+    ),
+    rgba(255, 255, 255, 0.86);
+  box-shadow:
+    inset 0 -1px 0 rgba(83, 75, 124, 0.04),
+    0 16px 42px -34px rgba(83, 75, 124, 0.18);
+}
+.liquid-glass-scope[data-theme="light"] .about-product-nav::before {
+  background:
+    radial-gradient(circle at 38% 0%, rgba(40, 103, 200, 0.1), transparent 34%),
+    radial-gradient(
+      circle at 72% 0%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 30%
+    );
+  opacity: 0.6;
+}
+.liquid-glass-scope[data-theme="light"] .about-product-back:hover {
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .about-product-nav a:hover,
+.liquid-glass-scope[data-theme="light"] .about-product-nav a:focus-visible {
+  background: rgba(83, 75, 124, 0.06);
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .about-product-nav a.is-active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+}
+
+/* ── Link pills (secondary, neutral) ──────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-link-pill {
+  background: rgba(83, 75, 124, 0.04);
+  border-color: rgba(83, 75, 124, 0.12);
+  color: var(--text-2);
+}
+.liquid-glass-scope[data-theme="light"] .about-link-pill:hover,
+.liquid-glass-scope[data-theme="light"] .about-link-pill:focus-visible {
+  background: rgba(83, 75, 124, 0.07);
+  border-color: rgba(83, 75, 124, 0.2);
+  color: var(--text);
+}
+/* is-primary: solid purple gradient + white text for WCAG AA (>=4.5:1).
+   Matches the .page-actions .btn-primary treatment so the primary CTA
+   reads clearly against the white About surface. */
+.liquid-glass-scope[data-theme="light"] .about-link-pill.is-primary {
+  background: linear-gradient(135deg, #7464c8, #6251ac);
+  border-color: rgba(98, 81, 172, 0.5);
+  color: #ffffff;
+}
+.liquid-glass-scope[data-theme="light"] .about-link-pill.is-primary:hover,
+.liquid-glass-scope[data-theme="light"]
+  .about-link-pill.is-primary:focus-visible {
+  background: linear-gradient(135deg, #7d70d0, #6c5cbb);
+  border-color: rgba(98, 81, 172, 0.7);
+  color: #ffffff;
+}
+
+/* ── Shared Guide hero ────────────────────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-guide-hero {
+  border-color: rgba(83, 75, 124, 0.1);
+  /* White/lavender gradient mirroring the page-level radial wash. */
+  background:
+    radial-gradient(
+      88% 118% at -8% 8%,
+      rgba(98, 81, 172, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      62% 86% at 4% 84%,
+      rgba(68, 200, 189, 0.05) 0%,
+      transparent 56%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fbfaff 60%, #f4f6fb 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 30px 60px -42px rgba(83, 75, 124, 0.24);
+}
+/* Aurora layer — soften saturation; mix-blend keeps it as a faint warm haze. */
+.liquid-glass-scope[data-theme="light"] .about-guide-hero .about-hero-aurora {
+  background:
+    radial-gradient(
+      60% 50% at 86% 12%,
+      rgba(40, 103, 200, 0.1) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      46% 44% at 22% 78%,
+      rgba(98, 81, 172, 0.1) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      48% 42% at 78% 90%,
+      rgba(31, 138, 79, 0.06) 0%,
+      transparent 68%
+    );
+  filter: blur(36px) saturate(0.9);
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+/* Grain — overlay blend washes out white on cream; multiply reads as paper. */
+.liquid-glass-scope[data-theme="light"] .about-guide-hero .about-hero-grain {
+  mix-blend-mode: multiply;
+  opacity: 0.05;
+}
+/* Title em — drop the white-on-dark glow; brand orange already pops on cream. */
+.liquid-glass-scope[data-theme="light"] .about-guide-title em {
+  text-shadow: none;
+}
+
+/* ── Feature highlights grid ──────────────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-features-grid {
+  background: rgba(83, 75, 124, 0.1);
+  border-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-feature-card {
+  background: rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .about-feature-card:hover {
+  background: rgba(255, 255, 255, 1);
+}
+.liquid-glass-scope[data-theme="light"] .about-feature-icon {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* ── Dashboard showcase ───────────────────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-dashboard-group-head {
+  border-bottom-color: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .about-dashboard-card {
+  border-color: rgba(83, 75, 124, 0.1);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.18)
+    ),
+    rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+.liquid-glass-scope[data-theme="light"] .about-dashboard-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .about-dashboard-tab {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .about-dashboard-signals {
+  border-top-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-dashboard-footnote {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.03);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* ── Numbers grid ─────────────────────────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-numbers-grid {
+  background: rgba(83, 75, 124, 0.1);
+  border-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-numbers-cell {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+/* ── Multi-repo flow grid ─────────────────────────────── */
+.liquid-glass-scope[data-theme="light"] .about-multirepo-grid {
+  background: rgba(83, 75, 124, 0.1);
+  border-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-multirepo-step {
+  background: rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .about-multirepo-step:hover {
+  background: rgba(255, 255, 255, 1);
+}
+.liquid-glass-scope[data-theme="light"] .about-multirepo-icon {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.liquid-glass-scope[data-theme="light"] .about-multirepo-note {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* ── Pipeline scroll-section + stage panels ───────────── */
+.liquid-glass-scope[data-theme="light"] .about-pipeline-progress {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.04);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+.liquid-glass-scope[data-theme="light"] .about-pipeline-progress-step {
+  background: rgba(83, 75, 124, 0.04);
+  color: var(--muted);
+}
+.liquid-glass-scope[data-theme="light"] .about-pipeline-progress-step:hover {
+  background: color-mix(
+    in srgb,
+    var(--stage-accent, #6ddcff) 14%,
+    rgba(83, 75, 124, 0.05)
+  );
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"]
+  .about-pipeline-progress-step.is-active {
+  background: color-mix(in srgb, var(--stage-accent, #6ddcff) 22%, transparent);
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+.liquid-glass-scope[data-theme="light"] .about-stage-panel {
+  border-color: rgba(83, 75, 124, 0.1);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 26px 60px -42px rgba(83, 75, 124, 0.28);
+}
+.liquid-glass-scope[data-theme="light"] .about-stage-visual {
+  border-color: rgba(83, 75, 124, 0.1);
+  background:
+    linear-gradient(135deg, rgba(83, 75, 124, 0.04), rgba(83, 75, 124, 0.02)),
+    rgba(83, 75, 124, 0.04);
+}
+
+/* ── How-To: jump links + ticket card + guide grids ───── */
+.liquid-glass-scope[data-theme="light"] .about-howto-jump-link {
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.04);
+  color: var(--text-2);
+}
+.liquid-glass-scope[data-theme="light"] .about-howto-jump-link:hover,
+.liquid-glass-scope[data-theme="light"] .about-howto-jump-link:focus-visible {
+  border-color: rgba(83, 75, 124, 0.2);
+  background: rgba(83, 75, 124, 0.07);
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .about-rovo-helper {
+  border-color: rgba(83, 75, 124, 0.12);
+  background:
+    radial-gradient(
+      92% 120% at 0% 0%,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.68),
+      rgba(255, 255, 255, 0.24)
+    ),
+    rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 22px 54px -38px rgba(83, 75, 124, 0.28);
+}
+.liquid-glass-scope[data-theme="light"] .about-rovo-helper-eyebrow {
+  color: color-mix(in srgb, var(--accent) 78%, #27233c);
+}
+.liquid-glass-scope[data-theme="light"] .about-rovo-helper-chip {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.04);
+  color: var(--text-2);
+}
+.liquid-glass-scope[data-theme="light"] .about-ticket-card {
+  border-color: rgba(83, 75, 124, 0.12);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.25)
+    ),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 54px -38px rgba(83, 75, 124, 0.3);
+}
+/* Card hover wash — switch the cyan tint over the warm paper base. */
+.liquid-glass-scope[data-theme="light"] .about-ticket-card:hover,
+.liquid-glass-scope[data-theme="light"] .about-ticket-card:focus-within {
+  border-color: color-mix(in srgb, #2079a8 32%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(109, 220, 255, 0.1),
+      rgba(255, 255, 255, 0.25) 70%
+    ),
+    rgba(255, 255, 255, 0.96);
+}
+/* Card sweep highlight — the white-alpha swipe needs anchoring on white;
+   replace with a faint purple-tinted sheen. */
+.liquid-glass-scope[data-theme="light"] .about-ticket-card::after {
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(98, 81, 172, 0.04) 30%,
+    rgba(83, 75, 124, 0.06) 42%,
+    rgba(255, 255, 255, 0.5) 52%,
+    transparent 66%
+  );
+}
+/* Toolbar — dark slab over now-light card reads as a black tape; flip. */
+.liquid-glass-scope[data-theme="light"] .about-ticket-toolbar {
+  border-bottom-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .about-guide-card-grid,
+.liquid-glass-scope[data-theme="light"] .about-stop-grid {
+  background: rgba(83, 75, 124, 0.1);
+  border-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-guide-card {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.2)
+    ),
+    rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .about-guide-card-icon {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* ── Spec sheet matrix — re-tokenize via custom properties ─── */
+.liquid-glass-scope[data-theme="light"] .spec-card {
+  --spec-bg: rgba(255, 255, 255, 0.96);
+  --spec-stroke: rgba(83, 75, 124, 0.12);
+  --spec-stroke-soft: rgba(83, 75, 124, 0.06);
+  --spec-row-hover: color-mix(in srgb, var(--accent) 8%, transparent);
+  --spec-yes: #1f8a4f;
+  --spec-no: #c43a32;
+  --spec-partial: #a36b00;
+  border-color: rgba(83, 75, 124, 0.12);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.6),
+      rgba(255, 255, 255, 0.18) 70%
+    ),
+    var(--spec-bg);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 22px 54px -36px rgba(83, 75, 124, 0.22);
+}
+.liquid-glass-scope[data-theme="light"] .spec-section-head {
+  background: linear-gradient(180deg, rgba(83, 75, 124, 0.04), transparent 62%);
+}
+.liquid-glass-scope[data-theme="light"] .spec-table-head > div {
+  background: linear-gradient(
+    180deg,
+    rgba(83, 75, 124, 0.05),
+    rgba(83, 75, 124, 0.02)
+  );
+}
+.liquid-glass-scope[data-theme="light"] .spec-profiled-repos {
+  border-top-color: rgba(83, 75, 124, 0.12);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 5%, transparent),
+      rgba(255, 255, 255, 0.1)
+    ),
+    rgba(83, 75, 124, 0.03);
+}
+.liquid-glass-scope[data-theme="light"] .spec-profiled-repos-grid {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .spec-profiled-repo {
+  background: rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .spec-profiled-repos-copy code {
+  color: var(--accent);
+}
+.liquid-glass-scope[data-theme="light"] .spec-legend {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.03);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* ── Docs label table — re-tokenize + flip to white surface ── */
+.liquid-glass-scope[data-theme="light"] .about-docs-label-rule {
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-label-table {
+  --docs-table-text: var(--text);
+  --docs-table-body: var(--text-2);
+  --docs-table-muted: var(--muted);
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-label-row {
+  border-top-color: rgba(83, 75, 124, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-label-row > div {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.2)
+    ),
+    rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-label-row.is-header > div {
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-label-chip {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+.liquid-glass-scope[data-theme="light"] .about-docs-dry-run {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* ── Scan intake cards — re-tokenize + flip to white surface ── */
+.liquid-glass-scope[data-theme="light"] .about-scan-grid {
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.1);
+}
+.liquid-glass-scope[data-theme="light"] .about-scan-card {
+  --scan-card-text: var(--text);
+  --scan-card-body: var(--text-2);
+  --scan-card-muted: var(--muted);
+  --scan-card-accent: var(--accent);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.2)
+    ),
+    rgba(255, 255, 255, 0.96);
+}
+.liquid-glass-scope[data-theme="light"] .about-scan-note {
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .about-scan-icon {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* ── Closer + trio cards (Guide and Features end-cap) ──── */
+.liquid-glass-scope[data-theme="light"] .about-closer,
+.liquid-glass-scope[data-theme="light"] .about-trio {
+  border-color: rgba(83, 75, 124, 0.12);
+  background:
+    radial-gradient(
+      120% 120% at 0% 0%,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      120% 120% at 100% 100%,
+      rgba(40, 103, 200, 0.07),
+      transparent 52%
+    ),
+    rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 26px 60px -42px rgba(83, 75, 124, 0.24);
+}
+.liquid-glass-scope[data-theme="light"] .about-trio-card + .about-trio-card {
+  border-left-color: rgba(83, 75, 124, 0.1);
+}
+@media (max-width: 880px) {
+  .liquid-glass-scope[data-theme="light"] .about-trio-card + .about-trio-card {
+    border-left: 0;
+    border-top: 1px solid rgba(83, 75, 124, 0.1);
+  }
+}
+
+/* ── Tech Spec TOC, rows, end-card ──────────── */
+.liquid-glass-scope[data-theme="light"] .about-techspec-toc {
+  border-left-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-toc-mobile {
+  border-bottom-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-toc-mobile select {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(83, 75, 124, 0.14);
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-group-head {
+  border-bottom-color: rgba(83, 75, 124, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-row {
+  border-bottom-color: rgba(83, 75, 124, 0.08);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-row-anchor {
+  border-color: rgba(83, 75, 124, 0.12);
+  background: rgba(83, 75, 124, 0.04);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-row-anchor:hover {
+  background: rgba(83, 75, 124, 0.08);
+  border-color: rgba(83, 75, 124, 0.24);
+  color: var(--text);
+}
+.liquid-glass-scope[data-theme="light"] .about-techspec-end {
+  border-color: rgba(83, 75, 124, 0.1);
+  background: rgba(83, 75, 124, 0.03);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+/* ── Changelog timeline (panel=changelog) ─────────────── */
+.liquid-glass-scope[data-theme="light"] .about-timeline-entry-body {
+  border-color: rgba(83, 75, 124, 0.1);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.18)
+    ),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 54px -38px rgba(83, 75, 124, 0.24);
+}
+.liquid-glass-scope[data-theme="light"]
+  .about-timeline-entry:hover
+  .about-timeline-entry-body {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      rgba(255, 255, 255, 0.2)
+    ),
+    rgba(255, 255, 255, 0.96);
+}
+/* Timeline rail dot — pure-dark dot reads OK on cream but the orange
+   ring + glow needs to be readable. Lift the dot to paper so the brand
+   ring carries the affordance. */
+.liquid-glass-scope[data-theme="light"] .about-timeline-entry::before {
+  background: #ffffff;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* ============================================================
+   Theme switch — Sun/Moon orb + room-light wipe
+   Sibling of .btn-search-circle in the .page-actions row. The
+   control keeps the same 38px footprint but uses the universal
+   theme metaphor: moon for dark, sun for light, with a soft
+   celestial morph before the page wipe radiates from the button.
+   ============================================================ */
+.liquid-glass-scope .btn-theme-orb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
+  cursor: pointer;
+  isolation: isolate;
+  overflow: visible;
+  transition:
+    background 0.2s,
+    color 0.25s,
+    border-color 0.2s,
+    box-shadow 0.25s,
+    transform 0.14s;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.liquid-glass-scope .btn-theme-orb:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.liquid-glass-scope .btn-theme-orb:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.liquid-glass-scope .btn-theme-orb:disabled {
+  cursor: default;
+}
+
+.liquid-glass-scope .btn-theme-orb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.liquid-glass-scope[data-theme="light"] .btn-theme-orb {
+  background: rgba(83, 75, 124, 0.05);
+  border-color: rgba(83, 75, 124, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.liquid-glass-scope[data-theme="light"] .btn-theme-orb:hover {
+  background: rgba(83, 75, 124, 0.08);
+  border-color: rgba(83, 75, 124, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="light"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="light"]:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.liquid-glass-scope .theme-orb-glow,
+.liquid-glass-scope .theme-orb-rays,
+.liquid-glass-scope .theme-orb-disc {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.liquid-glass-scope .theme-orb-glow {
+  inset: 5px;
+  z-index: -1;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 42%, transparent),
+    transparent 72%
+  );
+  opacity: 0;
+  transform: scale(0.72);
+  filter: blur(3px);
+}
+
+.liquid-glass-scope .theme-orb-rays {
+  inset: -9px;
+  z-index: -2;
+  opacity: 0;
+  transform: scale(0.66) rotate(-12deg);
+  background: repeating-conic-gradient(
+    from 4deg,
+    color-mix(in srgb, var(--accent) 56%, transparent) 0deg 7deg,
+    transparent 7deg 24deg
+  );
+  mask-image: radial-gradient(
+    circle,
+    transparent 0 42%,
+    #000 48% 66%,
+    transparent 72%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle,
+    transparent 0 42%,
+    #000 48% 66%,
+    transparent 72%
+  );
+}
+
+.liquid-glass-scope .theme-orb-disc {
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+
+.liquid-glass-scope .theme-orb-icon {
+  grid-area: 1 / 1;
+  transition:
+    filter 0.22s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.liquid-glass-scope .theme-orb-icon-sun {
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(4px) rotate(-28deg) scale(0.62);
+  filter: brightness(0.78) drop-shadow(0 0 0 transparent);
+}
+
+.liquid-glass-scope .theme-orb-icon-moon {
+  color: rgb(146, 168, 226);
+  opacity: 0;
+  transform: translateY(-4px) rotate(24deg) scale(0.62);
+  filter: brightness(0.84) drop-shadow(0 0 0 transparent);
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="light"] .theme-orb-icon-sun {
+  opacity: 1;
+  transform: translateY(0) rotate(0deg) scale(1);
+  filter: brightness(1.05) drop-shadow(0 0 0 transparent);
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="dark"] .theme-orb-icon-moon {
+  opacity: 1;
+  transform: translateY(0) rotate(0deg) scale(1);
+  filter: brightness(0.95) drop-shadow(0 0 2px rgba(125, 154, 235, 0.36));
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="light"] .theme-orb-glow {
+  opacity: 0;
+  transform: scale(0.72);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 42%, transparent),
+    transparent 72%
+  );
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="dark"] .theme-orb-glow {
+  opacity: 0.34;
+  transform: scale(0.9);
+  background: radial-gradient(
+    circle,
+    rgba(105, 133, 220, 0.34),
+    transparent 74%
+  );
+}
+
+.liquid-glass-scope .btn-theme-orb[data-state="light"] .theme-orb-rays {
+  opacity: 0;
+  transform: scale(0.7) rotate(4deg);
+}
+
+@keyframes sunrise-sun {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) rotate(-28deg) scale(0.52);
+    filter: brightness(0.7) drop-shadow(0 0 0 transparent);
+  }
+  48% {
+    opacity: 1;
+    transform: translateY(-1px) rotate(8deg) scale(1.14);
+    filter: brightness(1.36)
+      drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 78%, transparent));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: brightness(1.05) drop-shadow(0 0 0 transparent);
+  }
+}
+
+@keyframes sunrise-moon {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: brightness(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-7px) rotate(26deg) scale(0.58);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes moonrise-sun {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: brightness(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(7px) rotate(-26deg) scale(0.56);
+    filter: brightness(0.74);
+  }
+}
+
+@keyframes moonrise-moon {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) rotate(24deg) scale(0.56);
+    filter: brightness(0.82) drop-shadow(0 0 0 transparent);
+  }
+  52% {
+    opacity: 1;
+    transform: translateY(1px) rotate(-8deg) scale(1.08);
+    filter: brightness(1.05) drop-shadow(0 0 4px rgba(125, 154, 235, 0.42));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: brightness(0.95) drop-shadow(0 0 2px rgba(125, 154, 235, 0.36));
+  }
+}
+
+@keyframes orb-glow-sunrise {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.7);
+    filter: blur(2px);
+  }
+  42% {
+    opacity: 0.95;
+    transform: scale(1.2);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.72);
+    filter: blur(3px);
+  }
+}
+
+@keyframes orb-glow-moonrise {
+  0% {
+    opacity: 0.72;
+    transform: scale(1);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 0.34;
+    transform: scale(0.9);
+    filter: blur(3px);
+  }
+}
+
+@keyframes sun-rays-bloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.58) rotate(-20deg);
+  }
+  40% {
+    opacity: 0.66;
+    transform: scale(1.06) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7) rotate(4deg);
+  }
+}
+
+@keyframes sun-rays-collapse {
+  0% {
+    opacity: 0.36;
+    transform: scale(0.86) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.58) rotate(-16deg);
+  }
+}
+
+.liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-icon-sun {
+  animation: sunrise-sun 560ms cubic-bezier(0.25, 1, 0.35, 1) both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-icon-moon {
+  animation: sunrise-moon 430ms ease-out both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-glow {
+  animation: orb-glow-sunrise 620ms cubic-bezier(0.25, 1, 0.35, 1) both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-rays {
+  animation: sun-rays-bloom 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-icon-sun {
+  animation: moonrise-sun 340ms ease-out both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-icon-moon {
+  animation: moonrise-moon 460ms cubic-bezier(0.25, 1, 0.35, 1) both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-glow {
+  animation: orb-glow-moonrise 360ms ease-out both;
+}
+
+.liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-rays {
+  animation: sun-rays-collapse 320ms ease-out both;
+}
+
+@property --wipe-r {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: false;
+}
+
+@keyframes theme-wipe-in {
+  from {
+    --wipe-r: 0px;
+  }
+  to {
+    --wipe-r: var(--theme-flip-r, 150vmax);
+  }
+}
+
+:root[data-oneshot-theme-transition="true"]::view-transition-old(root) {
+  animation: none;
+}
+
+:root[data-oneshot-theme-transition="true"]::view-transition-new(root) {
+  animation: theme-wipe-in 700ms cubic-bezier(0.55, 0, 0.35, 1) both;
+  box-shadow: 0 0 160px 44px var(--theme-wipe-tint, transparent) inset;
+  mask-image: radial-gradient(
+    circle at var(--theme-flip-x, 50%) var(--theme-flip-y, 50%),
+    rgba(0, 0, 0, 1) 0,
+    rgba(0, 0, 0, 1) var(--wipe-r, 0px),
+    rgba(0, 0, 0, 0) calc(var(--wipe-r, 0px) + 180px)
+  );
+  -webkit-mask-image: radial-gradient(
+    circle at var(--theme-flip-x, 50%) var(--theme-flip-y, 50%),
+    rgba(0, 0, 0, 1) 0,
+    rgba(0, 0, 0, 1) var(--wipe-r, 0px),
+    rgba(0, 0, 0, 0) calc(var(--wipe-r, 0px) + 180px)
+  );
+}
+
+@keyframes theme-wipe-overlay {
+  from {
+    --wipe-r: var(--theme-flip-r, 150vmax);
+  }
+  to {
+    --wipe-r: 0px;
+  }
+}
+
+.liquid-glass-scope .theme-wipe-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: var(--theme-wipe-overlay-bg, transparent);
+  --wipe-r: var(--theme-flip-r, 150vmax);
+  mask-image: radial-gradient(
+    circle at var(--theme-flip-x, 50%) var(--theme-flip-y, 50%),
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) calc(var(--wipe-r, 0px) - 180px),
+    rgba(0, 0, 0, 1) var(--wipe-r, 0px)
+  );
+  -webkit-mask-image: radial-gradient(
+    circle at var(--theme-flip-x, 50%) var(--theme-flip-y, 50%),
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) calc(var(--wipe-r, 0px) - 180px),
+    rgba(0, 0, 0, 1) var(--wipe-r, 0px)
+  );
+  animation: theme-wipe-overlay 700ms cubic-bezier(0.55, 0, 0.35, 1) forwards;
+}
+
+.liquid-glass-scope .theme-wipe-overlay::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--theme-flip-x, 50%) var(--theme-flip-y, 50%),
+    var(--theme-wipe-tint, transparent) 0%,
+    transparent 44vmin
+  );
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope .btn-theme-orb.is-sunrise,
+  .liquid-glass-scope .btn-theme-orb.is-moonrise,
+  .liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-icon,
+  .liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-icon,
+  .liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-glow,
+  .liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-glow,
+  .liquid-glass-scope .btn-theme-orb.is-sunrise .theme-orb-rays,
+  .liquid-glass-scope .btn-theme-orb.is-moonrise .theme-orb-rays {
+    animation: none;
+  }
+  .liquid-glass-scope .btn-theme-orb,
+  .liquid-glass-scope .btn-theme-orb .theme-orb-icon,
+  .liquid-glass-scope .btn-theme-orb .theme-orb-glow {
+    transition-duration: 0.12s;
+  }
+  :root[data-oneshot-theme-transition="true"]::view-transition-old(root),
+  :root[data-oneshot-theme-transition="true"]::view-transition-new(root) {
+    animation: none;
+  }
+  .liquid-glass-scope .theme-wipe-overlay {
+    animation: none;
+    display: none;
+  }
+}

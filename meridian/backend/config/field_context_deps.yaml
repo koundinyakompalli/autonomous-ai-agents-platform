@@ -1,0 +1,62 @@
+# Field context dependencies — cascading batch_values injection.
+#
+# When a field resolves to a new ID, downstream fields in the same case batch
+# may need updated context to resolve correctly (e.g. Classification depends on
+# both Request Type and RequestReason, which in turn depends on Request Type).
+#
+# Structure:
+#   <module>:
+#     - resolves: <column_name>        # the column that just resolved
+#       provides:                       # context to inject into batch_values
+#         - field_name: <ui_name>       # key for #FieldName# placeholder substitution
+#                                       # MUST be the display/description value
+#           column_name: <col_name>     # key for column-based ID lookups
+#           fetch_sql: |               # SQL to fetch display + id
+#             SELECT <desc_col> AS display, <id_col> AS id
+#             FROM <table> ...
+#             WHERE ... = {record_id}   # placeholder: case record PK
+#               AND ... = {resolved_id} # placeholder: the just-resolved ID
+#             LIMIT 1
+#
+# Cascade depth is unlimited — each provides entry injects context for the next level.
+# The tool processes provides entries immediately after each field resolves, in list order.
+#
+# Add new entries here when a field's valid values depend on another field's new value.
+
+der:
+  - resolves: request_type
+    provides:
+      # Level 1: RequestReason (cdtype_id) scoped to new request_type.
+      # Injects description for #RequestReason# substitution and ID for column lookups.
+      - field_name: RequestReason
+        column_name: cdtype_id
+        fetch_sql: |
+          SELECT ct_new.description AS display, ct_new.id AS id
+          FROM der d
+          JOIN cdtype ct_cur ON ct_cur.id = d.cdtype_id
+          JOIN cdtype ct_new
+            ON ct_new.description = ct_cur.description
+            AND ct_new.request_type_id = {resolved_id}
+            AND ct_new.inactive = 0
+          WHERE d.id = {record_id}
+          LIMIT 1
+
+  - resolves: rd_original_cd_type
+    provides:
+      # Keep the hidden DER Original Request Type in sync with the selected
+      # Original Request Reason. rd_original_cd_type points to cdtype.id; that
+      # cdtype row carries the request type that the UI uses to filter reasons.
+      - field_name: Original Request Type
+        column_name: original_request_type
+        fetch_sql: |
+          SELECT drt.name AS display, drt.id AS id
+          FROM cdtype ct
+          JOIN der_request_types drt
+            ON drt.id = ct.request_type_id
+          WHERE ct.id = {resolved_id}
+          LIMIT 1
+
+  # Level 2 (cdtype_id → cdtype_determination_id) is NOT needed here because
+  # the wide parser now always includes Classification in the changes list
+  # (even when old display = new display), so the Classification calc_expression
+  # handles it directly using the #RequestReason# context injected by Level 1.

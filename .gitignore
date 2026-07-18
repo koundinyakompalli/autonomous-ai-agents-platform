@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Terraform
+terraform/.terraform/
+terraform/build/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/tfplan
+terraform/*.auto.tfvars
+!terraform/shared.auto.tfvars
+
+# AWS
+*.pem
+document-ai-bastion.pem
+
+# Test files
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+__pycache__/
+*.pyc
+
+# Test scripts
+test-upgrades.js
+
+# Development artifacts
+.plan/
+.superpowers/
+.playwright-mcp/
+.claude/
+dashboard/session-report-*.html
+local-oneshot/data/
+local-e2e/results/
+artifacts/spec-factory-certification/

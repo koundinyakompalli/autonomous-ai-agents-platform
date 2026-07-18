@@ -1,0 +1,94 @@
+import { describe, expect, it } from 'vitest'
+import {
+  enforceCodeInspectionForRejection,
+  normalizeQualificationAssessment,
+} from './QualifierAgent.js'
+
+describe('normalizeQualificationAssessment', () => {
+  it('demotes discoverable implementation-detail blockers to warnings', () => {
+    const normalized = normalizeQualificationAssessment({
+      qualified: false,
+      repoId: undefined,
+      branchName: undefined,
+      baseCommitSha: undefined,
+      requirementsSummary: ['Make the cancel button red in member search launch flow.'],
+      acceptanceCriteriaPresent: false,
+      blockingReasons: [
+        'Specific red color value not specified (hex/RGB).',
+        'CSS file location/path not provided.',
+      ],
+      nonBlockingWarnings: [],
+      repoInspectionPerformed: true,
+      inspectedFiles: ['src/member-search/launch.css'],
+      inspectionSummary: 'Confirmed the styling location is discoverable from the repo.',
+    })
+
+    expect(normalized.qualified).toBe(true)
+    expect(normalized.blockingReasons).toHaveLength(0)
+    expect(normalized.nonBlockingWarnings).toEqual(
+      expect.arrayContaining([
+        'Specific red color value not specified (hex/RGB).',
+        'CSS file location/path not provided.',
+      ]),
+    )
+  })
+
+  it('preserves true blockers that indicate ambiguous or oversized work', () => {
+    const normalized = normalizeQualificationAssessment({
+      qualified: false,
+      repoId: undefined,
+      branchName: undefined,
+      baseCommitSha: undefined,
+      requirementsSummary: ['Add a new search flow and redesign multiple entry points.'],
+      acceptanceCriteriaPresent: false,
+      blockingReasons: [
+        'Intended behavior is contradictory between summary and description.',
+      ],
+      nonBlockingWarnings: [],
+      repoInspectionPerformed: true,
+      inspectedFiles: ['src/search/SearchFlowController.ts'],
+      inspectionSummary: 'The repo shows multiple entry points, but the requested behavior remains contradictory.',
+    })
+
+    expect(normalized.qualified).toBe(false)
+    expect(normalized.blockingReasons).toEqual([
+      'Intended behavior is contradictory between summary and description.',
+    ])
+  })
+})
+
+describe('enforceCodeInspectionForRejection', () => {
+  it('allows code-backed rejections with inspection evidence', () => {
+    const assessment = enforceCodeInspectionForRejection({
+      qualified: false,
+      repoId: undefined,
+      branchName: undefined,
+      baseCommitSha: undefined,
+      requirementsSummary: ['Update provider search behavior.'],
+      acceptanceCriteriaPresent: false,
+      blockingReasons: ['Requested behavior is contradictory between entry points.'],
+      nonBlockingWarnings: [],
+      repoInspectionPerformed: true,
+      inspectedFiles: ['src/provider/ProviderSearchController.ts'],
+      inspectionSummary: 'Inspected the provider search controller and confirmed conflicting behavior requirements.',
+    }, 2)
+
+    expect(assessment.qualified).toBe(false)
+  })
+
+  it('throws when rejection lacks repo inspection evidence', () => {
+    expect(() => enforceCodeInspectionForRejection({
+      qualified: false,
+      repoId: undefined,
+      branchName: undefined,
+      baseCommitSha: undefined,
+      requirementsSummary: ['Update provider search behavior.'],
+      acceptanceCriteriaPresent: false,
+      blockingReasons: ['The ticket seems ambiguous.'],
+      nonBlockingWarnings: [],
+      repoInspectionPerformed: false,
+      inspectedFiles: [],
+      inspectionSummary: undefined,
+    }, 0)).toThrow(/repository inspection/i)
+  })
+})

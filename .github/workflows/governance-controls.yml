@@ -1,0 +1,62 @@
+name: Governance Controls
+
+on:
+  pull_request:
+    paths:
+      - "meridian/backend/**"
+      - "src/investigation/**"
+      - "src/orchestrator/workers/MERIDIANWorker.ts"
+      - "dashboard/server/services/**"
+      - "dashboard/server/routes/**"
+      - "db/migrations/**"
+      - "AI_GOVERNANCE_COMPLIANCE.md"
+      - "docs/01-GETTING-STARTED.md"
+      - "docs/MERIDIAN_INVESTIGATION_COCKPIT_ARCHITECTURE.md"
+      - "scripts/governance-controls.test.ts"
+      - "scripts/governance-diff.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/governance-controls.yml"
+      - ".github/workflows/governance-promotion-check.yml"
+  push:
+    branches:
+      - "release-*"
+      - "release/**"
+    paths:
+      - "meridian/backend/**"
+      - "src/investigation/**"
+      - "src/orchestrator/workers/MERIDIANWorker.ts"
+      - "dashboard/server/services/**"
+      - "dashboard/server/routes/**"
+      - "db/migrations/**"
+      - "AI_GOVERNANCE_COMPLIANCE.md"
+      - "docs/01-GETTING-STARTED.md"
+      - "docs/MERIDIAN_INVESTIGATION_COCKPIT_ARCHITECTURE.md"
+      - "scripts/governance-controls.test.ts"
+      - "scripts/governance-diff.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/governance-controls.yml"
+      - ".github/workflows/governance-promotion-check.yml"
+
+jobs:
+  governance-controls:
+    name: Governance control locks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify governance control locks
+        run: npm run governance:check

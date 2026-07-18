@@ -1,0 +1,77 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "8cb1fae4-4cf1-4cfa-9c18-b23ac219b91f",
+  "developer": {
+    "name": "Specter AI",
+    "websiteUrl": "https://harvey.mhkdevsandbox.com",
+    "privacyUrl": "https://harvey.mhkdevsandbox.com/health",
+    "termsOfUseUrl": "https://harvey.mhkdevsandbox.com/health"
+  },
+  "name": {
+    "short": "Harvey - Specter AI Assistant",
+    "full": "Harvey - Conversational Front Door to Specter AI Agent Cluster"
+  },
+  "description": {
+    "short": "Chat with Specter AI agents for code analysis, defect investigation, and more",
+    "full": "Harvey is the conversational front door to Specter's AI agent cluster. Tell Harvey what you need — defect root cause analysis (DARCI), code explanation (SCRIBE), implementation planning (PRISM), configuration lookup (HERMES), MySQL execution review (SENTRY), RCA reports (VERITAS), or client notes review for a release (NOTARY) — and Harvey will route your request to the right agent, gather the context needed, and deliver results right back to your Teams chat."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#4F46E5",
+  "bots": [
+    {
+      "botId": "a09f80ac-8a4d-4542-ba44-12911068dbe9",
+      "scopes": [
+        "personal"
+      ],
+      "supportsFiles": true,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal"
+          ],
+          "commands": [
+            {
+              "title": "investigate",
+              "description": "Investigate a defect — e.g. \"investigate JIRA-1234\""
+            },
+            {
+              "title": "explain",
+              "description": "Explain code — e.g. \"explain the auth middleware in payments-api\""
+            },
+            {
+              "title": "plan",
+              "description": "Plan an implementation — e.g. \"plan adding retry logic to the order service\""
+            },
+            {
+              "title": "lookup",
+              "description": "Look up configuration — e.g. \"lookup connection pool settings for prod\""
+            },
+            {
+              "title": "review",
+              "description": "Review MySQL queries — e.g. \"review slow queries on the orders table\""
+            },
+            {
+              "title": "rca",
+              "description": "Generate an RCA report — e.g. \"rca for the March 5 checkout outage\""
+            },
+            {
+              "title": "notary",
+              "description": "Review client notes for a release — e.g. \"notary 1.10.23\""
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": []
+}

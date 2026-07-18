@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Specter overview page for the current AI-agent platform architecture.">
+  <title>Specter Overview</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --ink: #1e1a17;
+      --muted: #5f5851;
+      --panel: rgba(255, 255, 255, 0.78);
+      --line: rgba(30, 26, 23, 0.12);
+      --accent: #9b4d2f;
+      --accent-soft: #d7b6a9;
+      --green: #2d6a4f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(155, 77, 47, 0.16), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(45, 106, 79, 0.12), transparent 30%),
+        var(--bg);
+      line-height: 1.65;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 72px;
+    }
+
+    .hero {
+      padding: 34px 28px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: clamp(44px, 8vw, 82px); line-height: 0.95; }
+    h2 { font-size: 28px; margin-top: 34px; }
+    h3 { font-size: 19px; }
+
+    p { margin: 0 0 14px; color: var(--muted); }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 4px 6px 0 0;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.75);
+      font-size: 12px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fffdf9;
+      overflow: auto;
+    }
+
+    ul { padding-left: 18px; color: var(--muted); }
+    strong { color: var(--ink); }
+    .good { color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Specter Platform</div>
+      <h1>Asynchronous AI Agents for Engineering Work</h1>
+      <p>
+        Specter routes work from JIRA and Microsoft Teams into specialized workers that analyze code,
+        validate SQL, plan changes, and return structured markdown results. It is designed around durable
+        handoff rather than synchronous request/response execution.
+      </p>
+      <div>
+        <span class="tag">JIRA Orchestrator</span>
+        <span class="tag">Claude Agent SDK</span>
+        <span class="tag">Harvey Teams Bot</span>
+        <span class="tag">Shared EFS</span>
+        <span class="tag">Shared S3 Buckets</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Platform Shape</h2>
+      <pre>JIRA issues / Teams requests
+            |
+            v
+   orchestrator or Harvey
+            |
+            v
+    MySQL task management
+            |
+            v
+         workers
+        /      \
+       v        v
+     EFS        S3</pre>
+      <p class="good">Current result storage model: one shared results bucket, partitioned by key prefix.</p>
+    </section>
+
+    <section>
+      <h2>Runtime Surfaces</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Orchestrator</h3>
+          <p>Polls JIRA, enriches issues, stages task markdown, and posts completed JIRA results back.</p>
+        </div>
+        <div class="card">
+          <h3>Workers</h3>
+          <p>Claim durable tasks, prepare workspaces on EFS, run agent logic, and upload result markdown.</p>
+        </div>
+        <div class="card">
+          <h3>Harvey</h3>
+          <p>Converts Teams conversations into task assignments and proactively delivers results back to chat.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Current Agent Families</h2>
+      <div class="grid">
+        <div class="card"><h3>DARCI</h3><p>Defect investigation and root-cause analysis.</p></div>
+        <div class="card"><h3>SCRIBE</h3><p>Code explanation and endpoint walkthroughs.</p></div>
+        <div class="card"><h3>PRISM</h3><p>Implementation planning and refinement.</p></div>
+        <div class="card"><h3>HERMES</h3><p>Configuration and environment lookup.</p></div>
+        <div class="card"><h3>SENTRY</h3><p>SQL safety review against application models.</p></div>
+        <div class="card"><h3>BEACON</h3><p>MOANA SQL validation.</p></div>
+        <div class="card"><h3>BCAT</h3><p>Spreadsheet-driven planning and ticket creation.</p></div>
+        <div class="card"><h3>VERITAS</h3><p>Evidence-based RCA synthesis.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Operational Notes</h2>
+      <ul>
+        <li>The active runtime is Claude SDK-based, not the older Phoenix execution model.</li>
+        <li>Harvey uses the same durable task pipeline as JIRA work instead of a custom side path.</li>
+        <li>Workers started through <strong>worker-main</strong> expose REST, SSE, and WebSocket status endpoints.</li>
+        <li>The repository also contains a separate Next.js marketing app under <strong>marketing/</strong>.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

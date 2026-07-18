@@ -1,0 +1,97 @@
+# Config-driven calc-expression overrides selected when pending batch context exists.
+#
+# Keys are module -> DB column name or UI field name. Each rule is used only when
+# all required_batch_values are already present in the same case batch.
+
+der:
+  cdtype_id:
+    required_batch_values:
+      - request_type
+    calc_expression: |
+      SELECT id
+      FROM cdtype
+      WHERE description = '#RequestReason#'
+        AND request_type_id = #request_type#
+        AND inactive = 0
+      LIMIT 1
+
+  cdtype_determination_id:
+    required_batch_values:
+      - cdtype_id
+    calc_expression: |
+      SELECT id
+      FROM cdtype_determination
+      WHERE description = '#Classification#'
+        AND cdtype_id = #cdtype_id#
+        AND inactive = 0
+      LIMIT 1
+
+  status_reason:
+    required_batch_values:
+      - status
+      - request_type
+    calc_expression: |
+      SELECT id
+      FROM der_status_reason
+      WHERE description = '#Status Reason#'
+        AND der_status_id = #status#
+        AND FIND_IN_SET(#request_type#, applicable_request_types) > 0
+      LIMIT 1
+
+  rd_original_cd_type:
+    - required_batch_values:
+        - original_request_type
+      calc_expression: |
+        SELECT id
+        FROM cdtype
+        WHERE description = '#Original Request Reason#'
+          AND request_type_id = #original_request_type#
+          AND inactive = 0
+        LIMIT 1
+    - required_batch_values:
+        - rd_original_der_no
+      calc_expression: |
+        SELECT id
+        FROM cdtype
+        WHERE description = '#Original Request Reason#'
+          AND request_type_id = (
+            SELECT request_type
+            FROM der
+            WHERE id = #rd_original_der_no#
+          )
+          AND inactive = 0
+        LIMIT 1
+
+ire_mgmt:
+  ire_status_id:
+    calc_expression: |
+      SELECT id
+      FROM ire_status
+      WHERE LOWER(TRIM(description)) = LOWER(TRIM('#Status#'))
+        AND ire_request_type_id = (
+          SELECT ire_request_type_id
+          FROM ire_mgmt
+          WHERE ire_no = '#IRE No#'
+        )
+      LIMIT 1
+
+  ire_status_reason_id:
+    - required_batch_values:
+        - ire_status_id
+      calc_expression: |
+        SELECT id
+        FROM ire_status_reason
+        WHERE LOWER(TRIM(description)) = LOWER(TRIM('#Status Reason#'))
+          AND ire_status_id = #ire_status_id#
+        LIMIT 1
+
+    - calc_expression: |
+        SELECT id
+        FROM ire_status_reason
+        WHERE LOWER(TRIM(description)) = LOWER(TRIM('#Status Reason#'))
+          AND ire_status_id = (
+            SELECT ire_status_id
+            FROM ire_mgmt
+            WHERE ire_no = '#IRE No#'
+          )
+        LIMIT 1

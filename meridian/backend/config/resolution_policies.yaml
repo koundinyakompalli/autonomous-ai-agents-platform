@@ -1,0 +1,14 @@
+# Field-specific FK resolution safeguards.
+#
+# disable_ref_table_fallback:
+#   Prevents a display value from falling back to a generic reference-table lookup
+#   after contextual calc_expression resolution fails. Use this for fields whose
+#   reference IDs are only valid with parent/context scope.
+
+der:
+  rd_original_cd_type:
+    disable_ref_table_fallback: true
+    error: >
+      Original Request Reason could not be resolved with original-request context.
+      Meridian refused generic cdtype fallback because Original Request Reason
+      must use Original Request Type or the linked Original case number's request_type.

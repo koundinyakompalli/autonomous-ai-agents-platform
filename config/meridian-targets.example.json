@@ -1,0 +1,17 @@
+{
+  "targets": [
+    {
+      "id": "client-prod-slave",
+      "approved": true,
+      "clients": ["Example CP", "Example"],
+      "environments": ["PROD", "PROD1"],
+      "region": "us-east-2",
+      "assumeRoleArn": "arn:aws:iam::123456789012:role/meridian-ssm-access",
+      "instanceId": "i-00000000000000000",
+      "remoteHost": "10.0.0.10",
+      "remotePort": 3306,
+      "database": "medhok",
+      "dbSecretId": "prod/meridian/example-db-readonly"
+    }
+  ]
+}

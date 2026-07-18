@@ -1,0 +1,477 @@
+name: Ops / Terraform / Agent Onboard
+run-name: Onboard / ${{ inputs.agent_key }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_key:
+        description: Agent key used in Terraform and ECR (lowercase or kebab-case)
+        type: string
+        required: true
+      agent_name:
+        description: Agent name stored in the Specter agents table
+        type: string
+        required: true
+      description:
+        description: Short agent description for the agents table
+        type: string
+        required: true
+      task_type:
+        description: Task type stored in the agents table
+        type: string
+        required: true
+      jql:
+        description: JIRA query used by the orchestrator
+        type: string
+        required: true
+      cpu:
+        description: ECS CPU units for the worker task definition
+        type: string
+        required: true
+        default: "512"
+      memory:
+        description: ECS memory (MB) for the worker task definition
+        type: string
+        required: true
+        default: "1024"
+      model:
+        description: Optional agent model override for DB registration
+        type: string
+        required: false
+        default: ""
+      additional_context:
+        description: Optional additional agent context stored in DB
+        type: string
+        required: false
+        default: ""
+      repository_name:
+        description: Optional code_repositories repo_name to upsert during onboarding
+        type: string
+        required: false
+        default: ""
+      repository_url:
+        description: Optional GitHub clone URL to upsert during onboarding
+        type: string
+        required: false
+        default: ""
+      repository_description:
+        description: Optional repository description stored in code_repositories
+        type: string
+        required: false
+        default: ""
+      repository_default_branch:
+        description: Default branch stored for the optional code_repositories row
+        type: string
+        required: false
+        default: "main"
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: specter-worker-catalog
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  TERRAFORM_VERSION: "1.6.6"
+  CATALOG_FILE: terraform/additional-worker-agents.auto.tfvars.json
+  PLAN_ARTIFACT: terraform-agent-onboard-plan
+  CATALOG_ARTIFACT: terraform-agent-onboard-catalog
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  prepare-catalog:
+    name: Prepare Catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate repository inputs
+        run: |
+          repo_name='${{ inputs.repository_name }}'
+          repo_url='${{ inputs.repository_url }}'
+          repo_default_branch='${{ inputs.repository_default_branch }}'
+
+          if [ -n "$repo_name" ] && [ -z "$repo_url" ]; then
+            echo "repository_url is required when repository_name is provided" >&2
+            exit 1
+          fi
+
+          if [ -z "$repo_name" ] && [ -n "$repo_url" ]; then
+            echo "repository_name is required when repository_url is provided" >&2
+            exit 1
+          fi
+
+          if [ -n "$repo_url" ] && ! printf '%s' "$repo_url" | grep -Eq '^https://github\.com/.+\.git$'; then
+            echo "repository_url must be a GitHub HTTPS clone URL ending in .git" >&2
+            exit 1
+          fi
+
+          if [ -n "$repo_name" ] && ! printf '%s' "$repo_default_branch" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+            echo "repository_default_branch contains unsupported characters" >&2
+            exit 1
+          fi
+
+      - name: Update tracked worker catalog
+        run: |
+          python3 .github/scripts/manage-worker-agent-catalog.py \
+            --file "${CATALOG_FILE}" \
+            upsert \
+            --agent-key "${{ inputs.agent_key }}" \
+            --cpu "${{ inputs.cpu }}" \
+            --memory "${{ inputs.memory }}" \
+            --desired-count 0
+
+      - name: Upload catalog artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: ${{ env.CATALOG_FILE }}
+          retention-days: 1
+
+      - name: Catalog summary
+        run: |
+          repo_branch='n/a'
+          if [ -n '${{ inputs.repository_name }}' ]; then
+            repo_branch='${{ inputs.repository_default_branch }}'
+          fi
+
+          echo "### Agent onboarding request" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent name: \`${{ inputs.agent_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- desired_count: \`0\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- DB active flag after registration: \`false\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository registration: \`${{ inputs.repository_name || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository default branch: \`${repo_branch}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  terraform-plan:
+    name: Terraform Plan
+    needs: prepare-catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Restore catalog artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: terraform
+
+      - name: Build worker Terraform target list
+        run: |
+          cat <<'EOF' > /tmp/worker-targets.txt
+          aws_cloudwatch_log_group.workers["${{ inputs.agent_key }}"]
+          aws_cloudwatch_log_metric_filter.sdk_stall["${{ inputs.agent_key }}-worker"]
+          aws_cloudwatch_metric_alarm.sdk_stall["${{ inputs.agent_key }}-worker"]
+          aws_ecr_repository.workers["${{ inputs.agent_key }}"]
+          aws_ecr_lifecycle_policy.workers["${{ inputs.agent_key }}"]
+          aws_ecs_task_definition.workers["${{ inputs.agent_key }}"]
+          aws_ecs_service.workers["${{ inputs.agent_key }}"]
+          EOF
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform plan
+        working-directory: terraform
+        run: |
+          mapfile -t TF_TARGETS < /tmp/worker-targets.txt
+          TARGET_ARGS=()
+          for target in "${TF_TARGETS[@]}"; do
+            TARGET_ARGS+=("-target=${target}")
+          done
+
+          terraform plan \
+            -input=false \
+            -compact-warnings \
+            -var=worker_pin_image_by_digest=false \
+            -out=tfplan \
+            -no-color \
+            "${TARGET_ARGS[@]}"
+
+      - name: Validate onboarding plan scope
+        run: |
+          terraform -chdir=terraform show -json tfplan > terraform/tfplan.json
+          python3 .github/scripts/validate-worker-activation-plan.py \
+            --plan-json terraform/tfplan.json \
+            --agent-key "${{ inputs.agent_key }}"
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform/tfplan
+          retention-days: 1
+
+      - name: Upload catalog artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: ${{ env.CATALOG_FILE }}
+          retention-days: 1
+
+      - name: Plan summary
+        working-directory: terraform
+        run: |
+          echo "### Terraform plan complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scope: \`targeted worker-only onboarding\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image reference during onboarding: \`:latest\` (digest pinning resumes after the first image push)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Review artifact: \`${PLAN_ARTIFACT}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  approve-apply:
+    name: Approval Gate
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment: specter-terraform-apply
+
+    steps:
+      - run: echo "Admin approval recorded for onboarding ${{ inputs.agent_key }}"
+
+  terraform-apply-and-register:
+    name: Apply And Register
+    needs:
+      - terraform-plan
+      - approve-apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Restore catalog artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: terraform
+
+      - name: Restore plan artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform apply approved plan
+        working-directory: terraform
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Register agent in DB as inactive
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg name "${{ inputs.agent_name }}" \
+            --arg description "${{ inputs.description }}" \
+            --arg task_type "${{ inputs.task_type }}" \
+            --arg jql "${{ inputs.jql }}" \
+            --arg model "${{ inputs.model }}" \
+            --arg additional_context "${{ inputs.additional_context }}" \
+            '{
+              operation: "upsert_agent",
+              agent: {
+                name: $name,
+                description: $description,
+                task_type: $task_type,
+                jql: $jql,
+                model: (if $model == "" then null else $model end),
+                additional_context: (if $additional_context == "" then null else $additional_context end),
+                is_active: false
+              }
+            }' > /tmp/agent-registry-upsert.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/agent-registry-upsert.json \
+            /tmp/agent-registry-upsert-response.json >/tmp/agent-registry-upsert-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/agent-registry-upsert-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during agent upsert:"
+            cat /tmp/agent-registry-upsert-response.json
+            exit 1
+          fi
+
+      - name: Verify agent registration
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg name "${{ inputs.agent_name }}" \
+            '{operation: "get_agent", name: $name}' > /tmp/agent-registry-get.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/agent-registry-get.json \
+            /tmp/agent-registry-get-response.json >/tmp/agent-registry-get-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/agent-registry-get-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during agent verification:"
+            cat /tmp/agent-registry-get-response.json
+            exit 1
+          fi
+
+          jq -e '.agent != null' /tmp/agent-registry-get-response.json >/dev/null
+          jq -e --arg name "${{ inputs.agent_name }}" '.agent.name == $name' /tmp/agent-registry-get-response.json >/dev/null
+          jq -e '.agent.is_active == false' /tmp/agent-registry-get-response.json >/dev/null
+
+      - name: Register repository metadata
+        if: ${{ inputs.repository_name != '' }}
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg repo_name "${{ inputs.repository_name }}" \
+            --arg repo_url "${{ inputs.repository_url }}" \
+            --arg description "${{ inputs.repository_description }}" \
+            --arg default_branch "${{ inputs.repository_default_branch }}" \
+            '{
+              operation: "upsert_repository",
+              repository: {
+                repo_name: $repo_name,
+                repo_url: $repo_url,
+                description: (if $description == "" then null else $description end),
+                default_branch: (if $default_branch == "" then "main" else $default_branch end)
+              }
+            }' > /tmp/repository-registry-upsert.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/repository-registry-upsert.json \
+            /tmp/repository-registry-upsert-response.json >/tmp/repository-registry-upsert-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/repository-registry-upsert-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during repository upsert:"
+            cat /tmp/repository-registry-upsert-response.json
+            exit 1
+          fi
+
+      - name: Verify repository registration
+        if: ${{ inputs.repository_name != '' }}
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg repo_name "${{ inputs.repository_name }}" \
+            '{operation: "get_repository", repo_name: $repo_name}' > /tmp/repository-registry-get.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/repository-registry-get.json \
+            /tmp/repository-registry-get-response.json >/tmp/repository-registry-get-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/repository-registry-get-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during repository verification:"
+            cat /tmp/repository-registry-get-response.json
+            exit 1
+          fi
+
+          jq -e '.repository != null' /tmp/repository-registry-get-response.json >/dev/null
+          jq -e --arg name "${{ inputs.repository_name }}" '.repository.repo_name == $name' /tmp/repository-registry-get-response.json >/dev/null
+          jq -e --arg url "${{ inputs.repository_url }}" '.repository.repo_url == $url' /tmp/repository-registry-get-response.json >/dev/null
+          jq -e --arg branch "${{ inputs.repository_default_branch }}" '.repository.default_branch == $branch' /tmp/repository-registry-get-response.json >/dev/null
+
+      - name: Open catalog persistence PR
+        id: create_catalog_pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: automation/worker-catalog/onboard-${{ inputs.agent_key }}-${{ github.run_id }}
+          commit-message: "infra: onboard agent ${{ inputs.agent_key }}"
+          title: "infra: persist worker catalog onboarding for ${{ inputs.agent_key }}"
+          body: |
+            ## Summary
+            - persist the governed worker catalog entry for `${{ inputs.agent_key }}`
+            - record the successful onboarding workflow result in git
+            - keep `terraform/additional-worker-agents.auto.tfvars.json` aligned with the applied infrastructure
+            - register the repository catalog entry `${{ inputs.repository_name || 'none' }}` in MySQL when provided
+
+            ## Merge guidance
+            - merge this PR before running the activation workflow
+            - the onboarding workflow already applied the approved Terraform plan and registered the agent as inactive in MySQL
+            - if a repository was supplied, the workflow also upserted the matching `code_repositories` row
+          base: main
+          delete-branch: true
+          add-paths: |
+            terraform/additional-worker-agents.auto.tfvars.json
+
+      - name: Final summary
+        run: |
+          repo_branch='n/a'
+          if [ -n '${{ inputs.repository_name }}' ]; then
+            repo_branch='${{ inputs.repository_default_branch }}'
+          fi
+
+          echo "### Agent onboarding complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent name: \`${{ inputs.agent_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ECS desired count: \`0\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- DB active flag: \`false\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository registration: \`${{ inputs.repository_name || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository default branch: \`${repo_branch}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Catalog PR: \`${{ steps.create_catalog_pr.outputs.pull-request-url || 'no change' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Next step: merge the catalog PR, push the first image through \`Agent Worker - Manual Build and Push\`, ensure runtime wiring exists, then run the activation workflow." >> "$GITHUB_STEP_SUMMARY"

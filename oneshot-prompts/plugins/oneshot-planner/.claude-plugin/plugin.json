@@ -1,0 +1,6 @@
+{
+  "name": "oneshot-planner",
+  "version": "1.0.0",
+  "description": "OneShot planner Skills for grounded planning, logical decomposition, and MedHOK domain planning.",
+  "skills": "./skills"
+}

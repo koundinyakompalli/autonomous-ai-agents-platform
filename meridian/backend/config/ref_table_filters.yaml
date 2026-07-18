@@ -1,0 +1,207 @@
+# Ref table scoping filters for ambiguous lookups.
+#
+# When resolve_new_value_id returns multiple rows for a description, the tool
+# retries with these extra WHERE clauses to narrow to one row.
+#
+# filter_expr:  SQL fragment added to the WHERE clause. Use {case_col} as a
+#               placeholder for the case identifier column on the main case table.
+# context_sql:  Subquery that returns the scoping value from the live case row.
+#               Use {case_id} as a placeholder for the actual case number.
+#
+# The tool substitutes {case_id} at runtime and appends:
+#   AND <filter_expr using (context_sql) result>
+#
+# Add new entries here when a ref table has columns that scope its rows to
+# specific request types, plan types, or other case-level attributes.
+
+product_group:
+  # Module-specific scoping by module_context column.
+  # Each module has a numeric context ID stored in product_group.module_context (CSV list).
+  # Add new module entries here when other modules use product_group.
+  # Format: module key → same find_in_set_expr/null_expr/context_sql structure.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('150', COALESCE(module_context, ''))"
+      null_expr: "module_context IS NULL"
+      context_sql: "SELECT 150"
+    appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('80', COALESCE(module_context, ''))"
+      null_expr: "module_context IS NULL"
+      context_sql: "SELECT 80"
+    der:
+      find_in_set_expr: "FIND_IN_SET('40', COALESCE(module_context, ''))"
+      null_expr: "module_context IS NULL"
+      context_sql: "SELECT 40"
+    grievance_mgmt:
+      find_in_set_expr: "FIND_IN_SET('901', COALESCE(module_context, ''))"
+      null_expr: "module_context IS NULL"
+      context_sql: "SELECT 901"
+
+yes_or_no:
+  # Scope to rows where context IS NULL (the generic Yes/No rows, ID 1 and 2)
+  # Priority 1: explicit context match (none needed — all generic lookups want context IS NULL)
+  find_in_set_expr: "context IS NULL"
+  # No NULL fallback needed — context IS NULL IS the filter
+  null_expr: "context IS NULL"
+  context_sql: "SELECT NULL"
+
+intake_type:
+  # Scope to rows where the module-specific flag = 1.
+  # intake_type has per-module boolean columns (providerappeals, appeals, grievance, etc.)
+  # that mark which rows are valid for each module.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "providerappeals = 1"
+      null_expr: "providerappeals IS NULL"
+      context_sql: "SELECT 1"
+    appeals_mgmt:
+      find_in_set_expr: "appeals = 1"
+      null_expr: "appeals IS NULL"
+      context_sql: "SELECT 1"
+    grievance_mgmt:
+      find_in_set_expr: "grievance = 1"
+      null_expr: "grievance IS NULL"
+      context_sql: "SELECT 1"
+    auth_review:
+      find_in_set_expr: "auth = 1"
+      null_expr: "auth IS NULL"
+      context_sql: "SELECT 1"
+    der:
+      find_in_set_expr: "der = 1"
+      null_expr: "der IS NULL"
+      context_sql: "SELECT 1"
+
+note_types:
+  # Scope by CODE column — each CODE uniquely identifies a template type per module.
+  # note_types descriptions are not unique across modules (e.g. "Business Partner Request"
+  # appears under Medical Appeals, Grievance, Compliance etc.).
+  # For provider_appeals_mgmt: only CODEs starting with 'Provider Dispute' or 'PD' are valid.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "(CODE LIKE 'Provider Dispute%' OR CODE LIKE 'PD%')"
+      null_expr: "(CODE LIKE 'Provider Dispute%' OR CODE LIKE 'PD%')"
+      context_sql: "SELECT 1"
+    appeals_mgmt:
+      find_in_set_expr: "(CODE LIKE 'Appeal%' OR CODE LIKE 'Med Appeal%' OR CODE LIKE 'Medicare%')"
+      null_expr: "(CODE LIKE 'Appeal%' OR CODE LIKE 'Med Appeal%' OR CODE LIKE 'Medicare%')"
+      context_sql: "SELECT 1"
+    grievance_mgmt:
+      find_in_set_expr: "(CODE LIKE 'Grievance%' OR CODE LIKE 'GRV%' OR CODE LIKE 'GrievanceN%')"
+      null_expr: "(CODE LIKE 'Grievance%' OR CODE LIKE 'GRV%' OR CODE LIKE 'GrievanceN%')"
+      context_sql: "SELECT 1"
+
+requester_type:
+  # Scope by context column — context=30 is provider_appeals_mgmt.
+  # Dispute Requester Type field already has calc_expression using context=30.
+  # Requested By (requested_by) has no calc_expression — scope it here.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "context = 30"
+      null_expr: "context = 30"
+      context_sql: "SELECT 30"
+
+opportunity_source:
+  # Scope by context column — context='5' is Provider Appeals.
+  # opportunity_source has no description dupes within context=5.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('5', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+    appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('2', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+    grievance_mgmt:
+      find_in_set_expr: "FIND_IN_SET('1', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+
+opportunity_root_cause:
+  # Scope by context column — context='5' is Provider Appeals.
+  # 'Other' is still ambiguous within ctx=5 (one per source), but that is expected —
+  # users must qualify which source they mean. Other descriptions are unique within ctx=5.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('5', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+    appeals_mgmt:
+      find_in_set_expr: "FIND_IN_SET('2', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+    grievance_mgmt:
+      find_in_set_expr: "FIND_IN_SET('1', COALESCE(context, ''))"
+      null_expr: "context IS NULL"
+      context_sql: "SELECT 1"
+
+provider_appeals_request_type:
+  # Scope by product_group_id matching the case's current product.
+  # 'Dispute', 'CRR', 'Code Edit' descriptions repeat across product groups.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "product_group_id = (SELECT product_group_id FROM provider_appeals_mgmt WHERE appeal_no = '{case_id}')"
+      null_expr: "product_group_id IS NULL"
+      context_sql: "SELECT product_group_id FROM provider_appeals_mgmt WHERE appeal_no = '{case_id}'"
+
+provider_appeals_sub_category:
+  # Sub Category is already scoped by calc_expression (joins through category).
+  # This filter is a fallback safety net if calc_expression fails.
+  _by_module:
+    provider_appeals_mgmt:
+      find_in_set_expr: "appeals_category_id = (SELECT appeals_category_id FROM provider_appeals_mgmt WHERE appeal_no = '{case_id}')"
+      null_expr: "appeals_category_id IS NULL"
+      context_sql: "SELECT appeals_category_id FROM provider_appeals_mgmt WHERE appeal_no = '{case_id}'"
+
+cdtype:
+  # Scope by request_type_id matching the case's request_type
+  find_in_set_expr: "request_type_id = ({context_sql})"
+  null_expr: "request_type_id IS NULL"
+  context_sql: "SELECT request_type FROM der WHERE der_no = '{case_id}'"
+
+der_status:
+  # Priority 1: rows where applicable_request_types explicitly includes the case's request_type
+  find_in_set_expr: "FIND_IN_SET(({context_sql}), applicable_request_types) > 0"
+  # Priority 2 fallback: rows where applicable_request_types is NULL (applies to all request types)
+  null_expr: "applicable_request_types IS NULL"
+  context_sql: "SELECT request_type FROM der WHERE der_no = '{case_id}'"
+
+der_status_reason:
+  # Always validate even when description is unique — a unique description can still
+  # belong to the wrong der_status_id for this case's current status.
+  always_scope: true
+  # Priority 1: scope by der_status_id + applicable_request_types (most specific)
+  find_in_set_expr: "der_status_id = (SELECT status FROM der WHERE der_no = '{case_id}') AND FIND_IN_SET(({context_sql}), applicable_request_types) > 0"
+  # Priority 2: der_status_id matches but applicable_request_types is NULL
+  null_expr: "der_status_id = (SELECT status FROM der WHERE der_no = '{case_id}') AND applicable_request_types IS NULL"
+  # Priority 3 fallback: ignore der_status_id, scope only by applicable_request_types
+  # Used for historical fields (Original Status Reason) where status context differs from current case
+  fallback_expr: "FIND_IN_SET(({context_sql}), applicable_request_types) > 0"
+  context_sql: "SELECT request_type FROM der WHERE der_no = '{case_id}'"
+
+# ── Sub-Task (adhok_business_task) Configuration ─────────────────────────────
+# Maps parent module → FK column on adhok_business_task.
+# When field = "Sub Task Status", the tool:
+#   1. Looks up parent case record_id via normal module resolution
+#   2. Finds open sub-task: SELECT * FROM adhok_business_task WHERE {fk_col} = parent_id AND adhok_business_task_status_id = 1
+#   3. Matches by fcontext_display if sub-task name is provided
+#   4. Updates adhok_business_task_status_id to target value
+adhok_business_task:
+  field_aliases:
+    - "sub task status"
+    - "subtask status"
+    - "sub-task status"
+    - "business task status"
+  status_table: adhok_business_task_status
+  status_id_col: adhok_business_task_status_id
+  status_desc_col: description
+  match_col: fcontext_display
+  module_fk:
+    appeals_mgmt: appeals_mgmt_id
+    grievance_mgmt: grievance_mgmt_id
+    der: der_id
+    authorizations: authorizations_id
+    ctm_mgmt: ctm_mgmt_id
+    provider_appeals_mgmt: provider_appeals_mgmt_id
+    ire_mgmt: ire_mgmt_id
+    quality_of_care_mgmt: quality_of_care_mgmt_id

@@ -1,0 +1,1458 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  buildQualifierRepoConfirmationDashboardUrl,
+  IssueAssignmentService,
+} from "./IssueAssignmentService.js";
+import { RepoRouter } from "../oneshot/repo-router/index.js";
+
+describe("buildQualifierRepoConfirmationDashboardUrl", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("normalizes a dashboard host without /oneshot", () => {
+    expect(
+      buildQualifierRepoConfirmationDashboardUrl(
+        "https://productFactory.mhkdevsandbox.com",
+        1234,
+      ),
+    ).toBe(
+      "https://productFactory.mhkdevsandbox.com/oneshot?view=waiting&run=qualifier-task-1234",
+    );
+  });
+
+  it("normalizes a dashboard host that already includes /oneshot", () => {
+    expect(
+      buildQualifierRepoConfirmationDashboardUrl(
+        "https://productFactory.mhkdevsandbox.com/oneshot/",
+        1234,
+      ),
+    ).toBe(
+      "https://productFactory.mhkdevsandbox.com/oneshot?view=waiting&run=qualifier-task-1234",
+    );
+  });
+});
+
+describe("IssueAssignmentService routing Jira fetch", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("fetches expand=names fields and paginated comments for routing", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (url: URL | RequestInfo) => {
+        const href = String(url);
+        if (href.includes("/comment?")) {
+          return new Response(
+            JSON.stringify({
+              comments: [{ id: "c1", body: "comment repo hint" }],
+              startAt: 0,
+              maxResults: 100,
+              total: 1,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            key: "CPDEV-21311",
+            names: { customfield_123: "Acceptance Criteria" },
+            fields: {
+              summary: "Use interop",
+              description: "description",
+              labels: ["PFOS"],
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      });
+
+    const service = new IssueAssignmentService(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    const issue = await service.fetchJiraIssue("CPDEV-21311");
+
+    expect(issue.names?.customfield_123).toBe("Acceptance Criteria");
+    expect((issue.fields.comment as any).comments).toHaveLength(1);
+    expect(fetchMock.mock.calls[0]?.[0]?.toString()).toContain("expand=names");
+    expect(fetchMock.mock.calls[0]?.[0]?.toString()).toContain("fields=*all");
+    expect(fetchMock.mock.calls[1]?.[0]?.toString()).toContain("/comment?");
+  });
+});
+
+describe("IssueAssignmentService unsupported RepoRouter outcomes", () => {
+  afterEach(() => {
+    delete process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE;
+    vi.restoreAllMocks();
+  });
+
+  it("creates an assigned QUALIFIER task without task generation or S3 upload", async () => {
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route").mockResolvedValue({
+      jiraKey: "CPDEV-999",
+      outcome: "unsupported",
+      decisionSource: "scoring",
+      selectedRepoIds: [],
+      candidates: [],
+      unsupportedRepoIds: [10],
+      blockingReasons: ["Only unsupported repositories matched: mp-web."],
+      signals: {
+        filePaths: [],
+        identifiers: [],
+        tables: [],
+        endpoints: [],
+        directionalPhrases: [],
+        sentences: [],
+        customerTags: [],
+        businessConcepts: [],
+        crossCuttingRisk: "low",
+        extractorSchemaVersion: "test",
+        provider: "regex",
+      },
+      weightsVersion: "test",
+      profileVersions: {},
+      extractorSchemaVersion: "test",
+      snapshotHash: "snapshot",
+      tiebreakerUsed: false,
+      confirmationRequired: false,
+      createdAt: new Date().toISOString(),
+      extractorLlmCall: null,
+      shortlistLlmCall: null,
+      deciderLlmCall: null,
+      deciderConfidence: null,
+      deciderReasoning: null,
+      deciderCitations: [],
+      totalLlmCostUsd: null,
+    });
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 10,
+          repo_name: "mp-web",
+          repo_url: "https://github.com/mhk-repos/mp-web.git",
+          default_branch: "main",
+        },
+      ]),
+      createRouterDecision: vi.fn().mockResolvedValue(44),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+      updateRouterDecisionTaskManagementId: vi.fn().mockResolvedValue(undefined),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn(),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn(),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    const result = await service.assignIssueToAgent(
+      {
+        key: "CPDEV-999",
+        fields: {
+          summary: "Update mp-web",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-999",
+          fields: {
+            summary: "Update mp-web",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ taskManagementId: 77, disposition: "created" });
+    expect(routeSpy).toHaveBeenCalled();
+    expect(taskDescriptionGenerator.generateFromTicketKey).not.toHaveBeenCalled();
+    expect(storage.uploadTaskDescription).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jira_number: "CPDEV-999",
+        related_code: "",
+        status: "assigned",
+      }),
+    );
+    expect(db.updateRouterDecisionTaskManagementId).toHaveBeenCalledWith(44, 77);
+  });
+
+  it("leaves non-QUALIFIER assignment on the existing RepoAnalyzer path", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 2,
+          repo_name: "batch-jobs",
+          repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+          default_branch: "master",
+        },
+      ]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const repoAnalyzer = {
+      analyzeTicketForRepos: vi.fn().mockResolvedValue({
+        selectedRepoIds: [2],
+        reasoning: "batch analyzer",
+      }),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      repoAnalyzer as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22308",
+        fields: {
+          summary: "Fax Intake",
+          description:
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+        },
+      },
+      {
+        id: 9,
+        name: "PRISM",
+        task_type: "prism",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-22308",
+          fields: {
+            summary: "Fax Intake",
+            description:
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+          },
+        },
+      },
+    );
+
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(repoAnalyzer.analyzeTicketForRepos).toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "2",
+        task_type: "prism",
+      }),
+    );
+  });
+
+  it("defaults to shadow mode without changing router selection", async () => {
+    vi.spyOn(RepoRouter.prototype, "route").mockResolvedValue({
+      jiraKey: "CPDEV-22308",
+      outcome: "auto",
+      decisionSource: "scoring",
+      selectedRepoIds: [1],
+      candidates: [],
+      unsupportedRepoIds: [],
+      blockingReasons: [],
+      signals: {
+        filePaths: [],
+        identifiers: [],
+        tables: [],
+        endpoints: [],
+        directionalPhrases: [],
+        sentences: [],
+        customerTags: [],
+        businessConcepts: [],
+        crossCuttingRisk: "low",
+        extractorSchemaVersion: "test",
+        provider: "regex",
+      },
+      weightsVersion: "test",
+      profileVersions: {},
+      extractorSchemaVersion: "test",
+      snapshotHash: "snapshot",
+      tiebreakerUsed: false,
+      confirmationRequired: false,
+      createdAt: new Date().toISOString(),
+      extractorLlmCall: null,
+      shortlistLlmCall: null,
+      deciderLlmCall: null,
+      deciderConfidence: null,
+      deciderReasoning: null,
+      deciderCitations: [],
+      totalLlmCostUsd: null,
+    });
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          repo_name: "core-app",
+          repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+          default_branch: "master",
+        },
+        {
+          id: 2,
+          repo_name: "batch-jobs",
+          repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+          default_branch: "master",
+        },
+      ]),
+      createRouterDecision: vi.fn().mockResolvedValue(44),
+      updateRouterDecisionTaskManagementId: vi.fn().mockResolvedValue(undefined),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22308",
+        fields: {
+          summary: "Fax Intake",
+          description:
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-22308",
+          fields: {
+            summary: "Fax Intake",
+            description:
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "1",
+      }),
+    );
+    expect(db.createRouterDecision).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        currentLogicResult: expect.objectContaining({
+          type: "description_repo_directive_shadow",
+          selectedRepo: "batch-jobs",
+        }),
+      }),
+    );
+  });
+
+  it("routes CPDEV-22308-style description directive to batch-jobs in select mode", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          repo_name: "core-app",
+          repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+          default_branch: "master",
+        },
+        {
+          id: 2,
+          repo_name: "batch-jobs",
+          repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+          default_branch: "master",
+        },
+      ]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22308",
+        fields: {
+          summary: "Fax Intake",
+          description: [
+            "The schema change lives in cp-medhok-monorepo (Flyway) and will be tracked separately.",
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          ].join(" "),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-22308",
+          fields: {
+            summary: "Fax Intake",
+            description: [
+              "The schema change lives in cp-medhok-monorepo (Flyway) and will be tracked separately.",
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            ].join(" "),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "2",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("assigns unsupported description directives without generating task text", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 10,
+          repo_name: "mp-web",
+          repo_url: "https://github.com/mhk-repos/mp-web.git",
+          default_branch: "main",
+        },
+      ]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn(),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn(),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    const result = await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22309",
+        fields: {
+          summary: "Update web",
+          description: "This ticket tracks only the code change in mp-web.",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-22309",
+          fields: {
+            summary: "Update web",
+            description: "This ticket tracks only the code change in mp-web.",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ taskManagementId: 77, disposition: "created" });
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(taskDescriptionGenerator.generateFromTicketKey).not.toHaveBeenCalled();
+    expect(storage.uploadTaskDescription).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("keeps retrofit repo selection when shadow description directive disagrees", async () => {
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const core = {
+      id: 1,
+      repo_name: "core-app",
+      repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+      default_branch: "master",
+    };
+    const batch = {
+      id: 2,
+      repo_name: "batch-jobs",
+      repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+      default_branch: "master",
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([core, batch]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-19884",
+        fields: {
+          summary: "Retrofit to 3.17",
+          description: [
+            "Retrofit: CPDEV-18876",
+            "From: medhok-monorepo-4.1",
+            "Target: medhok-monorepo-3.17",
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          ].join("\n"),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-19884",
+          fields: {
+            summary: "Retrofit to 3.17",
+            description: [
+              "Retrofit: CPDEV-18876",
+              "From: medhok-monorepo-4.1",
+              "Target: medhok-monorepo-3.17",
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            ].join("\n"),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "1",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("parks retrofit repo selection when select-mode description directive disagrees", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const core = {
+      id: 1,
+      repo_name: "core-app",
+      repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+      default_branch: "master",
+    };
+    const batch = {
+      id: 2,
+      repo_name: "batch-jobs",
+      repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+      default_branch: "master",
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([core, batch]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+      createRouterConfirmation: vi.fn().mockResolvedValue(901),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn(),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn(),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+    vi.spyOn(service, "addComment").mockResolvedValue({ id: "comment-1" });
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-19884",
+        fields: {
+          summary: "Retrofit to 3.17",
+          description: [
+            "Retrofit: CPDEV-18876",
+            "From: medhok-monorepo-4.1",
+            "Target: medhok-monorepo-3.17",
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          ].join("\n"),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-19884",
+          fields: {
+            summary: "Retrofit to 3.17",
+            description: [
+              "Retrofit: CPDEV-18876",
+              "From: medhok-monorepo-4.1",
+              "Target: medhok-monorepo-3.17",
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            ].join("\n"),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(taskDescriptionGenerator.generateFromTicketKey).not.toHaveBeenCalled();
+    expect(storage.uploadTaskDescription).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "",
+        status: "waiting_repo_confirmation",
+      }),
+    );
+    expect(db.createRouterConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        evidence: [
+          expect.objectContaining({
+            type: "description_repo_directive",
+            selectedRepo: "batch-jobs",
+          }),
+        ],
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ repoName: "batch-jobs" }),
+          expect.objectContaining({ repoName: "core-app" }),
+        ]),
+      }),
+    );
+  });
+
+  it("overrides stale auto related_code only for strict description directives", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const existing = {
+      id: 2329,
+      jira_number: "CPDEV-22308",
+      agent_id: 3,
+      customer_id: 25,
+      related_code: "1",
+      task_type: "qualifier",
+      status: "failed",
+      source: "jira",
+      retry_count: 0,
+      created_at: new Date(0),
+      updated_at: new Date(0),
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(existing),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          repo_name: "core-app",
+          repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+          default_branch: "master",
+        },
+        {
+          id: 2,
+          repo_name: "batch-jobs",
+          repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+          default_branch: "master",
+        },
+      ]),
+      getLatestRouterDecisionForTaskManagement: vi.fn().mockResolvedValue({
+        outcome: "auto",
+      }),
+      getLatestResolvedRouterConfirmationForTaskManagement: vi
+        .fn()
+        .mockResolvedValue(null),
+      requeueTaskManagement: vi.fn().mockResolvedValue(undefined),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22308",
+        fields: {
+          summary: "Fax Intake",
+          description:
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        existingTaskManagement: existing as any,
+        fullIssue: {
+          key: "CPDEV-22308",
+          fields: {
+            summary: "Fax Intake",
+            description:
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(db.requeueTaskManagement).toHaveBeenCalledWith(
+      2329,
+      expect.objectContaining({
+        related_code: "2",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("does not override a resolved router confirmation", async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = "select";
+    const existing = {
+      id: 2329,
+      jira_number: "CPDEV-22308",
+      agent_id: 3,
+      customer_id: 25,
+      related_code: "1",
+      task_type: "qualifier",
+      status: "failed",
+      source: "jira",
+      retry_count: 0,
+      created_at: new Date(0),
+      updated_at: new Date(0),
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(existing),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          repo_name: "core-app",
+          repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+          default_branch: "master",
+        },
+        {
+          id: 2,
+          repo_name: "batch-jobs",
+          repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+          default_branch: "master",
+        },
+      ]),
+      getLatestRouterDecisionForTaskManagement: vi.fn().mockResolvedValue({
+        outcome: "auto",
+      }),
+      getLatestResolvedRouterConfirmationForTaskManagement: vi
+        .fn()
+        .mockResolvedValue({ id: 99, resolved_repo_id: 1 }),
+      requeueTaskManagement: vi.fn().mockResolvedValue(undefined),
+      createRouterConfirmation: vi.fn().mockResolvedValue(100),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn(),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn(),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+    vi.spyOn(service, "addComment").mockResolvedValue({ id: "comment-1" });
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22308",
+        fields: {
+          summary: "Fax Intake",
+          description:
+            "This ticket tracks only the code change in cp-batch-monorepo.",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        existingTaskManagement: existing as any,
+        fullIssue: {
+          key: "CPDEV-22308",
+          fields: {
+            summary: "Fax Intake",
+            description:
+              "This ticket tracks only the code change in cp-batch-monorepo.",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(taskDescriptionGenerator.generateFromTicketKey).not.toHaveBeenCalled();
+    expect(db.requeueTaskManagement).toHaveBeenCalledWith(
+      2329,
+      expect.objectContaining({
+        related_code: "",
+        status: "waiting_repo_confirmation",
+      }),
+    );
+    expect(db.createRouterConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ repoName: "batch-jobs" }),
+          expect.objectContaining({ repoName: "core-app" }),
+        ]),
+        evidence: [
+          expect.objectContaining({
+            type: "description_repo_directive",
+            selectedRepo: "batch-jobs",
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("selects a GitHub-resolved explicit repo without heuristic routing even when retrofit fields exist", async () => {
+    const resolvedRepo = {
+      id: 42,
+      repo_name: "cp-new-service",
+      repo_url: "https://github.com/mhk-repos/cp-new-service.git",
+      default_branch: "main",
+    };
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          name: "cp-new-service",
+          full_name: "mhk-repos/cp-new-service",
+          html_url: "https://github.com/mhk-repos/cp-new-service",
+          clone_url: "https://github.com/mhk-repos/cp-new-service.git",
+          description: "New service",
+          default_branch: "main",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([
+        {
+          id: 10,
+          repo_name: "mp-web",
+          repo_url: "https://github.com/mhk-repos/mp-web.git",
+          default_branch: "main",
+        },
+      ]),
+      upsertCodeRepository: vi.fn().mockResolvedValue(resolvedRepo),
+      createRouterDecision: vi.fn().mockResolvedValue(44),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+      updateRouterDecisionTaskManagementId: vi.fn().mockResolvedValue(undefined),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    const result = await service.assignIssueToAgent(
+      {
+        key: "CPDEV-1000",
+        fields: {
+          summary: "Update new service",
+          description: [
+            "Repo: cp-new-service",
+            "This ticket tracks only the code change in mp-web.",
+            "Retrofit: CPDEV-18876",
+            "From: medhok-monorepo-4.1",
+            "Target: medhok-monorepo-3.17",
+          ].join("\n"),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-1000",
+          fields: {
+            summary: "Update new service",
+            description: [
+              "Repo: cp-new-service",
+              "This ticket tracks only the code change in mp-web.",
+              "Retrofit: CPDEV-18876",
+              "From: medhok-monorepo-4.1",
+              "Target: medhok-monorepo-3.17",
+            ].join("\n"),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ taskManagementId: 77, disposition: "created" });
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(db.upsertCodeRepository).toHaveBeenCalledWith({
+      repoName: "cp-new-service",
+      repoUrl: "https://github.com/mhk-repos/cp-new-service.git",
+      description: "New service",
+      defaultBranch: "main",
+    });
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        related_code: "42",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("overrides stale related_code from an explicit GitHub repo field", async () => {
+    const batchRepo = {
+      id: 3,
+      repo_name: "batch-jobs",
+      repo_url: "https://github.com/mhk-repos/cp-batch-monorepo.git",
+      default_branch: "master",
+    };
+    const reactRepo = {
+      id: 5,
+      repo_name: "React-based-new-ui",
+      repo_url: "https://github.com/mhk-repos/cp-mhk-smart-prominence.git",
+      default_branch: "master",
+    };
+    const existing = {
+      id: 2489,
+      jira_number: "CPDEV-22347",
+      agent_id: 3,
+      customer_id: 25,
+      related_code: "3",
+      task_type: "qualifier",
+      status: "posted_to_jira",
+      source: "jira",
+      retry_count: 0,
+      created_at: new Date(0),
+      updated_at: new Date(0),
+    };
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          name: "cp-mhk-smart-prominence",
+          full_name: "mhk-repos/cp-mhk-smart-prominence",
+          html_url: "https://github.com/mhk-repos/cp-mhk-smart-prominence",
+          clone_url: "https://github.com/mhk-repos/cp-mhk-smart-prominence.git",
+          description: "React UI",
+          default_branch: "master",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(existing),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([batchRepo, reactRepo]),
+      upsertCodeRepository: vi.fn().mockResolvedValue(reactRepo),
+      requeueTaskManagement: vi.fn().mockResolvedValue(undefined),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    await service.assignIssueToAgent(
+      {
+        key: "CPDEV-22347",
+        fields: {
+          summary: "Medical Appeals date field",
+          description: "Technical Details:\nrepo: cp-mhk-smart-prominence",
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        existingTaskManagement: existing as any,
+        fullIssue: {
+          key: "CPDEV-22347",
+          fields: {
+            summary: "Medical Appeals date field",
+            description: "Technical Details:\nrepo: cp-mhk-smart-prominence",
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(db.requeueTaskManagement).toHaveBeenCalledWith(
+      2489,
+      expect.objectContaining({
+        related_code: "5",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("selects a retrofit repo from branch profile aliases when Repo is absent", async () => {
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const core = {
+      id: 1,
+      repo_name: "core-app",
+      repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+      default_branch: "master",
+    };
+    const interop = {
+      id: 6,
+      repo_name: "interop",
+      repo_url: "https://github.com/mhk-repos/cp-interoperability-monorepo.git",
+      default_branch: "master",
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([core, interop]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn().mockResolvedValue({
+        bucket: "tasks",
+        key: "task.json",
+      }),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn().mockResolvedValue("Task description"),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+
+    const result = await service.assignIssueToAgent(
+      {
+        key: "CPDEV-19884",
+        fields: {
+          summary: "Retrofit to 3.17",
+          description: [
+            "Retrofit: CPDEV-18876",
+            "From: medhok-monorepo-4.1",
+            "Target: medhok-monorepo-3.17",
+          ].join("\n"),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-19884",
+          fields: {
+            summary: "Retrofit to 3.17",
+            description: [
+              "Retrofit: CPDEV-18876",
+              "From: medhok-monorepo-4.1",
+              "Target: medhok-monorepo-3.17",
+            ].join("\n"),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ taskManagementId: 77, disposition: "created" });
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jira_number: "CPDEV-19884",
+        related_code: "1",
+        status: "assigned",
+      }),
+    );
+  });
+
+  it("parks ambiguous retrofit repo resolution for confirmation without generating task text", async () => {
+    const routeSpy = vi.spyOn(RepoRouter.prototype, "route");
+    const core = {
+      id: 1,
+      repo_name: "core-app",
+      repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+      default_branch: "master",
+    };
+    const coreCopy = {
+      id: 91,
+      repo_name: "core-app-copy",
+      repo_url: "https://github.com/mhk-repos/cp-medhok-monorepo.git",
+      default_branch: "master",
+    };
+    const db = {
+      getTaskManagementByJiraAndAgent: vi.fn().mockResolvedValue(null),
+      getDefaultCustomerBranch: vi.fn().mockResolvedValue({
+        id: 25,
+        customer: "Default",
+        branch: "main",
+      }),
+      getAllRepositories: vi.fn().mockResolvedValue([core, coreCopy]),
+      createTaskManagement: vi.fn().mockResolvedValue(77),
+      createRouterConfirmation: vi.fn().mockResolvedValue(901),
+    };
+    const storage = {
+      uploadTaskDescription: vi.fn(),
+    };
+    const taskDescriptionGenerator = {
+      generateFromTicketKey: vi.fn(),
+    };
+    const service = new IssueAssignmentService(
+      db as any,
+      storage as any,
+      taskDescriptionGenerator as any,
+      {} as any,
+      {
+        jiraBaseUrl: "https://jira.example",
+        jiraToken: "token",
+        jiraUsername: "user",
+      },
+    );
+    vi.spyOn(service, "addComment").mockResolvedValue({ id: "comment-1" });
+
+    const result = await service.assignIssueToAgent(
+      {
+        key: "CPDEV-19885",
+        fields: {
+          summary: "Retrofit to 3.17",
+          description: [
+            "Retrofit: CPDEV-18876",
+            "From: medhok-monorepo-4.1",
+            "Target: medhok-monorepo-3.17",
+          ].join("\n"),
+          labels: ["PFOS"],
+        },
+      },
+      {
+        id: 3,
+        name: "QUALIFIER",
+        task_type: "qualifier",
+        jira_token: "agent-token",
+      } as any,
+      {
+        fullIssue: {
+          key: "CPDEV-19885",
+          fields: {
+            summary: "Retrofit to 3.17",
+            description: [
+              "Retrofit: CPDEV-18876",
+              "From: medhok-monorepo-4.1",
+              "Target: medhok-monorepo-3.17",
+            ].join("\n"),
+            labels: ["PFOS"],
+          },
+        },
+      },
+    );
+
+    expect(result).toMatchObject({ taskManagementId: 77, disposition: "created" });
+    expect(routeSpy).not.toHaveBeenCalled();
+    expect(taskDescriptionGenerator.generateFromTicketKey).not.toHaveBeenCalled();
+    expect(storage.uploadTaskDescription).not.toHaveBeenCalled();
+    expect(db.createTaskManagement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jira_number: "CPDEV-19885",
+        related_code: "",
+        status: "waiting_repo_confirmation",
+      }),
+    );
+    expect(db.createRouterConfirmation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticketId: "CPDEV-19885",
+        taskManagementId: 77,
+        routerDecisionId: null,
+        jiraCommentId: "comment-1",
+        snapshotHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            repoId: 1,
+            repoName: "core-app",
+            evidence: expect.arrayContaining([
+              expect.objectContaining({
+                type: "retrofit_profile_match",
+                branchRole: "source",
+                branchToken: "medhok-monorepo",
+                tokenKind: "stable_prefix",
+              }),
+            ]),
+          }),
+          expect.objectContaining({
+            repoId: 91,
+            repoName: "core-app-copy",
+          }),
+        ]),
+        evidence: [
+          expect.objectContaining({
+            type: "retrofit_repo_resolution",
+            sourceJiraKey: "CPDEV-18876",
+            sourceBranch: "medhok-monorepo-4.1",
+            targetBranch: "medhok-monorepo-3.17",
+            profileAmbiguityWarnings: expect.arrayContaining([
+              expect.stringContaining("profile_ambiguity"),
+            ]),
+            commitEvidenceInspectedRepoNames: expect.any(Array),
+          }),
+        ],
+      }),
+    );
+  });
+});

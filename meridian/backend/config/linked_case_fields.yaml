@@ -1,0 +1,37 @@
+# Linked-case field resolution.
+#
+# Some plain varchar columns store a case number that, when it refers to an
+# existing case in another module, also has a real foreign-key column on the
+# same row pointing at that parent case. Updating only the varchar leaves the
+# FK link stale/wrong.
+#
+# Example (ire_mgmt):
+#   original_case_no  = 'A19015870866'   (plain varchar - the human case number)
+#   appeals_mgmt_id   = 312              (FK to appeals_mgmt.id where appeal_no = original_case_no)
+#
+# When "Original Case No" is updated, the tool looks the new value up against
+# each candidate parent's natural key. If exactly one parent matches, it also
+# emits an UPDATE for that parent's FK column. The original case can be an
+# appeal, provider appeal, grievance, or DER, so all four are checked.
+#
+# Behaviour:
+#   - Exactly one parent matches: set that FK column only.
+#   - No parent matches: skip and flag for manual review.
+#   - More than one parent matches: flag as ambiguous for manual review.
+
+ire_mgmt:
+  original_case_no:
+    candidates:
+      - parent_table: appeals_mgmt
+        key_col: appeal_no
+        fk_col: appeals_mgmt_id
+      - parent_table: provider_appeals_mgmt
+        key_col: appeal_no
+        fk_col: provider_appeals_mgmt_id
+      - parent_table: grievance_mgmt
+        key_col: grievance_no
+        fk_col: grievance_mgmt_id
+      - parent_table: der
+        key_col: der_no
+        fk_col: der_id
+    on_no_match: skip_and_flag

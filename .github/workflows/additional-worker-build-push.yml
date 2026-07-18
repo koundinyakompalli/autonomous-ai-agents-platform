@@ -1,0 +1,168 @@
+name: Build / Worker / Additional Catalog
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'src/agents/anvil/**'
+      - 'src/agents/bc-intake/**'
+      - 'src/agents/forge/**'
+      - 'src/agents/notary/**'
+      - 'src/agents/rift/**'
+      - 'src/orchestrator/workers/ANVILWorker.ts'
+      - 'src/orchestrator/workers/BCIntakeWorker.ts'
+      - 'src/orchestrator/workers/FORGEWorker.ts'
+      - 'src/orchestrator/workers/NOTARYWorker.ts'
+      - 'src/orchestrator/workers/RIFTWorker.ts'
+      - 'src/orchestrator/workers/index.ts'
+      - 'src/orchestrator/workers/runtime.ts'
+      - 'src/worker-main.ts'
+      - 'src/config/**'
+      - 'src/claude-sdk/**'
+      - 'Dockerfile.worker'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/additional-worker-build-push.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'src/agents/anvil/**'
+      - 'src/agents/bc-intake/**'
+      - 'src/agents/forge/**'
+      - 'src/agents/notary/**'
+      - 'src/agents/rift/**'
+      - 'src/orchestrator/workers/ANVILWorker.ts'
+      - 'src/orchestrator/workers/BCIntakeWorker.ts'
+      - 'src/orchestrator/workers/FORGEWorker.ts'
+      - 'src/orchestrator/workers/NOTARYWorker.ts'
+      - 'src/orchestrator/workers/RIFTWorker.ts'
+      - 'src/orchestrator/workers/index.ts'
+      - 'src/orchestrator/workers/runtime.ts'
+      - 'src/worker-main.ts'
+      - 'src/config/**'
+      - 'src/claude-sdk/**'
+      - 'Dockerfile.worker'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  NODE_VERSION: '20'
+  ADDITIONAL_WORKERS: |
+    anvil ANVIL
+    bc-intake BC-INTAKE
+    forge FORGE
+    notary NOTARY
+    rift RIFT
+
+jobs:
+  validate:
+    name: Validate Worker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Build generic worker image
+        run: docker build -f Dockerfile.worker -t "specter/additional-worker:${{ github.sha }}" .
+
+  push-and-deploy:
+    name: Push Additional Worker Images
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch') }}
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify ECR repositories exist
+        run: |
+          set -euo pipefail
+          while read -r agent_key service_name; do
+            [ -z "${agent_key:-}" ] && continue
+            aws ecr describe-repositories \
+              --repository-names "specter/${agent_key}-worker" >/dev/null
+            echo "Found specter/${agent_key}-worker for ${service_name}"
+          done <<< "${ADDITIONAL_WORKERS}"
+
+      - name: Build generic worker image
+        run: docker build -f Dockerfile.worker -t "specter/additional-worker:${{ github.sha }}" .
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push images to ECR
+        run: |
+          set -euo pipefail
+          while read -r agent_key service_name; do
+            [ -z "${agent_key:-}" ] && continue
+            repository="${ECR_REGISTRY}/specter/${agent_key}-worker"
+            docker tag "specter/additional-worker:${{ github.sha }}" "${repository}:${{ github.sha }}"
+            docker tag "specter/additional-worker:${{ github.sha }}" "${repository}:latest"
+            docker push "${repository}:${{ github.sha }}"
+            docker push "${repository}:latest"
+            echo "Pushed ${repository}:${{ github.sha }} and ${repository}:latest for ${service_name}"
+          done <<< "${ADDITIONAL_WORKERS}"
+
+      - name: Force ECS deployments
+        run: |
+          set -euo pipefail
+          while read -r agent_key service_name; do
+            [ -z "${agent_key:-}" ] && continue
+            aws ecs update-service \
+              --region "${AWS_REGION}" \
+              --cluster specter-cluster \
+              --service "${service_name}" \
+              --force-new-deployment >/dev/null
+            echo "Started deployment for ${service_name}"
+          done <<< "${ADDITIONAL_WORKERS}"
+
+      - name: Summary
+        run: |
+          echo "### Additional worker images pushed" >> "$GITHUB_STEP_SUMMARY"
+          while read -r agent_key service_name; do
+            [ -z "${agent_key:-}" ] && continue
+            echo "- ${service_name}: \`${ECR_REGISTRY}/specter/${agent_key}-worker:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- ${service_name} latest: \`${ECR_REGISTRY}/specter/${agent_key}-worker:latest\`" >> "$GITHUB_STEP_SUMMARY"
+          done <<< "${ADDITIONAL_WORKERS}"

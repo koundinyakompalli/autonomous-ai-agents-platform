@@ -1,0 +1,117 @@
+# Anchor-driven diagnostics configuration for Investigation Cockpit.
+#
+# Cockpit derives candidate tables from code evidence, then binds only
+# ticket/runtime anchors to matching table columns. This file controls matching
+# behavior without adding module-specific TypeScript registries.
+
+limits:
+  maxAnchorValues: 10
+  maxCodeFlowTables: 12
+  maxProbeQueries: 8
+  maxSampleColumns: 8
+  maxConfigSampleColumns: 10
+
+phiColumnsPath: meridian/backend/config/phi_columns.yaml
+
+fuzzyMatching:
+  enabled: true
+  threshold: 0.72
+  configThreshold: 0.64
+
+anchorColumnPatterns:
+  member_identifier:
+    - '^subscriber_?(?:id|no|num|number)$'
+    - '^member_?(?:no|num|number)$'
+    - '^(?:member|subscriber|person|patient)_?(?:ext|external)_?(?:id|no|num|number)$'
+    - '^(?:member|subscriber|person|patient)_?id$'
+  case_number:
+    - '^(?:case|rx|pa|appeal|der).*(?:no|num|number|id)$'
+    - '^(?:der_no|case_no|case_number|case_id|rx_id|pa_case_id|appeal_case_id|pacase_id|paappeal_caseid)$'
+  transaction_id:
+    - '^(?:transaction|txn|message|event|request|trace|correlation).*(?:id|no|number)$'
+    - '^(?:transaction_id|txn_id|message_id|event_id|request_id|trace_id|correlation_id)$'
+  job_name:
+    - '^(?:job|skybot|scheduler|process).*(?:name|id|code|key)$'
+    - '^(?:job_name|job_id|process_name|scheduler_name)$'
+  batch_name:
+    - '^(?:batch|job|process|scheduler).*(?:name|id|code|key)$'
+    - '^(?:batch_name|batch_id|job_name|process_name)$'
+  file_name:
+    - '^(?:file|feed|document|attachment).*(?:name|id|path|key)$'
+    - '^(?:file_name|filename|file_id|file_path|s3_key|document_id)$'
+  extract_id:
+    - '^(?:extract|feed|file|run).*(?:id|name|key|no|number)$'
+    - '^(?:extract_id|extract_name|feed_id|feed_name|run_id)$'
+  letter_id:
+    - '^(?:letter|template|correspondence|document).*(?:id|no|number|name|code)$'
+    - '^(?:letter_id|letter_no|template_id|correspondence_id|document_id)$'
+  fax_id:
+    - '^(?:fax|document).*(?:id|no|number|name)$'
+    - '^(?:fax_id|fax_no|fax_number|document_id)$'
+  config_key:
+    - '^(?:config|property|setting|feature|flag|key|name|code|type)$'
+    - '(?:allowed|enabled|supported|config|property|setting|feature|flag)$'
+
+anchorPriority:
+  - transaction_id
+  - member_identifier
+  - case_number
+  - job_name
+  - batch_name
+  - extract_id
+  - file_name
+  - letter_id
+  - fax_id
+  - config_key
+
+# Stable schema-profile roots. These are domain-level read-only diagnostic
+# boundaries, not ticket, client, release, or incident-specific recipes.
+foundationalTables:
+  member_identifier:
+    - member
+    - member_eligibility
+    - member_current_link
+    - auth
+  case_number:
+    - auth
+
+# Ticket vocabulary is configuration, not Jira-ingestion code. Values are
+# extracted before redaction and remain sensitive throughout the run.
+ticketAnchorExtraction:
+  case_number:
+    labelPatterns:
+      - '\bcase\s*#|\bcase\s*(?:no\.?|number|numbers|id)\b'
+      - '\bcase\s+(?=[A-Za-z0-9-]{5,30}\b)'
+    rejectLabelPatterns:
+      - '\b(?:member|subscriber|person|patient|medicare|medicaid|policy|mrn|ssn|dob|date\s+of\s+birth)\b'
+    valuePatterns:
+      - '\b\d{5,20}\b'
+      - '\b(?=[A-Za-z0-9-]{5,30}\b)(?=[A-Za-z0-9-]*\d)[A-Za-z0-9]+(?:-[A-Za-z0-9]+)?\b'
+  member_identifier:
+    labelPatterns:
+      - '\b(?:reported\s+|affected\s+)?(?:member(?:s|\(s\))?|subscriber(?:s)?|person(?:s)?|patient(?:s)?)\s*(?:(?:id|ids|no\.?|number|numbers)\s*)?(?=["'']?\s*[:#=-]|$)'
+      - '\b(?:member|subscriber|person|patient)\b[^\n]{0,160}\b(?:id|no\.?|number)\b'
+    rejectLabelPatterns:
+      - '\bcase\s*(?:#|no\.?|number|numbers|id)\b'
+    valuePatterns:
+      - '\b(?=[A-Za-z0-9/-]*\d)[A-Za-z0-9]{5,30}(?:[-/][A-Za-z0-9]{1,10})?\b'
+    jsonKeyPatterns:
+      - '^(?:member|subscriber|person|patient)(?:external|ext)?(?:id|ids|no|number|numbers)$'
+    filenamePatterns:
+      - '^(?=[A-Za-z0-9/-]*\d)[A-Za-z0-9]{5,30}[-/][A-Za-z0-9]{1,10}$'
+
+configTablePatterns:
+  - '(?:config|default|setting|feature|rule|lookup|status|reason|xref|mapping|map)'
+
+safeSampleColumns:
+  allowPatterns:
+    - '^(?:id|status|status_reason|description|code|name|type|flag|value|enabled|active|in_active|inactive|insert_datetime|update_datetime|updated_datetime|created_at|updated_at|transaction_type|event_type|state|result|outcome|is_[A-Za-z0-9_]*|[A-Za-z0-9_]*(?:allowed|enabled|supported|status|reason|state|flag|count|total|date|datetime|type|code|id))$'
+  denyPatterns:
+    - '(?:member|subscriber|patient|person|medicare|medicaid|ssn|dob|birth|email|phone|fax|address|zip|npi|tax|mrn|hicn|mbi|pbm|provider|prescriber|pharmacy|firstname|lastname|first_name|last_name|full_name)'
+  nonConfigTextDenyPatterns:
+    - '(?:description|note|comment|message)'
+    - '(?:^id$|(?:id|no|number)$)'
+
+configSampleColumns:
+  allowPatterns:
+    - '(?:allowed|enabled|supported|active|status|reason|code|name|type|flag|value|description)$'

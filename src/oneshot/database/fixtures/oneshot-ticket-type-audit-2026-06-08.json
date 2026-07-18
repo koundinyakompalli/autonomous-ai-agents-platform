@@ -1,0 +1,1172 @@
+{
+  "CPDEV-15158": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - Handle Requested By / AOR Variations",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-15517": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - AI assisted Fax Intake metrics collection [MHK Internal Analytics]",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-16027": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - Links Tab / Section",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-16407": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MEDPHARMA: Support for Outbound Correspondence with DocumentResource FHIR resource",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-16408": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MEDPHARMA: Claim Level Cancellation",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-16410": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MEDPHARMA: Claim Level update - (Error messaging)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-16867": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MEDPHARM: $inquire",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-18187": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "SEN-397 : CA#1 : Wellcare278 Availity Integration : Add timeouts, retrigger mechanism after timeouts",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-18878": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit to 3.19",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-18879": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit to 3.18",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-18989": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Seq 06 - CALL_PREP_ACCESS permission - defense-in-depth (GWT button gating + REST API enforcement)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-19042": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CA #3 |Environment Visibility Enhancements to Notify User in PROD",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-19100": {
+    "jiraIssueType": "Task",
+    "ticketType": "other",
+    "title": "Review 4.1 slow queries post performance test",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-19692": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Seq 01 - Flyway migration - Call Prep core tables (summary_version, summary_sentence, source_ref)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-19784": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Platform Workflow Instrumentation and Navigation Capture",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-19884": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit to 3.17",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-20463": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-22733 to 3.19 - Reset Reason Code",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-20626": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[DEV] Story 4 \u2014 $questionnaire-package returns MHK Internal Assessment questionnaires alongside external questionnaires",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-20628": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[DEV] Story 9: Implement NotImplementedException for Phase 2 Operations",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-20821": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Rx AI-Fax Intake \"Auto\" Case Create- Multi-drug (OD Case) - OD-Non-Split, Medical and Pharmacy is configured",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21090": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Member Search: Style \"Cancel\" button",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21145": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "SCAN PROD | SEN-121-CA | Fax Intake Service Upgrades",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21311": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[DEV] Story 1 \u2014 order-sign: CRD shows \"documentation required\" when MHK Internal Assessments say so, regardless of external DTR",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21532": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Seq 05 - Hibernate entities, HBM mappings, GWT DTOs, RPC interfaces for Call Prep",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21533": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Seq 07 - Signed-token service for GWT-to-React iframe handoff",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21561": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[DEV] Story 3 \u2014 order-dispatch: CRD shows \"documentation required\" when MHK Internal Assessments say so, regardless of external DTR",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21564": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[DEV] Story 5 \u2014 MHK Internal Assessment: DTR $next-question: Route to External Provider Only; Reject MHK Questionnaires",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21571": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CTM Provider Search, Selection & CRUD Forms_part 2",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21572": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CTM Reporting & BI Integration for Multi-Provider (SPAGO)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21586": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "OneShot Test | Member Search Style Update",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21690": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "AI Agentic: Eligibility data is not displaying the processed fax",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21840": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] OrderTrackingMgmtBusinessService + FilterBuilderService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21841": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] CaregapsService + MMRBusinessService + IreAutomationBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21843": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] DatabaseTableHelper + CorrespondenceCloneConfigSharedService + AssessmentTableService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21844": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] MTMStratificationBusinessService + StratificationService + PopulationNeedGroupDetailsService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21845": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] ClinicalProfileUpdateService + FhirMemberSearchService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21846": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] ExternalMHKServices + IntakeService + CTMBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21847": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] Improve branch coverage on existing partially-tested services",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21898": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] QueueMonitorService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21899": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] ProviderAppealsMgmtBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21900": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] GeneralBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21901": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] BusinessCalendarUtils",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21902": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] IncomingImageRequestBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21904": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] DerThirdPartyReviewBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21905": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] DynamicJsonCRUDService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21906": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] ExternalClientBusinessService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21925": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] NativeSQLSharedService \u2014 Part 1: JDBC-wrapper & simple query methods",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21926": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] NativeSQLSharedService \u2014 Part 2: MTM / review / intervention / referral-copy",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21927": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] NativeSQLSharedService \u2014 Part 3: utility / lookup / static helpers / appeals",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21928": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "[Coverage] NativeSQLSharedService \u2014 Part 4: DER assessment definition methods",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-21980": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "Getting system error Null when trying to right click>Add in QoC portlet",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22045": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "CVS | Core App | DLT incorrect T/F requirements",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22049": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "CVS | Batch Job | DLT incorrect T/F requirements",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22224": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "Restore missing jbpm.cfg.xml in mm-member-merge on batch-monorepo-3.11",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22229": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "retrofit to 3.17 getUmQuestionSet endpoint",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22230": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "retrofit to 3.16 getUmQuestionSet endpoint",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22231": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "retrofit to 3.15 getUmQuestionSet endpoint",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22232": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "retrofit 3.14 getUmQuestionSet endpoint",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22233": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "retrofit 3.13 getUmQuestionSet endpoint",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22236": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "MHKRUD > An exception error occurs when closing the Member 360 banner for an existing CarewebQI records case.",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22308": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Fax Intake: Port EXTID method enum to 4.1+(forward-port of TMPLT-87181 for CPSUP-43286)",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22375": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Rx AI-Fax Intake Case Create- Manual / User selected Request Type: OD (Pharmacy/Medical)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22454": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "SEN 222 : CA #1 ( Dev) :  Review SQL injection vulnerability for Provider Portal through SSO parameters ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22517": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Custom QSet Project -  Prioritize Clinical Cluster-specific rule sets first",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22523": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CRD - Order Sign - Question 1: Is JCode Covered or Not Covered for a specific Line of Business (LOB)?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22524": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CRD - Order Sign - Question 2: Is Prior Auth required for the JCode for given LOB?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22525": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CRD - Order Sign - Question 3: Is Documentation required for the JCode?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22642": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "MHK Event Publishing Service: Not emitting events for Pharmacy (DER) records",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22650": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MedPharm CRD - Order Sign - PA list - Question 1: Is JCode Covered or Not Covered per the PA list?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22651": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Custom QSet Project -  Prioritize Clinical Cluster-specific rule sets first - Code change 2",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22675": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "PERF2- Not able to do member search",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22733": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Reset Reason Code",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22739": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-22517 to 4.1 Custom QSet Project -  Prioritize Clinical Cluster-specific rule sets first",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-22820": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "High Cost Drug Flag",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22844": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] mysql-connector-java \u2014 CVE-2020-2934 \u2014 cp-medhok-monorepo \u2014 Wiz remediation (Epic: CPDEV-22823)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-22853": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] commons-lang \u2014 CVE-2025-48924 \u2014 cp-medhok-monorepo \u2014 Wiz remediation (Epic: CPDEV-22823)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-22874": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] itext \u2014 CVE-2017-9096 \u2014 cp-medhok-monorepo \u2014 Wiz remediation (Epic: CPDEV-22823)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-22924": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Member Search: Style \"Cancel\" button",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22962": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MRIOA Routing Exclusions",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-22967": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "Getting 504 when trying to run the payload",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23099": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit to Master CPDEV-22370",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23100": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit to Master CPDEV-22361",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23113": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MailMergeService: support partial guardian names in ResponsibleName mail merge tags (CPSUP-33190)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23116": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CRD - Order Select - Question 1: Is JCode Covered or Not Covered for a specific Line of Business (LOB)?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23140": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "CRD - Order Select - Question 3: Is Documentation required for the JCode?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23148": {
+    "jiraIssueType": "Task",
+    "ticketType": "other",
+    "title": "CPDEV-22955 P1 #01 \u2014 Schema: dropdown_field_registry + dropdown_field_alias (Flyway)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23149": {
+    "jiraIssueType": "Task",
+    "ticketType": "other",
+    "title": "CPDEV-22955 P1 #02 \u2014 Extract ListValuesQueryService (regression-safe refactor)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23192": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Seq 55 - Flyway: extractor_lookback_config table + ExtractorLookbackConfigService",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23252": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "PAS Review Servicing Provider Same / Facility Provider Same logic - HealthSpring (Cigna)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23266": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "RETROFIT CPDEV-22820 TO 3.19 - High Cost Drug Flag",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23267": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "RETROFIT CPDEV-22820 TO 4.1 - High Cost Drug Flag",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23269": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "RETROFIT CPDEV-22962 TO 3.19 - MRIOA Routing Exclusions",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23270": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "RETROFIT CPDEV-22962 TO 4.1 - MRIOA Routing Exclusions",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23273": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MedPharm CRD - Order Sign - PA list - Question 2: Is Prior-Auth required for JCode per the PA list?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23274": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MedPharm CRD - Order Sign - PA list - Question 3: Is Documentation required for the JCode per the PA list?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23307": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MedPharm CRD - Order Dispatch - PA list - Question 3: Is Documentation required for the JCode per the PA list?",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23317": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - Linked Cases Backend Search Labels - MTM, OMS, Quality Of Care, Rx Case",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23326": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Fax Intake | Sorting required for AI Status Column",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23334": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "Rx Duplicate Check logic backend error observed - MhkRUD ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23335": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "RTE call search logic utilizing the patient and coverage sections - Gender logic",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23338": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-20865 from medhok-monorepo-4.1 to medhok-monorepo-3.19",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23339": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-22361 from medhok-monorepo-4.0 to master in cp-medhok-monorepo",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23365": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Align Servicing and Facility Provider population in Auth Inquiry API with Requesting Provider semantics (DB hydrate + per-field request override)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23367": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "OneShot GitHub Test",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23378": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "core-app: Add configurable LOB-level send_member_code flag (DB, entity/HBM, GWT DTO, Admin UI, save service)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23379": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 1/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23380": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 2/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23381": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 3/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23382": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 4/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23383": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 5/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23384": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 6/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23385": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 7/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23386": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 8/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23387": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 9/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23388": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 10/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23389": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 11/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23390": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 12/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23391": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 MedicalMgmt \u2014 13/13 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23392": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 1/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23393": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 2/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23394": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 3/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23395": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 4/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23396": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 5/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23397": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 6/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23398": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 7/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23399": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 8/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23400": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 9/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23401": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 10/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23402": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 11/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23403": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 mm-shared-services \u2014 12/12 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23404": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2178 \u2014 MedicalMgmt \u2014 1/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23405": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2178 \u2014 MedicalMgmt \u2014 2/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23406": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2229 \u2014 medhok-web-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23407": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S128 \u2014 MedicalMgmt \u2014 1/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23408": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S128 \u2014 MedicalMgmt \u2014 2/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23409": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S3516 \u2014 mm-shared-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23410": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S3516 \u2014 MedicalMgmt \u2014 1/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23411": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S3516 \u2014 MedicalMgmt \u2014 2/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23412": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2095 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23413": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2095 \u2014 mm-dynamic-loader-service \u2014 1/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23414": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2095 \u2014 mm-dynamic-loader-service \u2014 2/2 \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23415": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2095 \u2014 mm-shared-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23416": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2178 \u2014 mm-shared-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23417": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2755 \u2014 medhok-web-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23418": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2755 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23419": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2178 \u2014 medhok-web-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23420": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S2178 \u2014 MedicalMgmtUtilities \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23421": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S3516 \u2014 medhok-web-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23422": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S5344 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23423": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S1143 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23424": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] css:S4657 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23425": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S1143 \u2014 mm-dynamic-loader-service \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23426": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] css:S4651 \u2014 MedicalMgmt \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23427": {
+    "jiraIssueType": "Story",
+    "ticketType": "sonar",
+    "title": "[SonarQube] java:S4830 \u2014 mm-shared-services \u2014 core-app (Epic: CPDEV-23194)",
+    "typeSource": "dashboard_jira_preview_inferred_sonar"
+  },
+  "CPDEV-23433": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Author one-time SQL remediation to term duplicate active PCPs and fix member_current_link pointer (HealthSpring CR-1240)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23435": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "core-app: Add multi-criteria sort_criteria contract for Appeals Get Next auto-assignment",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23436": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "data-visor: Validate appeals/auto-assignment reporting is unaffected by the multi-criteria Get Next change",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23437": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "React-based-new-ui: Confirm no UI change is required for Appeals Get Next multi-criteria sort",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23486": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "core-app: Add LOB-configurable expedited Completion Date source for Medical Appeals",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23520": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "AI Agentic: Medical Appeals > Claims data is not filtering based on From Date and To Date",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23548": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Centene - NC Appeals API integration - Authentication change to OAUTH",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23549": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "MA Eligibility: Apply Latest Effective Date Tiebreaker When Payer Hierarchy Is Unresolved",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23562": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-22833 from medhok-monorepo-4.0 to master in cp-medhok-monorepo",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23563": {
+    "jiraIssueType": "Story",
+    "ticketType": "retrofit",
+    "title": "Retrofit CPDEV-22833 from medhok-monorepo-4.0 to master in cp-medhok-monorepo",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23566": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] log4j \u2014 CVE-2022-23302 + 3 more \u2014 /opt/software/medhok \u2014 Wiz remediation (Epic: CPDEV-23527)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-23567": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] log4j \u2014 CVE-2022-23302 + 3 more \u2014 /opt/software/cas \u2014 Wiz remediation (Epic: CPDEV-23527)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-23568": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] log4j \u2014 CVE-2022-23302 + 3 more \u2014 /opt/repo \u2014 Wiz remediation (Epic: CPDEV-23527)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-23569": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] log4j \u2014 CVE-2022-23302 + 3 more \u2014 /opt/ws9443-apps \u2014 Wiz remediation repo confirmation (Epic: CPDEV-23527)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-23570": {
+    "jiraIssueType": "Story",
+    "ticketType": "security",
+    "title": "[Security] log4j \u2014 CVE-2022-23305 + 3 more \u2014 /opt/software/medhok \u2014 Wiz remediation (Epic: CPDEV-23527)",
+    "typeSource": "dashboard_jira_preview_inferred_security"
+  },
+  "CPDEV-23575": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "CRD- Order Sign - Service Not Covered: Prior Authorization Outcome is Rejected message display for certain procedure code",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23597": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "other",
+    "title": "Development ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23599": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Flyway Retro for CPDEV-22962 from master to 3.19",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23600": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Code retro for CPDEV-22962 from master to 3.19",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23688": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - AI assisted Fax Intake metrics collection -Enable Stats Mode OCR Accuracy Metrics for Medical Appeals",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23693": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "Getting Exception when accessing Stratification ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23698": {
+    "jiraIssueType": "Defect",
+    "ticketType": "defect",
+    "title": "CVS_PROD1_BATCH1  Faxes Pending Confirmation over 140 Min",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23699": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Fix NullPointerException in FaxCorrespondenceConfirmation causing faxes to be permanently stuck in pend_confirmation state on CVS-PRD1",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23719": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - AI assisted Fax Intake metrics collection -Enable Stats Mode OCR Accuracy Metrics for Medical Appeals (AI Assisted Intake)",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23730": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Medical Appeals - Enable Linked Case UI Modules - MTM, OMS, Quality Of Care, Rx Case",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23734": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "Member Search: Style \"Cancel\" button",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23774": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "4.2 MASTER for CPDEV-23548 - Centene - NC Appeals API integration - Authentication change to OAUTH",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPDEV-23790": {
+    "jiraIssueType": "Task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to master branch",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23792": {
+    "jiraIssueType": "Task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to 3.17",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23793": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to 3.18 branch",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23794": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to 3.19 branch",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23796": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to 4.0 branch",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPDEV-23797": {
+    "jiraIssueType": "Sub-task",
+    "ticketType": "retrofit",
+    "title": "Retrofit the (commit  09237c1a04653d76acf74c44490c8a8275bc6a4e ) from 3.15 to 4.1 branch",
+    "typeSource": "dashboard_jira_preview_inferred_retrofit"
+  },
+  "CPSR-784": {
+    "jiraIssueType": "Idea",
+    "ticketType": "other",
+    "title": "PerformRx | LOE| Change Request |Update Logic for Guardian name Populating on Letter Templates",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-13509": {
+    "jiraIssueType": "Story",
+    "ticketType": "story",
+    "title": "SEN 222 : CA #1 ( Dev) :  Review SQL injection vulnerability for Provider Portal through SSO parameters ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-33190": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "PerformRx | LOE| Change Request |Update Logic for Guardian name Populating on Letter Templates",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-43847": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "SCAN | 310892 | LOE | CR Create BWW for QOC | SR",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-46885": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "LOE | Alterwood | SR | Member Attributes \u2013 Attributed PCP - Internal Issue 536",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-47014": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "UM Compliance Reporting Updates CR 1225 HeatlhSpring - LOE Request",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-47023": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "MY2025 HEDIS Updates CR 1216 - HealthSpring - LOE Request",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  },
+  "CPSUP-49442": {
+    "jiraIssueType": "Service request",
+    "ticketType": "other",
+    "title": "[Pending Config Update in Higher Env]CVS QA1 >Grv>  Work classification Column in missing in Workload ",
+    "typeSource": "dashboard_jira_preview_issue_type"
+  }
+}

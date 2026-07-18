@@ -1,0 +1,170 @@
+schema_version: 1
+profile_version: 2
+generated_at: "2026-06-10T00:00:00Z"
+source_repo_commit_sha: unknown
+generated:
+  aliases:
+    - Ai-agents
+    - ai agents
+    - enterprise-ai-agent-platform
+    - enterprise ai agent platform
+    - enterprise ai agents
+    - ai agent platform
+  domains:
+    - agents
+    - mcp
+    - automation-platform
+    - controller-agent-architecture
+    - healthcare-ai-orchestration
+    - multi-tenant-saas
+    - aws-hosted-agents
+    - agent-hosting
+    - validation-rules
+    - healthcare-safety-rules
+    - agent platform
+  packages:
+    - com.enterprise.ai.agent
+    - agent-orchestration-core
+    - agent-core-mcp
+    - mcp-protocol
+    - ai-orchestration-commons
+  file_path_patterns:
+    - agent-orchestration-core
+    - agent-core-mcp
+    - atlassian-mcp-server
+    - document360-mcp-server
+    - code-intelligence-service
+    - code-intelligence-mcp-server
+    - controller-agents
+    - processing-agents
+    - shared-libs
+    - terraform
+    - ui-portal
+    - tools/ai-platform-cli
+    - CLAUDE.md
+    - docs
+    - docs/reference
+    - docs/guides
+    - docs/architecture
+    - docs/decisions
+    - docs/security
+    - docs/operations
+    - docs/onboarding
+    - docs/implementations
+    - docs/patterns
+    - docs/iam-policies
+  symbols:
+    - ControllerAgent
+    - ProcessingAgent
+    - OrchestrationCoreClient
+    - McpServer
+    - SecurityContext
+    - TenantContext
+  endpoints:
+    - /actuator/health
+  tables:
+    - controller_agents
+    - agent_registry
+    - audit_trail
+    - workflow_configurations
+# Summary:
+# Enterprise AI Agent Platform is a Java 21 / Spring Boot healthcare AI SaaS
+# platform hosted on AWS. It contains orchestration core services, MCP servers,
+# controller agents, processing agents, shared Java/Python SDK libraries,
+# Terraform infrastructure, and a React/Vite portal. OneShot support for this
+# repo must preserve the platform's healthcare safety rules: controllers make
+# orchestration decisions, processing agents execute only, PHI must not be
+# logged, security failures fail closed, production service-to-service traffic
+# uses HTTPS through ALB/cert patterns, AWS changes stay in Terraform/IaC, and
+# all changes go through PR review with focused tests.
+curated:
+  aliases:
+    - enterprise-ai-agent-platform
+    - enterprise ai agent platform
+    - controller agents
+    - processing agents
+    - platform agents
+    - hosted agents
+    - agent hosting
+    - internal mcp
+    - external mcp
+  domains:
+    - controller-agent-architecture
+    - workflow-controller
+    - routing-controller
+    - decision-controller
+    - meta-controller
+    - processing-agent
+    - mcp-server
+    - mcp-protocol
+    - code-intelligence
+    - document360
+    - atlassian-mcp
+    - terraform-managed-agents
+    - aws-ecs-fargate
+    - sqs-agent-queues
+    - client-vpc
+    - client-specific-kms
+    - hipaa-compliance
+  packages:
+    - com.enterprise.ai.agent
+    - com.enterprise.ai.agent.orchestration
+    - com.enterprise.ai.agent.mcp
+    - com.enterprise.ai.agent.controller
+    - com.enterprise.ai.agent.processing
+  file_path_patterns:
+    - CLAUDE.md
+    - docs/reference/NEVER-RULES-DETAILED.md
+    - docs/guides/BUILD-AND-DEPLOYMENT.md
+    - docs/architecture
+    - docs/decisions
+    - docs/security
+    - docs/operations
+    - docs/onboarding
+    - docs/implementations
+    - docs/patterns
+    - docs/iam-policies
+    - docs/reference
+    - pmd-ruleset.xml
+    - spotbugs-exclude.xml
+    - agent-orchestration-core/src
+    - agent-core-mcp/src
+    - atlassian-mcp-server/src
+    - document360-mcp-server/src
+    - code-intelligence-service/src
+    - code-intelligence-mcp-server/src
+    - controller-agents/*/src
+    - processing-agents/java-agents
+    - processing-agents/python-agents
+    - shared-libs/ai-orchestration-commons
+    - shared-libs/mcp-protocol
+    - shared-libs/python-sdk
+    - terraform/00-shared
+    - terraform/10-orchestration-core
+    - terraform/30-controller-agents
+    - terraform/40-processing-agents
+    - terraform/47-internal-mcp-alb
+    - terraform/70-ui-portal
+    - ui-portal/src
+    - .github/workflows
+  symbols:
+    - ControllerAgent
+    - ProcessingAgent
+    - MetaController
+    - WorkflowController
+    - RoutingController
+    - DecisionController
+    - OrchestrationCoreClient
+    - SecurityContext
+    - TenantContext
+    - McpBinaryInterceptor
+    - AgentRegistry
+  endpoints:
+    - /actuator/health
+    - /api
+    - /mcp
+  tables:
+    - controller_agents
+    - processing_agents
+    - workflow_configurations
+    - audit_trail

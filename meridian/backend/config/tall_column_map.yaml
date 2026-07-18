@@ -1,0 +1,99 @@
+# Tall-format spreadsheet column header detection patterns.
+#
+# Each key is the logical column role; the value is a list of substrings
+# (case-insensitive) matched against the header row.
+# The FIRST matching pattern in the list wins — order matters.
+#
+# Add new patterns here when a new spreadsheet layout uses different header names.
+# No code change needed.
+
+# Substrings used to detect which row is the header row (any match = header found).
+header_detect:
+  - "der no"
+  - "der_no"
+  - "exrm no"
+  - "exrm_no"
+  - "auth review #"
+  - "mhk auth/referral/case number"
+  - "auth/referral/case"
+  - "case #"
+  - "case#"
+  - "dispute #"
+  - "dispute#"
+  - "auth reference"
+  - "member id"
+  - "user id"
+  - "case number"
+  - "case no"
+  - "appeal no"
+  - "appeal #"
+  - "(old)"
+  - "(new)"
+  - "old value"
+  - "new value"
+  - "target field"
+
+# The case/auth identifier column — checked in priority order.
+# "auth review #" must come before "auth reference" because some UM BEE forms
+# have both: col 0 = Member ID (Auth Reference #), col 1 = Auth Review #.
+case_col:
+  - "der no"
+  - "der_no"
+  - "exrm no"
+  - "exrm_no"
+  - "auth review #"
+  - "mhk auth/referral/case number"
+  - "auth/referral/case"
+  - "case #"
+  - "case#"
+  - "dispute #"
+  - "dispute#"
+  - "auth reference"
+  - "member id"
+  - "user id"
+  - "case number"
+  - "case no"
+  - "appeal no"
+  - "appeal #"
+
+field_col:
+  - "field name"
+  - "target field"
+
+old_col:
+  - "current value"
+  - "old value"
+  - "(old"
+
+new_col:
+  - "field value"
+  - "new value"
+  - "(new"
+
+reason_col:
+  - "reason"
+
+# Auth revision number — more specific pattern first
+rev_col:
+  - "auth revision number"
+  - "auth revision"
+  - "revision"
+
+assess_col:
+  - "assessment name"
+
+created_col:
+  - "created at"
+  - '"created at"'
+
+# Optional semantic context fields copied from tall-format columns into each
+# parsed row. Resolver rules in semantic_resolution.yaml decide whether and how
+# these context keys are used.
+semantic_context:
+  assessment_name:
+    column_role: assess_col
+  document_name:
+    column_role: assess_col
+  source_created_at:
+    column_role: created_col
+    formatter: datetime

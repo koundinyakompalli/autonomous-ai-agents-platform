@@ -1,0 +1,115 @@
+name: Governance Promotion Check
+
+on:
+  pull_request:
+    branches:
+      - "release-*"
+      - "release/**"
+  push:
+    branches:
+      - "release-*"
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      last_approved_ref:
+        description: "Release branch tip or commit to diff from"
+        required: true
+        type: string
+      candidate_ref:
+        description: "Candidate commit/ref to promote"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  governance-promotion-check:
+    name: Governance diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Inspect required governance reviews
+        if: github.event_name == 'pull_request'
+        id: governance-review-state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          declare -A requested_teams=()
+          while IFS= read -r team; do
+            requested_teams["${team}"]=1
+          done < <(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/requested_reviewers" --jq '.teams[].slug')
+
+          missing_count=0
+          for team in cp-compliance cp-security; do
+            if [[ -z "${requested_teams[${team}]:-}" ]]; then
+              missing_count=$((missing_count + 1))
+            fi
+          done
+          echo "missing_count=${missing_count}" >> "${GITHUB_OUTPUT}"
+
+      - name: Generate governance review token
+        if: github.event_name == 'pull_request' && steps.governance-review-state.outputs.missing_count != '0'
+        id: governance-review-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Request compliance/security release review
+        if: github.event_name == 'pull_request' && steps.governance-review-state.outputs.missing_count != '0'
+        env:
+          GH_TOKEN: ${{ steps.governance-review-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh api \
+            --method POST \
+            "repos/${REPOSITORY}/pulls/${PR_NUMBER}/requested_reviewers" \
+            -f team_reviewers[]=cp-compliance \
+            -f team_reviewers[]=cp-security
+
+      - name: Verify required governance reviews
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          declare -A requested_teams=()
+          while IFS= read -r team; do
+            requested_teams["${team}"]=1
+          done < <(gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}/requested_reviewers" --jq '.teams[].slug')
+
+          for team in cp-compliance cp-security; do
+            if [[ -z "${requested_teams[${team}]:-}" ]]; then
+              echo "Required governance review team is missing: ${team}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Print governance-scoped diff (PR)
+        if: github.event_name == 'pull_request'
+        run: node scripts/governance-diff.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+      - name: Print governance-scoped diff (push)
+        if: github.event_name == 'push'
+        run: node scripts/governance-diff.mjs "${{ github.event.before }}" "${{ github.sha }}"
+
+      - name: Print governance-scoped diff (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/governance-diff.mjs "${{ inputs.last_approved_ref }}" "${{ inputs.candidate_ref }}"

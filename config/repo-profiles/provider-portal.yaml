@@ -1,0 +1,441 @@
+schema_version: 1
+profile_version: 7
+generated_at: "2026-04-29T17:19:16.540Z"
+source_repo_commit_sha: 8e08730791e1e8aa2b831dd7d2ddce021ffb1190
+generated:
+  aliases:
+    - CMOfflineServices
+    - OfflineAssessmentServices
+    - cp-provider-portal
+    - "provider portal"
+    - provider-portal
+  domains:
+    - action
+    - "action pattern"
+    - address
+    - "architecture patterns"
+    - based
+    - "claude code context"
+    - "code style"
+    - "codex context"
+    - comment
+    - "common patterns"
+    - "configuration lookup"
+    - "configuration pattern"
+    - "connection pooling"
+    - continue
+    - "core request flow"
+    - create
+    - "critical files"
+    - "data flow"
+    - date
+    - delay
+    - display
+    - error
+    - "error handling"
+    - exception
+    - files
+    - "follow given"
+    - format
+    - formatting
+    - generate
+    - handling
+    - "healthcare compliance"
+    - "healthcare provider portal"
+    - indentation
+    - issues
+    - "java enterprise"
+    - "key design patterns"
+    - length
+    - line
+    - loading
+    - login
+    - metadata
+    - modal
+    - "module structure"
+    - "new action class template"
+    - order
+    - pagination
+    - "personally identifiable information"
+    - "pii protection"
+    - "project overview"
+    - "protected health information"
+    - "provider facing"
+    - "provider portal"
+    - provider-api
+    - provider-facing
+    - provider-portal
+    - provider-ui
+    - refresh
+    - "safe logging examples"
+    - "saml sso"
+    - search
+    - "servicefactory pattern"
+    - single-line
+    - "spring security"
+    - "sql security"
+    - style
+    - "technical stack"
+    - "testing standards"
+    - tmplt
+    - try-with-resources
+    - unit
+    - "use junit"
+    - violations
+  packages:
+    - com.medhok
+    - com.medhok.cmoffline
+    - com.medhok.mm
+    - com.medhok.offline
+    - com.medhok.providerPortal
+    - com.medhok.quality
+    - com.medhok.xpath
+  file_path_patterns:
+    - .github
+    - .settings
+    - AppScreenDefinitions
+    - CMOffline
+    - CMOfflineClient
+    - CMOfflineServices
+    - Extra
+    - OfflineAppClient
+    - OfflineAssessmentClient
+    - OfflineAssessmentClientUM
+    - OfflineAssessmentServices
+    - OfflineServices
+    - ProviderPortal
+    - ScreenDefinitions
+    - Screendefs
+    - SupportingDocuments
+    - WebContent
+    - container
+    - cp-provider-portal
+    - superpowers
+    - workflows
+  symbols:
+    - AWSPropertyManagerService
+    - AcceptCareplan
+    - AckAlert
+    - AcknowledgeOtp
+    - ActionExecutor
+    - AddDocument
+    - AddDocumentResponse
+    - AddMemberNotes
+    - AddMemberNotesResponse
+    - AddNote
+    - AddNoteResponse
+    - AddNotes
+    - AddNotesResponse
+    - AddOutboundContact
+    - AddOutboundContactResponse
+    - AddSameDocumentToMultipleCase
+    - AddSameDocumentToMultipleCaseResponse
+    - AddUMEdits
+    - AddUMEditsResponse
+    - AddUserCheckUserName
+    - AdditionalProviderList
+    - AesUtil
+    - AllowedSSOBindings
+    - Apart
+    - AppUtility
+    - AppealServices
+    - AppealServices_Service
+    - AppealsAuthorizations
+    - AppealsCategory
+    - AppealsDisputeType
+    - AppealsMemberClaimDetail
+    - AppealsMemberClaimDiagnosis
+    - AppealsMemberClaims
+    - AppealsMgmt
+    - AppealsProviderVendors
+    - AppealsRequestType
+    - AppealsStatus
+    - AppealsStatusReason
+    - AppealsSubCategory
+    - ApplicationAlerts
+    - AssessmentAccess
+    - AssessmentAction
+    - AssessmentClientConfig
+    - AssessmentDocument
+    - AssessmentDocumentAnswer
+    - AssessmentDocumentAnswerChoice
+    - AssessmentDocumentQuestion
+    - AssessmentHistory
+    - AssessmentMaster
+    - AssessmentObjects
+    - AssessmentObjectsGrid
+    - AssessmentQuestionType
+    - AssessmentRules
+    - AssessmentStatus
+    - AssessmentUpload
+    - AuditLog
+    - AuditStatus
+    - AuthConfigUpload
+    - AuthDiagnosis
+    - AuthIpDays
+    - AuthPriority
+    - AuthProcedure
+    - AuthProvider
+    - AuthRequestType
+    - AuthReview
+    - AuthReviewType
+    - AuthRules
+    - AuthRulesLob
+    - AuthRulesTypes
+    - AuthServices
+    - AuthStatus
+    - AuthStatusReason
+    - AuthSubType
+    - AuthSupport
+    - AuthSupportConfigRecord
+    - AuthSupportRules
+    - AuthTypes
+    - AuthUnits
+    - AuthenticateUser
+    - AuthenticateUserAES
+    - AuthorizationReview
+    - AuthorizationServices
+    - Authorizations
+    - Authprovtypes
+    - Authreviewers
+    - AuthtypeAllowablePos
+    - Authtypeprovs
+    - BatchFile
+    - BenefitDetails
+    - BenefitsMaster
+    - BiometricCategory
+    - BiometricSubCategory
+    - BusinessPartnerTaskManagement
+    - BusinessPartners
+    - BusinessProcess
+    - BusinessProcessConfigAccess
+    - BusinessTaskDefn
+    - CallMcg
+    - CallbackRequestReason
+    - CallbackSchedule
+    - CallbackStatus
+    - Campaign
+    - CampaignMeasure
+    - CampaignMeasureId
+    - CampaignProcess
+    - CampaignProcessLoadResult
+    - CampaignProcessMeasure
+    - CampaignProcessMeasureId
+    - CampaignProcessMeasureReport
+    - CampaignProcessMeasureReportId
+    - CampaignProcessMeasureResult
+    - CampaignProcessMeasureResultId
+    - CampaignProcessOutputCompliantReport
+    - CampaignProcessOutputCostOfCare
+    - CampaignProcessOutputEligiblePopulation
+    - CampaignProcessOutputEligiblePopulationId
+    - CampaignProcessOutputEtMatchedLab
+    - CampaignProcessOutputEtMatchedPharmacy
+    - CampaignProcessOutputEtMatchedVisits
+    - CampaignProcessOutputExcludedPopulation
+    - CampaignProcessOutputExecutionTraceReport
+    - CampaignProcessOutputFpcPopulation
+    - CampaignProcessOutputFpcPopulationId
+    - CampaignProcessOutputPrerequisiteDates
+    - CampaignProcessOutputUosPopulation
+    - CampaignProcessResult
+    - CampaignProcessResultId
+    - CampaignProcessRun
+    - CampaignProcessRunId
+    - CancelAuthForMedical
+    - CancelMyMemberViewAuth
+    - CareMgmtMemberStratificationConfigAccess
+    - Careplan
+    - CareplanBarriers
+    - CareplanGoals
+    - CareplanInterventionNotes
+    - CareplanInterventions
+    - CareplanParticipants
+    - CareplanProblems
+    - CareplanStatus
+    - CareplanStatusReasons
+    - CarrierFullfillmentPackage
+    - Cdtype
+    - CdtypeDetermination
+    - CertificationCategory
+    - ChangePasswordForChangePassword
+    - ChartActionExecutor
+    - ChartDashboards
+    - ChartDataParameters
+    - ChartDataRanges
+    - ChartMaster
+    - ChartMatrix
+    - ChartTypeMaster
+    - CheckContinueReviewEligibility
+    - CheckContinueReviewEligibilityREST
+    - CheckCurrentPasswordForChangePassword
+    - CheckDuplicateProcedureCode
+    - CheckEligibilityMemberSearch
+    - CheckForDuplicateAuths
+    - CircuitBreakerState
+    - ClaimStatus
+    - ClaimStatusReason
+    - ClaimType
+    - ClientAssessmentObjects
+    - ClientMessageConstants
+    - ClientModuleElig
+    - ClientTypes
+    - ClinicalGroupMaster
+    - CodesGroupMaster
+    - CodesMaster
+    - CodesMasterCluster
+    - CodesMasterGroup
+    - CodesTable
+    - CodesTableValues
+    - ColumnOverrides
+    - CommonStatusCodes
+    - CommonStatusReasonCodes
+    - CommonUtils
+    - Company
+    - CompanyAccountGroup
+    - CompanyAccounts
+    - CompanyLob
+    - CompleteMyMemberViewAuth
+    - ComplianceRestrictions
+    - CompliantStatus
+    - ConfigEntry
+    - ConsolReviewAssignment
+    - ConsolReviewStatus
+    - ConsolReviewStatusReason
+    - ConsolidatedReview
+    - Contact
+    - ContactAction
+    - ContactCategory
+    - ContactSubcategory
+    - CorrespondanceAttachments
+    - CorrespondanceAutoPkg
+    - CorrespondanceDefn
+    - CorrespondanceDefnAccess
+    - CorrespondanceDefnLanguageTemplate
+    - CorrespondanceMandatoryTag
+    - CorrespondanceManualDefn
+    - CorrespondanceManualPkgDetail
+    - CorrespondanceManualPkgMaster
+    - CorrespondanceStatus
+    - CorrespondanceTagDefn
+    - CorrespondanceTracking
+    - CorrespondanceTriggerDefn
+    - CorrespondanceType
+    - CorrespondanceUserDefinedFields
+    - CorrespondenceDeliveryContext
+    - CorrespondenceProcess
+    - CostSavings
+    - CostSavingsSlab
+    - CptCode
+    - CptDrgCluster
+    - CptSearch
+    - CreateIntake
+    - CreateRXPA
+    - CreateRXPAFromDrugSets
+    - CreateRXPAFromDrugSetsResponse
+    - CreateRXPAResponse
+    - CreateRXPAWithQSet
+    - JavaScript
+  endpoints:
+    - /create
+    - /display
+    - /generate
+    - /login
+    - /metadata
+    - /provider
+    - /refresh
+    - /removeProvider
+  tables:
+    - datatables_demo
+    - medhok
+    - portal_permissions
+    - portal_user
+    - portal_user_affiliations
+    - portal_user_password_history
+    - portal_user_permissions
+    - portal_user_roles
+    - portal_user_session
+    - provider_portal_configuration
+    - provider_portal_configuration_master
+    - provider_portal_user_activity_sso_login_details
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `provider-portal` (cp-provider-portal) is the external-provider-
+# facing web portal used by healthcare providers to interact with MHK — a
+# multi-module Spring MVC / Spring Security Java EE web app using an
+# Action-pattern servlet (ServiceController → ActionExecutor → Action impl).
+# Authenticated via SAML SSO / CAS. Providers use it to manage their own
+# account, search members, submit and check prior authorizations, upload
+# clinical documentation, and view authorization decisions. Includes
+# significant offline / CMOffline assessment functionality for providers
+# operating without network connectivity.
+#
+# Typical ticket vocabulary: provider portal, provider login, provider sso,
+# saml, cas, provider account, provider dashboard, provider authorization
+# submission, provider upload, provider fax attach, offline assessment,
+# CMOffline, offline client, provider search, provider-facing UI, web
+# portal, portal user, session expiration, SSO login.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - provider-portal
+    - cp-provider-portal
+    - providerportal
+    - provider portal
+  domains:
+    - provider portal
+    - provider-facing
+    - provider-facing ui
+    - provider login
+    - provider sso
+    - saml sso
+    - saml
+    - cas sso
+    - cas
+    - provider dashboard
+    - provider account
+    - provider authorization
+    - provider auth submission
+    - provider upload
+    - provider fax attach
+    - provider search
+    - offline assessment
+    - offline client
+    - cm offline
+    - offline services
+    - screen definitions
+    - portal user session
+    - portal user roles
+    - session expiration
+    - sso login
+    - web portal
+    - servicecontroller
+    - actionexecutor
+    - action pattern
+  packages:
+    - com.medhok.providerPortal
+    - com.medhok.providerPortal.service
+    - com.medhok.providerPortal.actions
+  file_path_patterns:
+    - ProviderPortal
+    - AppScreenDefinitions
+    - ScreenDefinitions
+    - OfflineAssessmentServices
+    - OfflineAssessmentClient
+    - OfflineAssessmentClientUM
+    - OfflineAppClient
+    - OfflineServices
+    - CMOffline
+  symbols:
+    - ServiceController
+    - ActionExecutor
+    - Action
+    - CommonUtils
+  endpoints: []
+  tables:
+    - provider_portal_configuration
+    - provider_portal_configuration_master
+    - portal_user_session
+    - portal_user_roles
+    - provider_portal_user_activity_sso_login_details

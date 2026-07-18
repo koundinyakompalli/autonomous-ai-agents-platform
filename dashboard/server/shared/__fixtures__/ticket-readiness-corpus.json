@@ -1,0 +1,242 @@
+[
+  {
+    "name": "cpdev-template-authorization",
+    "title": "Hide inactive authorization rows",
+    "taskDescription": "Summary: Hide inactive authorization rows from the member authorization search.\nOverview: Users see inactive rows that should not be selectable in the React screen.\nAcceptance Criteria:\n- Given the search has inactive rows, when the user opens the grid, then inactive rows are hidden by default.\nTechnical Details: Update core-app AuthorizationSearchService and src/auth/search/AuthorizationGrid.tsx.\nTesting Notes: Add unit tests for the filter and run the authorization search regression suite.\nOut of Scope: Do not change export behavior.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-provider-search",
+    "title": "Default provider search to active",
+    "taskDescription": "Summary: Provider search should default to active providers.\nOverview: The ProviderSearchController currently returns inactive records when no status filter is selected.\nAcceptance Criteria:\n- AC: default search excludes inactive providers unless the user selects all statuses.\nTechnical Details: Touch provider-portal ProviderSearchService.java and ProviderSearchRequest.ts.\nTesting Notes: Add request mapper tests and run provider search unit tests.\nOut of Scope: Do not alter saved searches.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-dashboard-copy",
+    "title": "Clarify retry button disabled text",
+    "taskDescription": "Summary: Clarify why retry is disabled on failed OneShot runs.\nOverview: Operators cannot tell whether retry is blocked by max attempts or stage state.\nAcceptance Criteria:\n- Given a failed run used all retries, when the detail modal opens, then the retry button shows max attempts reached.\nTechnical Details: Update dashboard/src/oneshot/DetailModal.tsx and retry helper tests.\nTesting Notes: Add React Testing Library coverage for disabled copy.\nOut of Scope: No backend retry behavior change.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-fhir",
+    "title": "Preserve FHIR profile metadata",
+    "taskDescription": "Summary: Preserve FHIR profile metadata when building DTR bundles.\nOverview: The bundle mapper drops meta.profile values needed by downstream validation.\nAcceptance Criteria:\n- Verify that generated QuestionnaireResponse resources include the original profile array.\nTechnical Details: Update interop FhirBundleMapper.java and fixtures under src/test/resources/fhir.\nTesting Notes: Run DTR mapper unit tests and fixture validation.\nOut of Scope: Do not change PAS submission flow.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-sql",
+    "title": "Fix report date filter",
+    "taskDescription": "Summary: Fix report date filtering for monthly claims report.\nOverview: The SQL query includes records one day outside the requested range.\nAcceptance Criteria:\n- Given a monthly range, when the report runs, then only claims inside the range are returned.\nTechnical Details: Update reporting/monthly_claims.sql and ReportDateRangeService.\nTesting Notes: Add SQL fixture coverage for boundary dates.\nOut of Scope: Do not change report columns.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-queue",
+    "title": "Retry queue stalled message",
+    "taskDescription": "Summary: Retry queue should expose stalled message diagnostics.\nOverview: The worker queue hides the message group id when a planning job stalls.\nAcceptance Criteria:\n- Accepted when stalled queue entries show the MessageGroupId and retry stage.\nTechnical Details: Update OneShot queue dashboard service and QueuePanel.tsx.\nTesting Notes: Add service unit tests and UI snapshot coverage.\nOut of Scope: Do not change SQS retry policy.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-cost",
+    "title": "Expose model cost source",
+    "taskDescription": "Summary: Expose whether OneShot cost is actual or estimated.\nOverview: Operators need to know when a cost tile is derived from pricing fallback.\nAcceptance Criteria:\n- Given mixed model telemetry, when the cost tab renders, then each model row labels actual, estimated, or mixed.\nTechnical Details: Update dashboard server costing helpers and CostAnalytics.tsx.\nTesting Notes: Add dashboard server tests for mixed source rows.\nOut of Scope: Do not alter billing export.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-routing",
+    "title": "Add repo routing evidence",
+    "taskDescription": "Summary: Show repo routing evidence for qualifier decisions.\nOverview: Operators need evidence when a ticket is sent to provider-portal instead of core-app.\nAcceptance Criteria:\n- Given a routed ticket, when the details modal opens, then matched repo evidence is visible.\nTechnical Details: Update RepoRouterDecisionMaterializer and dashboard route helpers.\nTesting Notes: Add route service tests with two candidate repos.\nOut of Scope: No router scoring changes.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-deployment",
+    "title": "Show deployment superseded state",
+    "taskDescription": "Summary: Show superseded deployment records in OneShot detail.\nOverview: A newer preview deployment hides why an older one stopped being active.\nAcceptance Criteria:\n- Given a superseded deployment, when viewing run detail, then status and superseding commit are shown.\nTechnical Details: Update oneshotDeployments service and deployment summary component.\nTesting Notes: Add dashboard tests for superseded records.\nOut of Scope: Do not change ECS deploy behavior.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "cpdev-template-ci",
+    "title": "Surface required check state",
+    "taskDescription": "Summary: Surface required GitHub check state on PR-open runs.\nOverview: OneShot can mark a PR complete while a required check is still pending.\nAcceptance Criteria:\n- Verify that required checks render as pending until GitHub reports success.\nTechnical Details: Update GitHub status polling and dashboard readiness evidence.\nTesting Notes: Add mocked GitHub status tests.\nOut of Scope: Do not auto-merge PRs.",
+    "expectedTier": "strong",
+    "expectedTemplateFit": "cpdev_template",
+    "expectedSignals": ["acceptance_criteria", "substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "retrofit-complete-core",
+    "title": "Retrofit CPDEV-1001 to release branch",
+    "taskDescription": "Retrofit: Move the completed fix for member search into the release branch.\nFrom: medhok-monorepo-3.16 feature branch with commit abc123.\nTarget: medhok-monorepo-3.15 release branch.\nScope: Apply the same core-app service changes without altering unrelated search defaults.\nTesting Notes: Run member search unit tests on the target branch.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "retrofit_template",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "retrofit-provider",
+    "title": "Retrofit provider search patch",
+    "taskDescription": "Retrofit: Port the provider search active-default change.\nFrom: provider-portal main commit def456.\nTarget: provider-portal release/2026.05.\nScope: Copy the ProviderSearchService and request mapper changes only.\nTesting Notes: Run ProviderSearchServiceTest and mapper tests.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "retrofit_template",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "retrofit-fhir",
+    "title": "Retrofit DTR bundle mapper",
+    "taskDescription": "Retrofit: Bring the DTR FHIR profile preservation fix to the customer release.\nFrom: interop main branch after CPDEV-2222.\nTarget: customer-release-4.2 branch.\nScope: Update FhirBundleMapper and fixture expectations.\nTesting Notes: Run DTR bundle mapper tests and validation fixtures.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "retrofit_template",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "retrofit-dashboard",
+    "title": "Retrofit retry copy",
+    "taskDescription": "Retrofit: Port the retry-disabled copy from dashboard main.\nFrom: dashboard main branch commit 456def.\nTarget: release dashboard branch.\nScope: Update DetailModal.tsx and retry text test only.\nTesting Notes: Run the dashboard retry component tests.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "retrofit_template",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "retrofit-sql",
+    "title": "Retrofit monthly report filter",
+    "taskDescription": "Retrofit: Port the monthly report date range fix.\nFrom: reporting main branch commit 789abc.\nTarget: customer reporting release branch.\nScope: Update monthly_claims.sql and ReportDateRangeService only.\nTesting Notes: Run report SQL boundary tests.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "retrofit_template",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "freeform-clear-auth",
+    "title": "Prevent inactive auth rows from default search",
+    "taskDescription": "Users keep selecting inactive authorization rows by accident. The core-app authorization search service should exclude inactive rows unless the status filter explicitly includes them. Update AuthorizationSearchService and the React grid request mapper, then add unit coverage for default and all-status searches. Do not change exports.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "non_template_clear",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "freeform-clear-provider",
+    "title": "Provider search active default",
+    "taskDescription": "Provider search is returning inactive providers when no status is selected. Please make ProviderSearchService default to active records, wire the request mapper to send the explicit status, and add service plus mapper tests. The saved search behavior should remain unchanged.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "non_template_clear",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "freeform-clear-fhir",
+    "title": "Keep FHIR profile on generated resources",
+    "taskDescription": "The DTR bundle mapper drops meta.profile on QuestionnaireResponse resources. Update FhirBundleMapper in the interop service so generated resources keep the profile values from the source bundle, and add fixture validation tests that prove the profile array is preserved.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "non_template_clear",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "freeform-clear-dashboard",
+    "title": "Explain disabled retry",
+    "taskDescription": "Operators cannot tell why the retry action is disabled on a failed OneShot run. Update the dashboard DetailModal retry section to show whether max attempts were used or the stage is not retryable, and add React tests for both states. No backend retry behavior should change.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "non_template_clear",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes", "out_of_scope_constraints"]
+  },
+  {
+    "name": "freeform-clear-queue",
+    "title": "Show stalled queue message group",
+    "taskDescription": "When OneShot planning stalls, the queue dashboard should expose the message group and retry stage so operators can match it to SQS. Update the queue service and panel component, then add server tests and a UI test for the stalled row.",
+    "expectedTier": "adequate",
+    "expectedTemplateFit": "non_template_clear",
+    "expectedSignals": ["substantive_description", "expected_behavior_scope", "repo_file_service_hints", "testing_notes"]
+  },
+  {
+    "name": "missing-description-title-only",
+    "title": "Fix search",
+    "taskDescription": "",
+    "expectedTier": "missing_description",
+    "expectedTemplateFit": "missing_description",
+    "expectedSignals": []
+  },
+  {
+    "name": "missing-description-short",
+    "title": "Update button",
+    "taskDescription": "Make it better.",
+    "expectedTier": "missing_description",
+    "expectedTemplateFit": "missing_description",
+    "expectedSignals": []
+  },
+  {
+    "name": "missing-description-placeholder",
+    "title": "Report bug",
+    "taskDescription": "TBD",
+    "expectedTier": "missing_description",
+    "expectedTemplateFit": "missing_description",
+    "expectedSignals": []
+  },
+  {
+    "name": "missing-description-duplicate-title",
+    "title": "Add validation",
+    "taskDescription": "Add validation",
+    "expectedTier": "missing_description",
+    "expectedTemplateFit": "missing_description",
+    "expectedSignals": []
+  },
+  {
+    "name": "missing-description-vague",
+    "title": "Broken screen",
+    "taskDescription": "Screen broken after deploy.",
+    "expectedTier": "missing_description",
+    "expectedTemplateFit": "missing_description",
+    "expectedSignals": []
+  },
+  {
+    "name": "weak-non-template-service",
+    "title": "Change auth filter",
+    "taskDescription": "The auth service should change default filtering for inactive rows in core-app search results without a clear test plan or acceptance criteria.",
+    "expectedTier": "weak",
+    "expectedTemplateFit": "non_template_weak",
+    "expectedSignals": ["expected_behavior_scope", "repo_file_service_hints"]
+  },
+  {
+    "name": "weak-non-template-api",
+    "title": "Fix API response",
+    "taskDescription": "The provider API should include the missing flag from ProviderSearchService for one dashboard case but gives no examples or tests.",
+    "expectedTier": "weak",
+    "expectedTemplateFit": "non_template_weak",
+    "expectedSignals": ["expected_behavior_scope", "repo_file_service_hints"]
+  },
+  {
+    "name": "weak-non-template-report",
+    "title": "Monthly report issue",
+    "taskDescription": "The report SQL should handle monthly range boundaries in reporting/monthly_claims.sql, but the expected result and validation steps are unclear.",
+    "expectedTier": "weak",
+    "expectedTemplateFit": "non_template_weak",
+    "expectedSignals": ["expected_behavior_scope", "repo_file_service_hints"]
+  },
+  {
+    "name": "weak-non-template-worker",
+    "title": "Queue retry update",
+    "taskDescription": "The worker queue should retry the stalled planning stage using the existing service path, but there are no concrete acceptance criteria.",
+    "expectedTier": "weak",
+    "expectedTemplateFit": "non_template_weak",
+    "expectedSignals": ["expected_behavior_scope", "repo_file_service_hints"]
+  },
+  {
+    "name": "weak-non-template-ui",
+    "title": "Dashboard label update",
+    "taskDescription": "The dashboard UI should update the retry label in DetailModal.tsx when a run failed, without clear examples or tests.",
+    "expectedTier": "weak",
+    "expectedTemplateFit": "non_template_weak",
+    "expectedSignals": ["expected_behavior_scope", "repo_file_service_hints"]
+  }
+]

@@ -1,0 +1,344 @@
+name: Build / Service / Spec Factory
+run-name: Spec Factory / ${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref_name }} / ${{ github.actor }}
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "src/spec-factory/**"
+      - "src/claude-sdk/**"
+      - "src/config/**"
+      - "src/orchestrator/JiraClient.ts"
+      - "src/orchestrator/database.ts"
+      - "src/utils/**"
+      - "dashboard/src/spec-factory/**"
+      - "dashboard/package.json"
+      - "dashboard/package-lock.json"
+      - "dashboard/tsconfig*.json"
+      - "dashboard/vite.config.*"
+      - "certification/**"
+      - "db/schema.sql"
+      - "db/migrations/*compose*"
+      - "db/migrations/*spec_factory*"
+      - "Dockerfile.spec-factory"
+      - "Dockerfile.compose-markitdown"
+      - "sidecar/markitdown/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "terraform/spec-factory-ecs.tf"
+      - "terraform/spec-factory-data-plane.tf"
+      - "terraform/iam.tf"
+      - "terraform/outputs.tf"
+      - "terraform/variables.tf"
+      - "terraform/shared.auto.tfvars"
+      - ".github/workflows/spec-factory-build-push.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "src/spec-factory/**"
+      - "src/claude-sdk/**"
+      - "src/config/**"
+      - "src/orchestrator/JiraClient.ts"
+      - "src/orchestrator/database.ts"
+      - "src/utils/**"
+      - "dashboard/src/spec-factory/**"
+      - "dashboard/package.json"
+      - "dashboard/package-lock.json"
+      - "dashboard/tsconfig*.json"
+      - "dashboard/vite.config.*"
+      - "certification/**"
+      - "db/schema.sql"
+      - "db/migrations/*compose*"
+      - "db/migrations/*spec_factory*"
+      - "Dockerfile.spec-factory"
+      - "Dockerfile.compose-markitdown"
+      - "sidecar/markitdown/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "terraform/spec-factory-ecs.tf"
+      - "terraform/spec-factory-data-plane.tf"
+      - "terraform/iam.tf"
+      - "terraform/outputs.tf"
+      - "terraform/variables.tf"
+      - "terraform/shared.auto.tfvars"
+      - ".github/workflows/spec-factory-build-push.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  SPEC_FACTORY_ECS_CLUSTER: specter-cluster
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECR_REPOSITORY: specter/spec-factory
+  SPEC_FACTORY_API_ECR_REPOSITORY: specter/spec-factory-api
+  SPEC_FACTORY_RESEARCH_ECR_REPOSITORY: specter/spec-factory-research
+  SPEC_FACTORY_CONVERSION_ECR_REPOSITORY: specter/spec-factory-conversion
+  COMPOSE_MARKITDOWN_ECR_REPOSITORY: specter/compose-markitdown
+  NODE_VERSION: "26"
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: spec-factory-dist
+          path: dist/
+          retention-days: 1
+
+  test:
+    name: "Test"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm --prefix dashboard ci
+
+      - name: Verify schema and migration consistency
+        run: npm run check:spec-factory-schema
+
+      - name: Run Spec Factory tests
+        run: npm run test:spec-factory
+
+      - name: Typecheck and test the dashboard
+        run: |
+          npm --prefix dashboard run typecheck
+          npm --prefix dashboard test
+          npm --prefix dashboard run build
+
+      - name: Generate the Work Order T certification manifest
+        run: |
+          node --check certification/spec-factory-load.js
+          npm run spec-factory:certification:plan -- --release-sha=${{ github.sha }} --environment=candidate
+
+      - name: Test ECS task-definition release tooling
+        run: |
+          python3 .github/scripts/test_prepare_ecs_task_definition.py
+          bash -n .github/scripts/deploy_spec_factory_ecs.sh
+
+      - name: Upload certification manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: spec-factory-certification-manifest
+          path: artifacts/spec-factory-certification/manifest.json
+          retention-days: 30
+
+  terraform-validate:
+    name: "Terraform Validate"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Check formatting
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Initialize providers
+        run: terraform -chdir=terraform init -backend=false
+
+      - name: Validate configuration
+        run: terraform -chdir=terraform validate
+
+  mysql-ddl:
+    name: "MySQL 8 Migration Path"
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: spec-factory-ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pspec-factory-ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout code with migration baseline
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Ensure MySQL client is available
+        run: command -v mysql || (sudo apt-get update && sudo apt-get install -y mysql-client)
+
+      - name: Resolve pre-change schema
+        run: |
+          migration_commit="$(git log --diff-filter=A --format=%H -- db/migrations/069_spec_factory_context_v4.sql | head -n 1)"
+          test -n "${migration_commit}"
+          base_sha="${migration_commit}^"
+          git show "${base_sha}:db/schema.sql" > /tmp/spec-factory-base-schema.sql
+
+      - name: Apply v4 migrations to the previous schema
+        env:
+          MYSQL_PWD: spec-factory-ci
+        run: |
+          mysql -h 127.0.0.1 -uroot < /tmp/spec-factory-base-schema.sql
+          for migration in \
+            db/migrations/069_spec_factory_context_v4.sql \
+            db/migrations/070_spec_factory_outbox.sql \
+            db/migrations/071_spec_factory_handoffs.sql \
+            db/migrations/072_spec_factory_draft_workflows.sql \
+            db/migrations/073_spec_factory_repair_and_bounds.sql \
+            db/migrations/074_spec_factory_source_distillation_prompt_v2.sql \
+            db/migrations/075_spec_factory_source_deletion_lifecycle.sql; do
+            mysql -h 127.0.0.1 -uroot Specter < "${migration}"
+          done
+          test "$(mysql -N -h 127.0.0.1 -uroot -e "SELECT COUNT(*) FROM information_schema.triggers WHERE trigger_schema='Specter' AND event_object_table='compose_session_sources' AND trigger_name IN ('trg_compose_source_conversion_insert_outbox','trg_compose_source_conversion_update_outbox')")" = "2"
+          test "$(mysql -N -h 127.0.0.1 -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='Specter' AND table_name='compose_source_deletions'")" = "1"
+          test "$(mysql -N -h 127.0.0.1 -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='Specter' AND table_name='compose_session_sources' AND column_name IN ('deletion_id','purged_at')")" = "2"
+
+      - name: Load the fresh-install schema
+        env:
+          MYSQL_PWD: spec-factory-ci
+        run: |
+          mysql -h 127.0.0.1 -uroot -e 'DROP DATABASE Specter'
+          mysql -h 127.0.0.1 -uroot < db/schema.sql
+          test "$(mysql -N -h 127.0.0.1 -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='Specter' AND table_name IN ('spec_factory_outbox','spec_factory_queue_receipts','compose_handoffs','compose_handoff_snapshots','spec_factory_draft_workflows','spec_factory_draft_stage_runs','spec_factory_repair_runs','spec_factory_repair_items','compose_source_revisions','compose_source_chunks','compose_source_deletions')")" = "11"
+
+  docker-build:
+    name: "Docker Build"
+    runs-on: ubuntu-latest
+    needs: [build, test, terraform-validate, mysql-ddl]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: spec-factory-dist
+          path: dist/
+
+      - name: Build role-specific Docker images
+        run: |
+          docker build --target api -f Dockerfile.spec-factory -t "${SPEC_FACTORY_API_ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target core -f Dockerfile.spec-factory -t "${ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target research -f Dockerfile.spec-factory -t "${SPEC_FACTORY_RESEARCH_ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target conversion -f Dockerfile.spec-factory -t "${SPEC_FACTORY_CONVERSION_ECR_REPOSITORY}:${{ github.sha }}" .
+
+      - name: Build compose-markitdown Docker image
+        run: |
+          docker build -f Dockerfile.compose-markitdown -t "${COMPOSE_MARKITDOWN_ECR_REPOSITORY}:${{ github.sha }}" .
+
+  push-images:
+    name: "Push and Deploy Immutable Images"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+    concurrency:
+      group: spec-factory-production-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: spec-factory-dist
+          path: dist/
+
+      - name: Build role-specific Docker images
+        run: |
+          docker build --target api -f Dockerfile.spec-factory -t "${SPEC_FACTORY_API_ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target core -f Dockerfile.spec-factory -t "${ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target research -f Dockerfile.spec-factory -t "${SPEC_FACTORY_RESEARCH_ECR_REPOSITORY}:${{ github.sha }}" .
+          docker build --target conversion -f Dockerfile.spec-factory -t "${SPEC_FACTORY_CONVERSION_ECR_REPOSITORY}:${{ github.sha }}" .
+
+      - name: Build compose-markitdown Docker image
+        run: |
+          docker build -f Dockerfile.compose-markitdown -t "${COMPOSE_MARKITDOWN_ECR_REPOSITORY}:${{ github.sha }}" .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push immutable role images to existing ECR repositories
+        run: |
+          pushed=()
+          while IFS='|' read -r local_image repository; do
+            [ -n "${repository}" ] || continue
+            if ! aws ecr describe-repositories --repository-names "${repository}" >/dev/null 2>&1; then
+              echo "Skipping ${repository}; apply Terraform to create it first."
+              continue
+            fi
+            remote="${ECR_REGISTRY}/${repository}:${{ github.sha }}"
+            docker tag "${local_image}:${{ github.sha }}" "${remote}"
+            docker push "${remote}"
+            pushed+=("${repository}")
+          done <<EOF
+          ${SPEC_FACTORY_API_ECR_REPOSITORY}|${SPEC_FACTORY_API_ECR_REPOSITORY}
+          ${ECR_REPOSITORY}|${ECR_REPOSITORY}
+          ${SPEC_FACTORY_RESEARCH_ECR_REPOSITORY}|${SPEC_FACTORY_RESEARCH_ECR_REPOSITORY}
+          ${SPEC_FACTORY_CONVERSION_ECR_REPOSITORY}|${SPEC_FACTORY_CONVERSION_ECR_REPOSITORY}
+          ${COMPOSE_MARKITDOWN_ECR_REPOSITORY}|${COMPOSE_MARKITDOWN_ECR_REPOSITORY}
+          EOF
+          printf '%s\n' "${pushed[@]}" > /tmp/spec-factory-pushed-repositories.txt
+
+      - name: Deploy immutable images to ECS
+        run: .github/scripts/deploy_spec_factory_ecs.sh "${{ github.sha }}"
+
+      - name: Summary
+        run: |
+          echo "### Spec Factory immutable images" >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r repository; do
+            [ -n "${repository}" ] || continue
+            digest="$(aws ecr describe-images --repository-name "${repository}" --image-ids imageTag=${{ github.sha }} --query 'imageDetails[0].imageDigest' --output text)"
+            echo "- \`${ECR_REGISTRY}/${repository}@${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+          done < /tmp/spec-factory-pushed-repositories.txt
+          echo "- ECS application release deployed automatically from the current task-definition configuration." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Terraform remains required for infrastructure, environment, IAM, scaling, sidecar, or volume changes." >> "$GITHUB_STEP_SUMMARY"
+          echo "- DB migrations are intentionally not run by this workflow." >> "$GITHUB_STEP_SUMMARY"

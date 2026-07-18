@@ -1,0 +1,1769 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { classifyGateResult, scoreTicket } from '../../oneshot/qualification-scorer.js'
+import {
+  QualifierWorker,
+  buildRawQualificationText,
+  classifyQualifierNoActionReason,
+  extractAcceptanceCriteriaText,
+  extractParentEpicTitle,
+  stringifyJiraFieldValue,
+  type QualifierJiraIssue,
+} from './QualifierWorker.js'
+import { resolveBranchForQualification } from '../../oneshot/branch-resolution.js'
+import { extractOneShotQualifierComment } from '../../oneshot/jira-comments.js'
+
+vi.mock('../../oneshot/branch-resolution.js', () => ({
+  resolveBranchForQualification: vi.fn(),
+}))
+
+describe('QualifierWorker Jira field helpers', () => {
+  afterEach(() => {
+    delete process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE
+    vi.restoreAllMocks()
+  })
+
+  it('extracts acceptance criteria from Jira custom fields discovered through expand=names', () => {
+    const issue: QualifierJiraIssue = {
+      key: 'CPDEV-1',
+      names: {
+        customfield_12345: 'Acceptance Criteria',
+      },
+      fields: {
+        summary: 'Add member search filter',
+        customfield_12345: {
+          type: 'doc',
+          version: 1,
+          content: [
+            {
+              type: 'paragraph',
+              content: [
+                { type: 'text', text: 'Given a member search,' },
+                { type: 'text', text: ' when a filter is selected,' },
+                { type: 'text', text: ' then the results should update.' },
+              ],
+            },
+          ],
+        },
+      },
+    }
+
+    expect(extractAcceptanceCriteriaText(issue)).toContain('Given a member search')
+  })
+
+  it('includes parent epic title in raw qualification text', () => {
+    const issue: QualifierJiraIssue = {
+      key: 'CPDEV-2',
+      fields: {
+        summary: 'Add reporting dashboard filters',
+        description: 'Implement filters for the report.',
+        parent: {
+          key: 'CPDEV-1',
+          fields: {
+            summary: '[DV] Reporting dashboard epic',
+          },
+        },
+      },
+    }
+
+    expect(extractParentEpicTitle(issue)).toBe('[DV] Reporting dashboard epic')
+    expect(buildRawQualificationText(issue)).toContain(
+      '[DV] Reporting dashboard epic',
+    )
+  })
+
+  it('stringifies Atlassian document format fields into plain text', () => {
+    const text = stringifyJiraFieldValue({
+      type: 'doc',
+      version: 1,
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Line one' },
+          ],
+        },
+        {
+          type: 'bulletList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: 'Line two' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(text).toContain('Line one')
+    expect(text).toContain('Line two')
+  })
+
+  it('builds raw qualification text from newline-separated Jira fields', () => {
+    const issue: QualifierJiraIssue = {
+      key: 'CPDEV-2',
+      names: {
+        customfield_12345: 'Acceptance Criteria',
+      },
+      fields: {
+        summary: 'Update member search',
+        description: 'Please review this in cp-medhok-monorepo.',
+        customfield_12345: 'Given member search, then update the UI.',
+        labels: ['PFOS', 'client-specific'],
+        fixVersions: [{ name: '4.2' }],
+        components: [{ name: 'UM' }],
+      },
+    }
+
+    expect(buildRawQualificationText(issue).split('\n')).toEqual([
+      'Update member search',
+      'Please review this in cp-medhok-monorepo.',
+      'Given member search, then update the UI.',
+      'PFOS',
+      'client-specific',
+      '4.2',
+      'UM',
+    ])
+  })
+
+  it('classifies already-queued qualifier tasks with missing PFOS as no-action', () => {
+    expect(classifyQualifierNoActionReason([], null)).toEqual({
+      reasonCode: 'pfos_label_missing_at_processing',
+      reason: 'No OneShot action was taken because the PFOS label was missing when QUALIFIER processed the task.',
+    })
+  })
+
+  it('classifies stale PFOS-NOT-QUALIFIED labels as no-action for fresh tickets', () => {
+    expect(classifyQualifierNoActionReason(['PFOS', 'PFOS-NOT-QUALIFIED'], null))
+      .toEqual({
+        reasonCode: 'pfos_not_qualified_label_present',
+        reason: 'No OneShot action was taken because PFOS-NOT-QUALIFIED is still present on a fresh ticket.',
+      })
+  })
+
+  it('classifies non-actionable existing run states as no-action', () => {
+    expect(classifyQualifierNoActionReason(['PFOS'], 'queued_for_planning'))
+      .toEqual({
+        reasonCode: 'existing_run_not_actionable',
+        reason: 'No OneShot action was taken because an existing OneShot run is not in an actionable state (queued_for_planning).',
+      })
+  })
+
+  it('directly qualifies strong tickets without invoking the qualifier agent', async () => {
+    process.env.ONESHOT_COMMENT_ASSET_BASE_URL = 'https://productFactory.mhkdevsandbox.com'
+    process.env.ONESHOT_DASHBOARD_BASE_URL = 'https://productFactory.mhkdevsandbox.com'
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-200',
+      fields: {
+        summary: 'Implement member search audit logging for /api/member/search requests',
+        description: [
+          'When a user searches for a member, the request should log the requester,',
+          'applied filters, and response count for compliance review.',
+          'Update MemberSearchController and MemberSearchAuditService so the audit record',
+          'is written after successful searches and skipped for validation failures.',
+          'Add automated verification that covers both the happy path and validation rejection.',
+          'Files likely involved: src/main/java/com/mhk/member/MemberSearchController.java',
+          'and src/test/java/com/mhk/member/MemberSearchControllerTest.java.',
+        ].join(' '),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+    const acceptanceCriteria = [
+      'Given a valid /api/member/search request, when the search completes, then an audit record should be stored.',
+      'Given an invalid search request, when validation fails, then no audit record should be written.',
+      'Given the controller test suite, when tests run, then both the success and validation cases must pass.',
+    ].join('\n')
+
+    const gateResult = scoreTicket({
+      summary: jiraIssue.fields.summary,
+      description: stringifyJiraFieldValue(jiraIssue.fields.description),
+      acceptanceCriteria,
+      labels: jiraIssue.fields.labels,
+      issuetype: jiraIssue.fields.issuetype?.name,
+    })
+    const gateDecision = classifyGateResult(gateResult)
+
+    expect(gateResult.score).toBeGreaterThanOrEqual(85)
+    expect(gateDecision.disposition).toBe('direct_qualify')
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'master',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+
+    const buildRepositoryContextSpy = vi.spyOn(worker, 'buildRepositoryContext')
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification: vi.fn() })
+
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 74, publishError: null })
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.isOneShotComment).toBe(true)
+    expect(extracted.body).toContain('![OneShot](https://productFactory.mhkdevsandbox.com/oneshot/oneshot-logo-jira.png)')
+    expect(extracted.body).toContain('## OneShot | Qualification Ready')
+    expect(extracted.body).toContain('### Requirements Summary')
+    expect(extracted.body).toContain('Implement member search audit logging')
+    expect(extracted.body).toContain('[Open this run in OneShot Dashboard](https://productFactory.mhkdevsandbox.com/oneshot?view=runs&run=run-74)')
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      jiraKey: jiraIssue.key,
+      qualificationProvider: 'deterministic',
+      qualificationModel: 'none',
+    }))
+    expect(createQualifiedRun.mock.calls[0]?.[0].repoSelectionMetadata).not.toHaveProperty(
+      'qualificationReason',
+    )
+    expect(buildRepositoryContextSpy).not.toHaveBeenCalled()
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+  })
+
+  it('uses shared ADF description parsing for explicit repo and target branch intent', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-250',
+      fields: {
+        summary: 'Update member merge JBPM config loader validation',
+        description: {
+          type: 'doc',
+          version: 1,
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Repo:' }],
+            },
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'cp-batch-monorepo' }],
+            },
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Target:' }],
+            },
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'batch-monorepo-3.18' }],
+            },
+            {
+              type: 'paragraph',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Update mm-member-merge/src/main/resources/jbpm.cfg.xml and MemberMergeBatchJobConfigLoader so member merge processing uses the corrected JBPM resource lookup.',
+                },
+              ],
+            },
+            {
+              type: 'paragraph',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Add automated validation in MemberMergeBatchJobConfigLoaderTest for successful config loading and missing-resource failure behavior.',
+                },
+              ],
+            },
+          ],
+        },
+        customfield_acceptance_criteria: [
+          'Given member merge batch processing, when the job starts, then the corrected JBPM config is loaded.',
+          'Given the config resource is missing, when validation runs, then the failure is clear and actionable.',
+          'Given the focused batch test suite, when tests run, then the config loading behavior is covered.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'batch-monorepo-3.18',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 3,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification: vi.fn() })
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 82, publishError: null })
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      repo,
+      branchName: 'batch-monorepo-3.18',
+      repoSelectionMetadata: expect.objectContaining({
+        repoResolution: expect.objectContaining({
+          source: 'explicit_repo',
+        }),
+      }),
+    }))
+    expect(resolveBranchForQualification).toHaveBeenCalledWith(
+      expect.anything(),
+      repo,
+      expect.anything(),
+      expect.stringContaining('Target:\nbatch-monorepo-3.18'),
+    )
+  })
+
+  it('selects retrofit repo from branch profile aliases when Repo is absent', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19884',
+      fields: {
+        summary: 'Retrofit CPDEV-18876 source change to 3.17',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: medhok-monorepo-4.1',
+          'Target: medhok-monorepo-3.17',
+          'Reapply the CPDEV-18876 source branch changes from medhok-monorepo-4.1 onto medhok-monorepo-3.17.',
+          'Scope is limited to the same files touched by CPDEV-18876 in the source branch.',
+          'Verification: compare the source and target diffs and run focused tests for the touched modules.',
+        ].join('\n'),
+        customfield_acceptance_criteria: [
+          'Given the 4.1 retrofit source change, when OneShot plans the 3.17 retrofit, then it uses medhok-monorepo-3.17 as the target branch.',
+          'Given no explicit Repo field, when qualification resolves the repo, then it selects the repo from the retrofit branch prefix.',
+          'Given the retrofit implementation is complete, when focused validation runs, then the target branch contains the missing source change.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'medhok-monorepo-3.17',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+      retrofitContext: {
+        sourceJiraKey: 'CPDEV-18876',
+        sourceBranch: 'medhok-monorepo-4.1',
+        targetBranch: 'medhok-monorepo-3.17',
+      },
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const interop = {
+      id: 6,
+      repo_name: 'interop',
+      repo_url: 'https://github.com/mhk-repos/cp-interoperability-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([core, interop]),
+    }
+    const buildRepositoryContextSpy = vi.spyOn(worker, 'buildRepositoryContext').mockResolvedValue(
+      'Repository context for retrofit branch selection.',
+    )
+    const assessQualification = vi.fn().mockResolvedValue({
+      assessment: {
+        qualified: true,
+        requirementsSummary: ['Retrofit CPDEV-18876 onto medhok-monorepo-3.17.'],
+        acceptanceCriteriaPresent: true,
+        blockingReasons: [],
+        nonBlockingWarnings: [],
+        repoInspectionPerformed: true,
+        inspectedFiles: ['retrofit evidence from medhok-monorepo-4.1'],
+        inspectionSummary: 'Repo selection used the medhok-monorepo branch prefix.',
+      },
+      metrics: { durationMs: 1 },
+    })
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification })
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 83, publishError: null })
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(buildRepositoryContextSpy).not.toHaveBeenCalled()
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+    expect(assessQualification).not.toHaveBeenCalled()
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      repo: core,
+      branchName: 'medhok-monorepo-3.17',
+      qualificationProvider: 'deterministic',
+      qualificationModel: 'none',
+      qualification: expect.objectContaining({
+        acceptanceCriteriaPresent: true,
+        nonBlockingWarnings: [],
+        repoInspectionPerformed: false,
+        inspectedFiles: [],
+        requirementsSummary: expect.arrayContaining([
+          'Retrofit CPDEV-18876 from medhok-monorepo-4.1 to medhok-monorepo-3.17',
+          'Given the 4.1 retrofit source change, when OneShot plans the 3.17 retrofit, then it uses medhok-monorepo-3.17 as the target branch.',
+        ]),
+      }),
+      repoSelectionMetadata: expect.objectContaining({
+        qualificationReason: 'retrofit_complete',
+        repoResolution: expect.objectContaining({
+          source: 'retrofit_profile',
+          diagnostics: expect.objectContaining({
+            resolutionSource: 'profile_alias',
+            profileMatch: expect.objectContaining({
+              branchRole: 'source',
+              branchToken: 'medhok-monorepo',
+              tokenKind: 'stable_prefix',
+              matchedAlias: 'medhok-monorepo',
+              aliasSource: 'profile',
+              score: 100,
+            }),
+            commitEvidenceInspectedRepoNames: [],
+            profileAmbiguityWarnings: [],
+            warnings: [],
+          }),
+        }),
+        retrofitContext: expect.objectContaining({
+          sourceJiraKey: 'CPDEV-18876',
+          sourceBranch: 'medhok-monorepo-4.1',
+          targetBranch: 'medhok-monorepo-3.17',
+        }),
+      }),
+    }))
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.body).toContain(
+      'Retrofit contract qualified deterministically. Planner will derive source commits and detect already-applied changes.',
+    )
+  })
+
+  it('deterministically qualifies a CPDEV-19884-style retrofit ticket without acceptance criteria', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19884',
+      fields: {
+        summary: 'Retrofit to 3.17',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: medhok-monorepo-4.1',
+          'Target: medhok-monorepo-3.17',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'medhok-monorepo-3.17',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+      retrofitContext: {
+        sourceJiraKey: 'CPDEV-18876',
+        sourceBranch: 'medhok-monorepo-4.1',
+        targetBranch: 'medhok-monorepo-3.17',
+      },
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const interop = {
+      id: 6,
+      repo_name: 'interop',
+      repo_url: 'https://github.com/mhk-repos/cp-interoperability-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([core, interop]),
+    }
+
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const buildRepositoryContextSpy = vi.spyOn(worker, 'buildRepositoryContext')
+    const assessQualification = vi.fn()
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification })
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 84, publishError: null })
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).not.toHaveBeenCalled()
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(buildRepositoryContextSpy).not.toHaveBeenCalled()
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+    expect(assessQualification).not.toHaveBeenCalled()
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      repo: core,
+      branchName: 'medhok-monorepo-3.17',
+      qualificationProvider: 'deterministic',
+      qualificationModel: 'none',
+      qualification: expect.objectContaining({
+        requirementsSummary: expect.arrayContaining([
+          'Retrofit CPDEV-18876 from medhok-monorepo-4.1 to medhok-monorepo-3.17',
+          'Retrofit to 3.17',
+        ]),
+        acceptanceCriteriaPresent: true,
+        nonBlockingWarnings: [],
+      }),
+      repoSelectionMetadata: expect.objectContaining({
+        qualificationReason: 'retrofit_complete',
+        retrofitContext: expect.objectContaining({
+          sourceJiraKey: 'CPDEV-18876',
+          sourceBranch: 'medhok-monorepo-4.1',
+          targetBranch: 'medhok-monorepo-3.17',
+        }),
+      }),
+    }))
+  })
+
+  it('fails malformed retrofit blocks before generic qualification', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19885',
+      fields: {
+        summary: 'Retrofit missing source and target',
+        description: 'Retrofit: CPDEV-18876',
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: null,
+      baseCommitSha: null,
+      blockingReasons: ['Malformed retrofit block: missing from, target.'],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPDEV-19885', 'PFOS-NOT-QUALIFIED')
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(result.metrics?.qualifierOutcome).toMatchObject({
+      reasonCode: 'branch_resolution_failed',
+      reason: 'Malformed retrofit block: missing from, target.',
+    })
+  })
+
+  it('fails conflicting retrofit target branch hints before generic qualification', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19886',
+      fields: {
+        summary: 'Retrofit with conflicting target branches',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: medhok-monorepo-4.1',
+          'Target: medhok-monorepo-3.17',
+          'Target Branch: medhok-monorepo-3.18',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: null,
+      baseCommitSha: null,
+      blockingReasons: [
+        'branch_conflict: Conflicting target branch hints found: medhok-monorepo-3.17, medhok-monorepo-3.18.',
+      ],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(result.metrics?.qualifierOutcome).toMatchObject({
+      reasonCode: 'branch_resolution_failed',
+      reason: expect.stringContaining('branch_conflict'),
+    })
+  })
+
+  it('does not qualify unresolved retrofit repo selections', async () => {
+    vi.mocked(resolveBranchForQualification).mockClear()
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19887',
+      fields: {
+        summary: 'Retrofit with no matching repo',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: unknown-monorepo-4.1',
+          'Target: unknown-monorepo-3.17',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([]),
+    }
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo: null,
+      disposition: 'no_match',
+      resolutionSource: 'retrofit_evidence',
+      confidence: 'high',
+      evidence: ['No profiled repository could be selected.'],
+      blockingReasons: [
+        'retrofit_repo_unresolved: Retrofit CPDEV-18876 was not found on profiled repositories for source branch unknown-monorepo-4.1 and target branch unknown-monorepo-3.17.',
+      ],
+      candidateRepoIds: [],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPDEV-19887', 'PFOS-NOT-QUALIFIED')
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(resolveBranchForQualification).not.toHaveBeenCalled()
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(result.output).toContain('retrofit_repo_unresolved')
+  })
+
+  it('does not qualify ambiguous retrofit repo selections', async () => {
+    vi.mocked(resolveBranchForQualification).mockClear()
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-19888',
+      fields: {
+        summary: 'Retrofit with ambiguous repo aliases',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: shared-monorepo-4.1',
+          'Target: shared-monorepo-3.17',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const batch = {
+      id: 3,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([core, batch]),
+    }
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo: null,
+      disposition: 'ambiguous',
+      resolutionSource: 'retrofit_profile',
+      confidence: 'high',
+      evidence: ['Retrofit repo resolution matched multiple repositories: core-app, batch-jobs.'],
+      blockingReasons: [
+        'retrofit_repo_ambiguous: Retrofit CPDEV-18876 matched multiple profiled repositories: core-app, batch-jobs. Add Repo: to disambiguate.',
+      ],
+      candidateRepoIds: [core.id, batch.id],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPDEV-19888', 'PFOS-NOT-QUALIFIED')
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(resolveBranchForQualification).not.toHaveBeenCalled()
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(result.output).toContain('retrofit_repo_ambiguous')
+  })
+
+  it('does not block qualification solely because a prior core-app planner attempt made no progress', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-20908',
+      fields: {
+        summary: 'Update MemberSearchForm cancel button style and automated validation',
+        description: [
+          'Update MemberSearchForm so the Cancel button uses the expected visual style.',
+          'The change is limited to MedicalMgmt/src/main/java/com/medhok/mm/client/member/MemberSearchForm.java.',
+          'Add or update automated validation for the member search button style behavior.',
+          'Verification: run the focused MemberSearchForm test or equivalent UI style validation.',
+          'Acceptance Criteria:',
+          '- Cancel button is visually distinct on Member Search.',
+          '- Existing member search behavior is unchanged.',
+          '- Automated validation covers the button style path.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'master',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      confidence: 'high',
+      evidence: ['Orchestrator assigned repository core-app.'],
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 80, publishError: null })
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      {
+        state: 'failed',
+        repo_id: repo.id,
+        last_error: 'planner_no_progress: OneShot planner produced output without repository-tool inspection or strong deterministic grounding',
+        final_disposition: 'failed',
+      } as any,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      jiraKey: jiraIssue.key,
+      repo,
+    }))
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.body).toContain('## OneShot | Qualification Ready')
+    expect(extracted.body).toContain('A prior OneShot planning attempt for core-app timed out or made no tool progress')
+    expect(extracted.body).not.toContain('OneShot | Qualification Not Ready')
+  })
+
+  it('keeps synthesized task text out of core-app guardrails', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-210',
+      fields: {
+        summary: 'Update MemberSearchForm cancel button style',
+        description: [
+          'Update only MemberSearchForm so the Cancel button uses the expected visual style.',
+          'The change is limited to MedicalMgmt/src/main/java/com/medhok/mm/client/member/MemberSearchForm.java.',
+          'Add automated validation for the member search button style behavior.',
+        ].join('\n'),
+        customfield_acceptance_criteria: [
+          'Given the Member Search screen, then the Cancel button has the expected visual style.',
+          'Given existing member search behavior, then it remains unchanged.',
+          'Given the focused validation, then the button style path is covered.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+    const synthesizedTaskDescription =
+      'Generated task context mentions a legacy cross-cutting concern across the application.'
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'master',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      confidence: 'high',
+      evidence: ['Explicit repository mention matched core-app.'],
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    const buildRepositoryContextSpy = vi.spyOn(worker, 'buildRepositoryContext')
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification: vi.fn() })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const createQualifiedRun = vi.fn().mockResolvedValue({ runId: 81, publishError: null })
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      synthesizedTaskDescription,
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).not.toHaveBeenCalled()
+    expect(buildRepositoryContextSpy).not.toHaveBeenCalled()
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).toHaveBeenCalledWith(expect.objectContaining({
+      jiraKey: jiraIssue.key,
+      qualificationProvider: 'deterministic',
+      qualificationModel: 'none',
+    }))
+    expect(resolveBranchForQualification).toHaveBeenCalledWith(
+      expect.anything(),
+      repo,
+      expect.anything(),
+      expect.not.stringContaining('legacy cross-cutting'),
+    )
+  })
+
+  it('creates linked child runs for distinct multi-CP qualifications', async () => {
+    process.env.ONESHOT_DASHBOARD_BASE_URL = 'https://productFactory.mhkdevsandbox.com'
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-300',
+      fields: {
+        summary: 'Implement OCR status propagation for core-app and Document-ai',
+        description: [
+          'Update core-app MemberSearchController and OcrStatusService so member search displays OCR status from Document-ai.',
+          'Update Document-ai OcrStatusController and OcrStatusService so the OCR status endpoint returns processing state.',
+          'Acceptance Criteria:',
+          '- The system should display OCR status in core-app member search.',
+          '- The system should expose OCR status from Document-ai.',
+          '- The system should preserve existing validation failures.',
+          'Verification: add unit test coverage and validate manually in the launch workflow.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'master',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const coreRepo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const documentRepo = {
+      id: 8,
+      repo_name: 'Document-ai',
+      repo_url: 'https://github.com/mhk-repos/document-ai.git',
+      default_branch: 'main',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([coreRepo, documentRepo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo: null,
+      repos: [coreRepo, documentRepo],
+      disposition: 'multi_repo',
+      resolutionSource: 'explicit_raw',
+      blockingReasons: [],
+      candidateRepoIds: [coreRepo.id, documentRepo.id],
+    })
+
+    const getQualifierAgentSpy = vi
+      .spyOn(worker, 'getQualifierAgent')
+      .mockReturnValue({ assessQualification: vi.fn() })
+
+    const createQualifiedRunGroup = vi.fn().mockResolvedValue({
+      runGroupId: 12,
+      runIds: [101, 102],
+      publishError: null,
+    })
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRunGroup } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(createQualifiedRunGroup).toHaveBeenCalledWith(expect.objectContaining({
+      jiraKey: jiraIssue.key,
+      runs: expect.arrayContaining([
+        expect.objectContaining({ repo: coreRepo, qualificationProvider: 'deterministic' }),
+        expect.objectContaining({ repo: documentRepo, qualificationProvider: 'deterministic' }),
+      ]),
+    }))
+    expect(getQualifierAgentSpy).not.toHaveBeenCalled()
+
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.isOneShotComment).toBe(true)
+    expect(extracted.body).toContain('## OneShot | Multi-Repo Qualification Ready')
+    expect(extracted.body).toContain('Repo: `core-app`')
+    expect(extracted.body).toContain('Repo: `Document-ai`')
+    expect(extracted.body).toContain('run-101')
+    expect(extracted.body).toContain('run-102')
+  })
+
+  it('runs the clarity gate before branch resolution for multi-repo tickets', async () => {
+    vi.mocked(resolveBranchForQualification).mockClear()
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-301',
+      fields: {
+        summary: 'Fix',
+        description: '',
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const interopRepo = {
+      id: 6,
+      repo_name: 'interop',
+      repo_url: 'https://github.com/mhk-repos/cp-interoperability-monorepo.git',
+      default_branch: 'main',
+    }
+    const dataVisorRepo = {
+      id: 7,
+      repo_name: 'data-visor',
+      repo_url: 'https://github.com/mhk-repos/cp-data-visor.git',
+      default_branch: 'main',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([interopRepo, dataVisorRepo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo: null,
+      repos: [interopRepo, dataVisorRepo],
+      disposition: 'multi_repo',
+      resolutionSource: 'orchestrator_assigned',
+      confidence: 'high',
+      evidence: ['Orchestrator selected repositories: interop, data-visor.'],
+      blockingReasons: [],
+      candidateRepoIds: [interopRepo.id, dataVisorRepo.id],
+    })
+    vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const createQualifiedRunGroup = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      '',
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'main' } as any,
+      { createQualifiedRunGroup } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(resolveBranchForQualification).not.toHaveBeenCalled()
+    expect(createQualifiedRunGroup).not.toHaveBeenCalled()
+    expect(result.metrics?.qualifierOutcome).toMatchObject({
+      disposition: 'not_qualified',
+      reasonCode: 'gate_hard_fail',
+      gateDisposition: 'hard_fail',
+      acceptanceCriteriaPresent: false,
+    })
+  })
+
+  it('adds PFOS-NOT-QUALIFIED and tells users how to retry when qualification fails', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPSUP-43946',
+      fields: {
+        summary: 'PFOS ticket mentions multiple repos',
+        description: 'The ticket references both core-app and Document-ai.',
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const coreRepo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const documentRepo = {
+      id: 8,
+      repo_name: 'Document-ai',
+      repo_url: 'https://github.com/mhk-repos/document-ai.git',
+      default_branch: 'main',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([coreRepo, documentRepo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo: null,
+      disposition: 'ambiguous',
+      resolutionSource: 'explicit_raw',
+      confidence: 'medium',
+      evidence: [
+        'Explicit repository mention matched core-app.',
+        'Explicit repository mention matched Document-ai.',
+      ],
+      blockingReasons: ['Multiple repositories were explicitly referenced: core-app, Document-ai.'],
+      candidateRepoIds: [1, 8],
+    })
+
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      {} as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPSUP-43946', 'PFOS-NOT-QUALIFIED')
+    expect(jiraIssue.fields.labels).toContain('PFOS-NOT-QUALIFIED')
+
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.isOneShotComment).toBe(true)
+    expect(extracted.body).toContain('PFOS-NOT-QUALIFIED')
+    expect(extracted.body).toContain('remove `PFOS-NOT-QUALIFIED`')
+    expect(extracted.body).toContain('Explicit repository mention matched core-app.')
+    expect(result.metrics?.qualifierOutcome).toMatchObject({
+      disposition: 'not_qualified',
+      reasonCode: 'repo_resolution_failed',
+      repoResolution: {
+        disposition: 'ambiguous',
+        source: 'explicit_raw',
+        candidateRepos: ['core-app', 'Document-ai'],
+      },
+    })
+  })
+
+  it('keeps taskManagement.related_code as an orchestrator-assigned repo short-circuit', async () => {
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getRepositoryById: vi.fn().mockResolvedValue(repo),
+    }
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-450',
+        fields: {
+          summary: 'Update member search',
+          description: 'No raw repo mention.',
+          labels: ['PFOS'],
+        },
+      },
+      'Update member search\nNo raw repo mention.',
+      'Generated task summary mentions client-services.',
+      [repo],
+      { related_code: '1' } as any,
+    )
+
+    expect(result.repo).toBe(repo)
+    expect(result.resolutionSource).toBe('orchestrator_assigned')
+  })
+
+  it('uses a strict description repo directive to override stale auto related_code', async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = 'select'
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const batch = {
+      id: 2,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getRepositoryById: vi.fn().mockResolvedValue(core),
+      getLatestRouterDecisionForTaskManagement: vi.fn().mockResolvedValue({
+        outcome: 'auto',
+      }),
+      getLatestResolvedRouterConfirmationForTaskManagement: vi
+        .fn()
+        .mockResolvedValue(null),
+    }
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-22308',
+        fields: {
+          summary: 'Fax Intake',
+          description:
+            'This ticket tracks only the code change in cp-batch-monorepo.',
+          labels: ['PFOS'],
+        },
+      },
+      'Fax Intake',
+      '',
+      [core, batch],
+      { id: 2329, related_code: '1' } as any,
+    )
+
+    expect(result.repo).toBe(batch)
+    expect(result.resolutionSource).toBe('description_repo_directive')
+    expect(result.diagnostics.overrodeRelatedCode).toEqual(['core-app'])
+  })
+
+  it('keeps matching description directive related_code on orchestrator_assigned path', async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = 'select'
+    const worker = new QualifierWorker('/tmp', false) as any
+    const batch = {
+      id: 2,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getRepositoryById: vi.fn().mockResolvedValue(batch),
+    }
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-22308',
+        fields: {
+          summary: 'Fax Intake',
+          description:
+            'This ticket tracks only the code change in cp-batch-monorepo.',
+          labels: ['PFOS'],
+        },
+      },
+      'Fax Intake',
+      '',
+      [batch],
+      { id: 2329, related_code: '2' } as any,
+    )
+
+    expect(result.repo).toBe(batch)
+    expect(result.resolutionSource).toBe('orchestrator_assigned')
+    expect(result.diagnostics.descriptionRepoAgreement.selectedRepo).toBe(
+      'batch-jobs',
+    )
+  })
+
+  it('blocks description directive conflicts with resolved router confirmation', async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = 'select'
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const batch = {
+      id: 2,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getRepositoryById: vi.fn().mockResolvedValue(core),
+      getLatestRouterDecisionForTaskManagement: vi.fn().mockResolvedValue({
+        outcome: 'auto',
+      }),
+      getLatestResolvedRouterConfirmationForTaskManagement: vi
+        .fn()
+        .mockResolvedValue({ id: 99, resolved_repo_id: 1 }),
+    }
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-22308',
+        fields: {
+          summary: 'Fax Intake',
+          description:
+            'This ticket tracks only the code change in cp-batch-monorepo.',
+          labels: ['PFOS'],
+        },
+      },
+      'Fax Intake',
+      '',
+      [core, batch],
+      { id: 2329, related_code: '1' } as any,
+    )
+
+    expect(result.repo).toBeNull()
+    expect(result.resolutionSource).toBe('description_repo_directive')
+    expect(result.blockingReasons.join(' ')).toContain(
+      'repo_directive_conflict',
+    )
+  })
+
+  it('fails unsupported description directives with repo_directive_unsupported', async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = 'select'
+    const worker = new QualifierWorker('/tmp', false) as any
+    const mpWeb = {
+      id: 10,
+      repo_name: 'mp-web',
+      repo_url: 'https://github.com/mhk-repos/mp-web.git',
+      default_branch: 'main',
+    }
+    worker.db = {}
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-22309',
+        fields: {
+          summary: 'Update web',
+          description: 'This ticket tracks only the code change in mp-web.',
+          labels: ['PFOS'],
+        },
+      },
+      'Update web',
+      '',
+      [mpWeb],
+      { id: 2330, related_code: '' } as any,
+    )
+
+    expect(result.repo).toBeNull()
+    expect(result.disposition).toBe('unsupported')
+    expect(result.blockingReasons.join(' ')).toContain(
+      'repo_directive_unsupported',
+    )
+  })
+
+  it('records shadow retrofit and description directive disagreement without blocking', async () => {
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const batch = {
+      id: 2,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {}
+
+    const result = await worker.resolveQualificationRepo(
+      {
+        key: 'CPDEV-19884',
+        fields: {
+          summary: 'Retrofit to 3.17',
+          description: [
+            'Retrofit: CPDEV-18876',
+            'From: medhok-monorepo-4.1',
+            'Target: medhok-monorepo-3.17',
+            'This ticket tracks only the code change in cp-batch-monorepo.',
+          ].join('\n'),
+          labels: ['PFOS'],
+        },
+      },
+      'Retrofit to 3.17',
+      '',
+      [core, batch],
+      { id: 2331, related_code: '' } as any,
+    )
+
+    expect(result.repo).toBe(core)
+    expect(result.resolutionSource).toBe('retrofit_profile')
+    expect(result.diagnostics.descriptionRepoDirective).toMatchObject({
+      mode: 'shadow',
+      wouldSelectRepo: 'batch-jobs',
+      actualSelectedRepo: 'core-app',
+      conflict: true,
+    })
+  })
+
+  it('does not run CPDEV-22308-style description directive tickets on stale master', async () => {
+    process.env.ONESHOT_DESCRIPTION_REPO_DIRECTIVE_MODE = 'select'
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: null,
+      baseCommitSha: null,
+      blockingReasons: [
+        'Branch batch-monorepo-4.2 does not exist in the batch-jobs remote.',
+      ],
+      warningReasons: [],
+    })
+    const worker = new QualifierWorker('/tmp', false) as any
+    const core = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+    const batch = {
+      id: 2,
+      repo_name: 'batch-jobs',
+      repo_url: 'https://github.com/mhk-repos/cp-batch-monorepo.git',
+      default_branch: 'master',
+    }
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([core, batch]),
+      getRepositoryById: vi.fn().mockResolvedValue(core),
+      getLatestRouterDecisionForTaskManagement: vi.fn().mockResolvedValue({
+        outcome: 'auto',
+      }),
+      getLatestResolvedRouterConfirmationForTaskManagement: vi
+        .fn()
+        .mockResolvedValue(null),
+    }
+    vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      {
+        key: 'CPDEV-22308',
+        fields: {
+          summary: 'Implement EXTID enum support for fax intake filename parsing',
+          description: [
+            'The schema change lives in cp-medhok-monorepo (Flyway) and will be tracked separately.',
+            'This ticket tracks only the code change in cp-batch-monorepo.',
+            'Update FaxFileData.java so EXTID maps into the method enum and ext_id is populated.',
+            'Create feature branches for batch-monorepo-4.1 and batch-monorepo-4.2 once that branch exists.',
+          ].join(' '),
+          customfield_acceptance_criteria: [
+            'Given fileNameData includes N:EXTID, when FaxFileData parses the filename, then ext_id is populated.',
+            'Given getMethodFromStr receives EXTID, then it returns method.EXTID.',
+            'Given batch-monorepo-4.2 is missing, then qualification should not run on master.',
+          ].join('\n'),
+          labels: ['PFOS'],
+          issuetype: { name: 'Story' },
+        },
+      },
+      'raw task text',
+      '',
+      '/tmp/workspace',
+      { id: 2329, customer_id: 25, related_code: '1' } as any,
+      2329,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(resolveBranchForQualification).toHaveBeenCalledWith(
+      expect.anything(),
+      batch,
+      expect.anything(),
+      expect.any(String),
+    )
+    expect(result.output).toContain('batch-monorepo-4.2')
+  })
+
+  it('records gate hard-fail qualifier outcome metadata', async () => {
+    vi.mocked(resolveBranchForQualification).mockClear()
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-400',
+      fields: {
+        summary: 'Fix',
+        description: '',
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    vi.mocked(resolveBranchForQualification).mockResolvedValue({
+      branchName: 'master',
+      baseCommitSha: 'abc123def456',
+      blockingReasons: [],
+      warningReasons: [],
+    })
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      {} as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.metrics?.qualifierOutcome).toMatchObject({
+      disposition: 'not_qualified',
+      reasonCode: 'gate_hard_fail',
+      qualifierMode: 'fresh',
+      gateDisposition: 'hard_fail',
+      acceptanceCriteriaPresent: false,
+    })
+    expect(resolveBranchForQualification).not.toHaveBeenCalled()
+  })
+
+  it('blocks broad core-app scope without a central hook or module boundary', async () => {
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-500',
+      fields: {
+        summary: 'Update all screens in core-app to show new member status',
+        description: [
+          'Update all screens and all workflows in the core application.',
+          'Acceptance Criteria:',
+          '- Every screen should show the new status.',
+          '- Existing workflows should continue to work.',
+          '- Add automated validation where possible.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'explicit_raw',
+      confidence: 'high',
+      evidence: ['Explicit repository mention matched core-app.'],
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPDEV-500', 'PFOS-NOT-QUALIFIED')
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    const extracted = extractOneShotQualifierComment(result.output)
+    expect(extracted.body).toContain('core-app scope is too broad')
+  })
+
+  it('keeps the core-app broad-scope blocker ahead of deterministic retrofit qualification', async () => {
+    vi.mocked(resolveBranchForQualification).mockClear()
+    const jiraIssue: QualifierJiraIssue = {
+      key: 'CPDEV-501',
+      fields: {
+        summary: 'Retrofit all core-app screens to 3.17',
+        description: [
+          'Retrofit: CPDEV-18876',
+          'From: medhok-monorepo-4.1',
+          'Target: medhok-monorepo-3.17',
+          'Update all screens and all workflows in the core application.',
+        ].join('\n'),
+        labels: ['PFOS'],
+        issuetype: { name: 'Story' },
+      },
+    }
+
+    const worker = new QualifierWorker('/tmp', false) as any
+    const repo = {
+      id: 1,
+      repo_name: 'core-app',
+      repo_url: 'https://github.com/mhk-repos/cp-medhok-monorepo.git',
+      default_branch: 'master',
+    }
+
+    worker.db = {
+      getAllRepositories: vi.fn().mockResolvedValue([repo]),
+    }
+    vi.spyOn(worker, 'resolveQualificationRepo').mockResolvedValue({
+      repo,
+      disposition: 'single_repo',
+      resolutionSource: 'retrofit_profile',
+      confidence: 'high',
+      evidence: ['Retrofit branch profile selected core-app.'],
+      blockingReasons: [],
+      candidateRepoIds: [repo.id],
+    })
+    const addJiraLabelSpy = vi.spyOn(worker, 'addJiraLabel').mockResolvedValue(undefined)
+    const gateSpy = vi.spyOn(worker, 'runDeterministicQualificationGate')
+    const createQualifiedRun = vi.fn()
+
+    const result = await worker.handleFreshQualification(
+      jiraIssue,
+      stringifyJiraFieldValue(jiraIssue.fields.description),
+      '',
+      '/tmp/workspace',
+      { id: 77, customer_id: 25 } as any,
+      77,
+      { id: 25, branch: 'master' } as any,
+      { createQualifiedRun } as any,
+      null,
+      Date.now(),
+    )
+
+    expect(result.success).toBe(true)
+    expect(addJiraLabelSpy).toHaveBeenCalledWith('CPDEV-501', 'PFOS-NOT-QUALIFIED')
+    expect(resolveBranchForQualification).not.toHaveBeenCalled()
+    expect(gateSpy).not.toHaveBeenCalled()
+    expect(createQualifiedRun).not.toHaveBeenCalled()
+    expect(result.output).toContain('core-app scope is too broad')
+  })
+})

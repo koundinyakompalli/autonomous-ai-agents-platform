@@ -1,0 +1,180 @@
+## Module Configuration — maps module keys to DB tables, lookup columns, and audit settings.
+## Add new modules here without code changes.
+
+authorizations:
+  table: authorizations
+  id_col: auth_number
+  pk: id
+  audit_fk: authorizations_id
+  update_datetime_col: update_datetime
+  display: Authorization
+  case_id_patterns:
+    - '^H\d+$'
+
+der:
+  table: der
+  id_col: der_no
+  pk: id
+  audit_fk: der_id
+  update_datetime_col: update_datetime
+  display: DER (COMPASS)
+  case_id_patterns:
+    - '^\d{10,12}$'
+
+auth_review:
+  table: auth_review
+  id_col: review_number
+  pk: id
+  revision_col: revision
+  audit_fk: authorizations_id
+  audit_fk_join: "SELECT a.id FROM authorizations a INNER JOIN auth_review ar ON a.id = ar.authorization_id WHERE ar.id = {pk}"
+  update_datetime_col: update_datetime
+  display: Auth Review (UM)
+  case_id_patterns:
+    - '^H\d+$'
+
+grievance_mgmt:
+  table: grievance_mgmt
+  id_col: grievance_no
+  pk: id
+  audit_fk: grievance_mgmt_id
+  update_datetime_col: update_datetime
+  display: Grievance
+  case_id_patterns:
+    - '^G\d+$'
+    - '^GR\d+$'
+
+appeals_mgmt:
+  table: appeals_mgmt
+  id_col: appeals_no
+  pk: id
+  audit_fk: appeals_mgmt_id
+  update_datetime_col: update_datetime
+  display: Appeals
+  case_id_patterns:
+    - '^A\d+$'
+
+ctm_mgmt:
+  table: ctm_mgmt
+  id_col: ctm_id
+  pk: id
+  audit_fk: ctm_mgmt_id
+  update_datetime_col: update_datetime
+  display: CTM
+  case_id_patterns:
+    - '^CTM\d+$'
+    - '^C\d+$'
+
+provider_appeals_mgmt:
+  table: provider_appeals_mgmt
+  id_col: appeal_no
+  pk: id
+  audit_fk: provider_appeals_mgmt_id
+  update_datetime_col: update_datetime
+  display: Provider Appeals
+  case_id_patterns:
+    - '^[DP]\d+$'
+
+quality_of_care_mgmt:
+  table: quality_of_care_mgmt
+  id_col: case_no
+  pk: id
+  audit_fk: null
+  update_datetime_col: update_datetime
+  display: QOC
+  case_id_patterns:
+    - '^Q\d+$'
+
+member_cob:
+  table: member_cob
+  id_col: null
+  pk: id
+  audit_fk: null
+  update_datetime_col: update_datetime
+  display: Member COB
+
+users:
+  table: users
+  id_col: USER_ID
+  pk: ID
+  audit_fk: null
+  update_datetime_col: last_update_date
+  display: User Termination
+
+member_assessment:
+  table: member_assessment
+  id_col: id
+  pk: ID
+  audit_fk: member_assessment_id
+  update_datetime_col: update_datetime
+  display: Member Assessment
+
+ire_mgmt:
+  table: ire_mgmt
+  id_col: ire_no
+  pk: id
+  audit_fk: ire_mgmt_id
+  update_datetime_col: update_datetime
+  display: IRE
+  case_id_patterns:
+    - '^EXRM\d+$'
+    - '^I\d+$'
+
+member_referral:
+  table: member_referral
+  id_col: referral_number
+  pk: ID
+  audit_fk: member_referral_id
+  update_datetime_col: update_datetime
+  display: Member Referral
+
+careplan:
+  table: careplan
+  id_col: referral_number
+  pk: ID
+  audit_fk: careplan_id
+  update_datetime_col: update_datetime
+  display: Careplan
+
+documents:
+  table: documents
+  id_col: file_name
+  pk: id
+  audit_fk: documents_id
+  update_datetime_col: update_datetime
+  display: Documents
+
+## Module Aliases — maps display names / keywords to module keys.
+## Used by detect_module() to resolve free-form module names.
+_aliases:
+  der: der
+  compass: der
+  drug exception: der
+  auth review: auth_review
+  authorization review: auth_review
+  authorization: authorizations
+  authorizations: authorizations
+  um: auth_review
+  grievance: grievance_mgmt
+  appeals: appeals_mgmt
+  ctm: ctm_mgmt
+  contact: ctm_mgmt
+  provider appeals: provider_appeals_mgmt
+  qoc: quality_of_care_mgmt
+  quality of care: quality_of_care_mgmt
+  cob: member_cob
+  coordination of benefits: member_cob
+  user: users
+  termination: users
+  member assessment: member_assessment
+  assessment: member_assessment
+  case management: member_assessment
+  ire: ire_mgmt
+  exrm: ire_mgmt
+  independent review: ire_mgmt
+  member referral: member_referral
+  referral: member_referral
+  careplan: careplan
+  care plan: careplan
+  document: documents
+  documents: documents

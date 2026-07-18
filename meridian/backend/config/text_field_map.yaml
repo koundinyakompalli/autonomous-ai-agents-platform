@@ -1,0 +1,46 @@
+# Natural language → field name mappings for free-text input (Jira tickets, emails).
+#
+# Key:   lowercase phrase as it appears in ticket/email text
+# Value: exact field name from data_loader_config_fields / mapping xlsx
+#
+# Used by LLMExtractor.build_text_system_prompt() to inject a "common language"
+# section into the LLM prompt so it maps ticket language to the right field names.
+# Add new entries here when tickets use different phrasing for known fields.
+
+# Grievance
+"received date":                      "Manual Received Date"
+"manual received date":               "Manual Received Date"
+"source":                             "Source"
+"source needs to be updated":         "Source"
+"regulatory":                         "Regulatory"
+"regulatory box":                     "Regulatory"
+"executive complaint":                "Executive Compliant"
+"executive compliant":                "Executive Compliant"
+"qio":                                "QIO Request"
+"qio request":                        "QIO Request"
+"previous complaints":                "Previous CTM Grievance"
+"previous grievance":                 "Previous CTM Grievance"
+"14 day extension":                   "14 Day Extension"
+"verified member id":                 "Verified Member Data"
+"verified member data":               "Verified Member Data"
+"oral notification":                  "Oral Enrollee Notification Date"
+"oral notification date":             "Oral Enrollee Notification Date"
+"date oral notification":             "Oral Enrollee Notification Date"
+
+# Appeals
+"decision date":                      "Decision Date"
+"appeal decision date":               "Decision Date"
+"acknowledgement mailed date":        "Acknowledgement Correspondence Date"
+"resolution mail date":               "Requester Resolution Mail Date"
+
+# DER
+"request type":                       "RequestReason"
+"request reason":                     "RequestReason"
+"letter template":                    "Letter template"
+"letter verbiage":                    "Letter Template Note"
+
+# Workflow actions
+"terminate workflow":                 "Terminate Workflow"
+"kill from workflow":                 "Terminate Workflow"
+"kill workflow":                      "Terminate Workflow"
+"remove from workflow":               "Terminate Workflow"

@@ -1,0 +1,301 @@
+name: specter-oneshot-local
+
+x-oneshot-env: &oneshot-env
+  NODE_ENV: development
+  AWS_REGION: ${AWS_REGION:-us-east-2}
+  AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-2}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+  AWS_ENDPOINT_URL_S3: http://moto:5000
+  AWS_ENDPOINT_URL_SQS: http://moto:5000
+  S3_FORCE_PATH_STYLE: "true"
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_USER: root
+  DB_PASSWORD: specter_local
+  DB_NAME: Specter
+  S3_BUCKET_PREFIX: specter-local
+  ONESHOT_ARTIFACT_BUCKET: specter-local-results
+  ONESHOT_ARTIFACT_PREFIX: oneshot
+  ONESHOT_PROMPT_SOURCE: local
+  ONESHOT_PROMPT_LOCAL_PATH: /app/oneshot-prompts
+  ONESHOT_REPO_ADMIN_BASE: /mnt/efs/specter-repo/repo-admin
+  REPOSITORY_PATH: /mnt/efs/specter-repo/repositories
+  ONESHOT_WORKSPACE_BASE: /mnt/efs/specter-repo/oneshot
+  ONESHOT_MAVEN_BUILDS_ENABLED: ${ONESHOT_MAVEN_BUILDS_ENABLED:-false}
+  ONESHOT_MULTI_REPO_ENABLED: ${ONESHOT_MULTI_REPO_ENABLED:-true}
+  ONESHOT_WORKSPACE_LEASE_TTL_SECONDS: ${ONESHOT_WORKSPACE_LEASE_TTL_SECONDS:-2700}
+  ONESHOT_WORKSPACE_LEASE_HEARTBEAT_SECONDS: ${ONESHOT_WORKSPACE_LEASE_HEARTBEAT_SECONDS:-30}
+  ONESHOT_REPO_CACHE_FRESHNESS_TTL_MS: ${ONESHOT_REPO_CACHE_FRESHNESS_TTL_MS:-300000}
+  ONESHOT_COMMENT_ASSET_BASE_URL: http://localhost:3001/oneshot
+  ONESHOT_DASHBOARD_BASE_URL: http://localhost:3001/oneshot
+  ONESHOT_PLANNING_QUEUE_URL: http://moto:5000/000000000000/oneshot-planning.fifo
+  ONESHOT_REVIEW_QUEUE_URL: http://moto:5000/000000000000/oneshot-review.fifo
+  ONESHOT_IMPLEMENTATION_QUEUE_URL: http://moto:5000/000000000000/oneshot-implementation.fifo
+  ONESHOT_CODE_REVIEW_QUEUE_URL: http://moto:5000/000000000000/oneshot-code-review.fifo
+  ONESHOT_TESTING_QUEUE_URL: http://moto:5000/000000000000/oneshot-testing.fifo
+  ONESHOT_MAX_REVIEW_LOOPS: ${ONESHOT_MAX_REVIEW_LOOPS:-3}
+  ONESHOT_MAX_VERIFICATION_LOOPS: ${ONESHOT_MAX_VERIFICATION_LOOPS:-3}
+  ONESHOT_MAX_STAGE_ATTEMPTS: ${ONESHOT_MAX_STAGE_ATTEMPTS:-5}
+  ONESHOT_MAX_TOTAL_TOKENS: ${ONESHOT_MAX_TOTAL_TOKENS:-50000000}
+  ONESHOT_REVIEWER_ENABLED: ${ONESHOT_REVIEWER_ENABLED:-true}
+  ONESHOT_CODE_REVIEWER_ENABLED: ${ONESHOT_CODE_REVIEWER_ENABLED:-true}
+  ONESHOT_TRACE_ENABLED: ${ONESHOT_TRACE_ENABLED:-true}
+  ONESHOT_TRACE_POST_TO_JIRA: ${ONESHOT_TRACE_POST_TO_JIRA:-false}
+  ONESHOT_IMPLEMENTATION_PLAN_POST_TO_JIRA: ${ONESHOT_IMPLEMENTATION_PLAN_POST_TO_JIRA:-true}
+  ONESHOT_VERIFY_ENABLED: ${ONESHOT_VERIFY_ENABLED:-true}
+  ONESHOT_VERIFY_MODE: ${ONESHOT_VERIFY_MODE:-balanced}
+  ONESHOT_REVIEW_STAGES_BLOCK_ON_EXHAUSTION: ${ONESHOT_REVIEW_STAGES_BLOCK_ON_EXHAUSTION:-false}
+  STATUS_HOST: 0.0.0.0
+  GITHUB_REPO_TOKEN: ${GITHUB_REPO_TOKEN:-}
+  GITHUB_WRITE_TOKEN: ${GITHUB_WRITE_TOKEN:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_REVIEWER_MODEL: ${OPENAI_REVIEWER_MODEL:-gpt-5.4}
+  OPENAI_CODE_REVIEWER_MODEL: ${OPENAI_CODE_REVIEWER_MODEL:-gpt-5.4}
+  OPENAI_MAX_TOOL_ITERATIONS: ${OPENAI_MAX_TOOL_ITERATIONS:-50}
+  ONESHOT_REVIEWER_PROVIDER: ${ONESHOT_REVIEWER_PROVIDER:-openai}
+  ONESHOT_REVIEWER_MODEL_ID: ${ONESHOT_REVIEWER_MODEL_ID:-}
+  ONESHOT_CODE_REVIEWER_PROVIDER: ${ONESHOT_CODE_REVIEWER_PROVIDER:-openai}
+  ONESHOT_CODE_REVIEWER_MODEL_ID: ${ONESHOT_CODE_REVIEWER_MODEL_ID:-}
+  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-us.anthropic.claude-sonnet-4-6}
+  BEDROCK_MODEL: ${BEDROCK_MODEL:-us.anthropic.claude-sonnet-4-6}
+  ANTHROPIC_SMALL_FAST_MODEL: ${ANTHROPIC_SMALL_FAST_MODEL:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-1}
+  CLAUDE_CODE_MAX_OUTPUT_TOKENS: ${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-50000}
+  MAX_THINKING_TOKENS: ${MAX_THINKING_TOKENS:-2048}
+  ONESHOT_PLANNER_MAX_REPO_TOOL_CALLS: ${ONESHOT_PLANNER_MAX_REPO_TOOL_CALLS:-75}
+  ONESHOT_PLANNER_MAX_TURNS: ${ONESHOT_PLANNER_MAX_TURNS:-75}
+  ONESHOT_PLANNER_SKILLS_ENABLED: ${ONESHOT_PLANNER_SKILLS_ENABLED:-true}
+  ONESHOT_PLANNER_SUBAGENTS_ENABLED: ${ONESHOT_PLANNER_SUBAGENTS_ENABLED:-true}
+  ONESHOT_PLANNER_SUBAGENT_MAX_TURNS: ${ONESHOT_PLANNER_SUBAGENT_MAX_TURNS:-16}
+  ONESHOT_PLANNER_PLUGIN_PATH: ${ONESHOT_PLANNER_PLUGIN_PATH:-}
+  ONESHOT_IMPLEMENTER_MODEL_ID: ${ONESHOT_IMPLEMENTER_MODEL_ID:-us.anthropic.claude-sonnet-5}
+  ONESHOT_IMPLEMENTER_MAX_TURNS: ${ONESHOT_IMPLEMENTER_MAX_TURNS:-500}
+  ARTIFACTORY_HOST: ${ARTIFACTORY_HOST:-}
+  MAVEN_USER: ${MAVEN_USER:-}
+  MAVEN_PASSWORD: ${MAVEN_PASSWORD:-}
+  MAVEN_CLI_OPTS: ${MAVEN_CLI_OPTS:--s .m2/settings.xml --batch-mode}
+  MAVEN_OPTS: ${MAVEN_OPTS:--Dmaven.repo.local=/tmp/oneshot/maven-repository -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Daether.connector.https.securityMode=insecure}
+  OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+
+x-oneshot-service: &oneshot-service
+  image: specter-oneshot-local:latest
+  build:
+    context: ..
+    dockerfile: Dockerfile.oneshot
+  environment:
+    <<: *oneshot-env
+  volumes:
+    - ./data/repo-admin:/mnt/efs/specter-repo/repo-admin
+    - ./data/repositories:/mnt/efs/specter-repo/repositories
+    - ./data/workspaces:/mnt/efs/specter-repo/oneshot
+  depends_on:
+    mysql:
+      condition: service_healthy
+    moto:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: specter-oneshot-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: specter_local
+      MYSQL_DATABASE: Specter
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    ports:
+      - "${ONESHOT_LOCAL_MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pspecter_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  moto:
+    image: motoserver/moto:latest
+    container_name: specter-oneshot-moto
+    environment:
+      MOTO_ACCOUNT_ID: "000000000000"
+    ports:
+      - "${ONESHOT_MOTO_PORT:-5002}:5000"
+    volumes:
+      - moto_data:/var/lib/moto
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/moto-api/"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  dashboard:
+    image: specter-dashboard-local:latest
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    container_name: specter-oneshot-dashboard
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: specter_local
+      DB_NAME: Specter
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_USERNAME: ${JIRA_USERNAME:-}
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+      DASHBOARD_OPERATOR_ID_HEADER: ${DASHBOARD_OPERATOR_ID_HEADER:-}
+      DASHBOARD_OPERATOR_NAME_HEADER: ${DASHBOARD_OPERATOR_NAME_HEADER:-}
+    ports:
+      - "${ONESHOT_DASHBOARD_PORT:-3001}:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  planner:
+    <<: *oneshot-service
+    container_name: specter-oneshot-planner
+    environment:
+      <<: *oneshot-env
+      ONESHOT_ROLE: PLANNER
+      STATUS_PORT: "8080"
+      ONESHOT_PLANNER_MODEL_ID: ${ONESHOT_PLANNER_MODEL_ID:-us.anthropic.claude-opus-4-6-v1}
+      ONESHOT_PLANNER_SCOUT_ENABLED: ${ONESHOT_PLANNER_SCOUT_ENABLED:-true}
+      ONESHOT_PLANNER_SCOUT_MODEL_ID: ${ONESHOT_PLANNER_SCOUT_MODEL_ID:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      # Always capture the raw SDK trace in local dev (prod stays "failure").
+      # Lets us diagnose near-stalls and slow-but-successful runs without retries.
+      ONESHOT_SDK_TRACE_MODE: ${ONESHOT_SDK_TRACE_MODE:-always}
+      # Log-only: include the tail of partialThinkingText in [SDK_STALLED_*]
+      # records so we can see *where* the model stopped. Local-dev only;
+      # prod default ("off") preserves the no-raw-reasoning-in-logs posture.
+      ONESHOT_SDK_STALL_THINKING_PREVIEW: ${ONESHOT_SDK_STALL_THINKING_PREVIEW:-tail}
+      # Short SQS visibility in local dev so retryable planner validation
+      # failures cycle back into the queue in ~2 min instead of 30 min.
+      # Prod default (1800) in src/oneshot/consumers/planner.ts.
+      ONESHOT_PLANNER_VISIBILITY_TIMEOUT_SECONDS: ${ONESHOT_PLANNER_VISIBILITY_TIMEOUT_SECONDS:-120}
+    ports:
+      - "${ONESHOT_PLANNER_HEALTH_PORT:-18080}:8080"
+
+  reviewer:
+    <<: *oneshot-service
+    container_name: specter-oneshot-reviewer
+    environment:
+      <<: *oneshot-env
+      ONESHOT_ROLE: REVIEWER
+      STATUS_PORT: "8080"
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_USERNAME: ${JIRA_USERNAME:-}
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+      # Short SQS visibility in local dev — see planner service for rationale.
+      ONESHOT_REVIEWER_VISIBILITY_TIMEOUT_SECONDS: ${ONESHOT_REVIEWER_VISIBILITY_TIMEOUT_SECONDS:-120}
+    ports:
+      - "${ONESHOT_REVIEWER_HEALTH_PORT:-18081}:8080"
+
+  implementer:
+    <<: *oneshot-service
+    container_name: specter-oneshot-implementer
+    environment:
+      <<: *oneshot-env
+      ONESHOT_ROLE: IMPLEMENTER
+      STATUS_PORT: "8080"
+      # Always capture the raw SDK trace in local dev — parity with planner.
+      # Prod stays on "failure" via config default.
+      ONESHOT_SDK_TRACE_MODE: ${ONESHOT_SDK_TRACE_MODE:-always}
+      # Local override for long implementer sessions. Prod default (180) lives
+      # in src/oneshot/config.ts; 500 gives headroom for debugging CPDEV-21561-
+      # scale wandering where 120 was too tight.
+      ONESHOT_IMPLEMENTER_MAX_TURNS: ${ONESHOT_IMPLEMENTER_MAX_TURNS:-500}
+      # Short SQS visibility in local dev — see planner service for rationale.
+      # Prod default (5400) in src/oneshot/consumers/implementer.ts.
+      ONESHOT_IMPLEMENTER_VISIBILITY_TIMEOUT_SECONDS: ${ONESHOT_IMPLEMENTER_VISIBILITY_TIMEOUT_SECONDS:-120}
+    ports:
+      - "${ONESHOT_IMPLEMENTER_HEALTH_PORT:-18082}:8080"
+
+  code-reviewer:
+    <<: *oneshot-service
+    container_name: specter-oneshot-code-reviewer
+    environment:
+      <<: *oneshot-env
+      ONESHOT_ROLE: CODE_REVIEWER
+      STATUS_PORT: "8080"
+      # Short SQS visibility in local dev — see planner service for rationale.
+      # Prod default (3600) in src/oneshot/consumers/code-reviewer.ts.
+      ONESHOT_CODE_REVIEWER_VISIBILITY_TIMEOUT_SECONDS: ${ONESHOT_CODE_REVIEWER_VISIBILITY_TIMEOUT_SECONDS:-120}
+    ports:
+      - "${ONESHOT_CODE_REVIEWER_HEALTH_PORT:-18083}:8080"
+
+  tester:
+    <<: *oneshot-service
+    container_name: specter-oneshot-tester
+    environment:
+      <<: *oneshot-env
+      ONESHOT_ROLE: TESTER
+      STATUS_PORT: "8080"
+    ports:
+      - "${ONESHOT_TESTER_HEALTH_PORT:-18084}:8080"
+
+  qualifier:
+    image: specter-qualifier-local:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile.worker
+    container_name: specter-oneshot-qualifier
+    environment:
+      <<: *oneshot-env
+      WORKER_TYPE: QUALIFIER
+      STATUS_PORT: "8080"
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_USERNAME: ${JIRA_USERNAME:-}
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+    volumes:
+      - ./data/repo-admin:/mnt/efs/specter-repo/repo-admin
+      - ./data/repositories:/mnt/efs/specter-repo/repositories
+      - ./data/workspaces:/mnt/efs/specter-repo/oneshot
+    ports:
+      - "${ONESHOT_QUALIFIER_HEALTH_PORT:-18086}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      moto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  orchestrator:
+    image: specter-orchestrator-local:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile.orchestrator
+    container_name: specter-oneshot-orchestrator
+    environment:
+      <<: *oneshot-env
+      STATUS_PORT: "8080"
+      JIRA_BASE_URL: ${JIRA_BASE_URL:-}
+      JIRA_USERNAME: ${JIRA_USERNAME:-}
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+      JIRA_POLLING_ENABLED: ${JIRA_POLLING_ENABLED:-false}
+      JIRA_POLLING_INTERVAL_MS: ${JIRA_POLLING_INTERVAL_MS:-60000}
+      DASHBOARD_RUN_REQUEST_INTERVAL_MS: ${DASHBOARD_RUN_REQUEST_INTERVAL_MS:-10000}
+      AUTO_REASSIGN_TICKETS: ${AUTO_REASSIGN_TICKETS:-false}
+    volumes:
+      - ./data/repo-admin:/mnt/efs/specter-repo/repo-admin
+      - ./data/repositories:/mnt/efs/specter-repo/repositories
+      - ./data/workspaces:/mnt/efs/specter-repo/oneshot
+    ports:
+      - "${ONESHOT_ORCHESTRATOR_HEALTH_PORT:-18085}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      moto:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  moto_data:

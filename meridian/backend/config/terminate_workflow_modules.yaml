@@ -1,0 +1,46 @@
+# Terminate Workflow — OPS server configuration
+#
+# When Terminate Workflow = Y, the tool:
+#   1. Looks up process_flow using the FK column below
+#   2. Emits DBA cleanup SQL using workflow_cleanup
+#   3. Emits the OPS script instruction after DBA cleanup/validation
+
+ops_path: /opt/software/medhok/KillPID
+ops_user: appuser
+ops_script: RunAppPID.sh
+
+workflow_cleanup:
+  process_flow:
+    table: process_flow
+    pid_col: pid
+    active_col: active
+    end_datetime_col: end_datetime
+  task:
+    table: jbpm4_task
+    execution_col: EXECUTION_ID_
+    name_col: NAME_
+    state_col: STATE_
+  history:
+    table: jbpm4_hist_actinst
+    execution_col: EXECUTION_
+    activity_name_col: ACTIVITY_NAME_
+    start_col: START_
+    end_col: END_
+    duration_col: DURATION_
+  bulk_stage:
+    table: stage.pid
+    pid_col: pid
+    truncate_before_insert: true
+    script: RunAppQuery.sh
+
+# process_flow FK column per module
+module_fk:
+  authorizations:        authorization_id
+  der:                   der_id
+  appeals_mgmt:          appeals_mgmt_id
+  grievance_mgmt:        grievance_mgmt_id
+  ctm_mgmt:              ctm_mgmt_id
+  provider_appeals_mgmt: provider_appeals_mgmt_id
+  quality_of_care_mgmt:  quality_of_care_mgmt_id
+  ire_mgmt:              ire_mgmt_id
+  member_referral:       member_referral_id

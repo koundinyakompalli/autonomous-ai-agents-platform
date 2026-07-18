@@ -1,0 +1,93 @@
+schema_version: 1
+profile_version: 1
+generated_at: "2026-06-15T00:00:00Z"
+source_repo_commit_sha: unknown
+generated:
+  aliases:
+    - cp-autonomous-ai-agents-platform
+    - autonomous ai agents platform
+    - specter
+    - oneshot
+    - one shot
+    - oneshot platform
+    - qualifier
+    - planner
+    - repo router
+  domains:
+    - oneshot
+    - specter
+    - qualifier
+    - planner
+    - repo-router
+    - dashboard
+    - orchestration
+    - agent-runtime
+    - multi-repo
+  packages: []
+  file_path_patterns:
+    - src/oneshot
+    - src/orchestrator/workers/QualifierWorker.ts
+    - dashboard/src/oneshot
+    - dashboard/server/services/oneshot
+    - terraform/oneshot-ecs.tf
+    - config/repo-profiles
+  symbols:
+    - QualifierWorker
+    - OneShotService
+    - RepoRouter
+    - Planner
+    - Reviewer
+    - Implementer
+  endpoints: []
+  tables:
+    - oneshot_runs
+    - task_management
+    - router_decisions
+    - router_confirmations
+# Summary:
+# cp-autonomous-ai-agents-platform owns the OneShot/Specter runtime, dashboard,
+# QUALIFIER, planner, reviewer, implementer, tester consumers, repository
+# routing, and ECS/Terraform wiring. Use this repo for tickets that change
+# OneShot orchestration, qualification, planning, review loops, execution,
+# dashboard run visibility, repo-router behavior, or OneShot infrastructure.
+curated:
+  aliases:
+    - specter dashboard
+    - oneshot runtime
+    - oneshot qualifier
+    - oneshot planner
+    - repo router
+  domains:
+    - oneshot-runtime
+    - qualification
+    - planning
+    - code-review
+    - testing
+    - ecs-workers
+  packages: []
+  file_path_patterns:
+    - src/oneshot/consumers
+    - src/oneshot/providers
+    - src/oneshot/repo-router
+    - src/oneshot/schema
+    - dashboard/server/services/oneshot.ts
+    - dashboard/server/routes/oneshot.ts
+    - dashboard/src/oneshot
+    - terraform/oneshot-ecs.tf
+    - .github/workflows/agent-worker-build-push.yml
+  symbols:
+    - QualifierWorker
+    - OneShotService
+    - RepoRouter
+    - Planner
+    - Reviewer
+    - Implementer
+    - Tester
+  endpoints:
+    - /api/oneshot
+  tables:
+    - oneshot_runs
+    - oneshot_stage_attempts
+    - task_management
+    - router_decisions
+    - router_confirmations

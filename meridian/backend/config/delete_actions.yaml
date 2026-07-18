@@ -1,0 +1,29 @@
+# Delete Actions Configuration
+#
+# Defines child-table row deletion patterns for the BECU tool.
+# When a spreadsheet row has a field matching ui_name AND new_value matches
+# any trigger_value (case-insensitive), the tool emits a DELETE on the
+# child_table row instead of an UPDATE.
+#
+# Fields:
+#   ui_name          — the field name as it appears in the spreadsheet
+#   parent_module    — the module key (must match MODULE_CONFIG)
+#   child_table      — the child table containing the row to delete
+#   child_fk_col     — FK column in child_table linking it to the parent record
+#   child_match_col  — column in child_table whose value appears as old_value in spreadsheet
+#   audit_fk         — FK column name to use in audit_log INSERT
+#   trigger_values   — new_value strings (lowercased) that mean "delete this row"
+
+- ui_name: "Appeal Review Number"
+  parent_module: appeals_mgmt
+  child_table: appeals_review
+  child_fk_col: appeals_mgmt_id
+  child_match_col: appeal_review_number
+  audit_fk: appeals_mgmt_id
+  trigger_values:
+    - "blank"
+    - "blank remove the entire line"
+    - "remove"
+    - "delete"
+    - "null"
+    - ""

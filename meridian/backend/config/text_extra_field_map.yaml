@@ -1,0 +1,28 @@
+# Module-scoped natural language -> field name mappings for ticket-level
+# instructions that apply to every case in a companion spreadsheet.
+#
+# The spreadsheet remains the case-list source. These labels only supply the
+# uniform target fields requested in Jira text. Values are still validated
+# through FieldMapper for the detected/effective module before SQL generation.
+
+default:
+  "terminate workflow": "Terminate Workflow"
+  "kill from workflow": "Terminate Workflow"
+  "killed from workflow": "Terminate Workflow"
+  "kill workflow": "Terminate Workflow"
+  "killed workflow": "Terminate Workflow"
+  "remove from workflow": "Terminate Workflow"
+  "removed from workflow": "Terminate Workflow"
+
+provider_appeals_mgmt:
+  "category": "Category"
+  "subcategory": "Sub Category"
+  "sub category": "Sub Category"
+  "status": "Status"
+  "status reason": "Status Reason"
+  "closed date": "Case Closure Date"
+  "close date": "Case Closure Date"
+  "case closure date": "Case Closure Date"
+  "case notes": "Dispute Request Reason"
+  "case note": "Dispute Request Reason"
+  "notes": "Dispute Request Reason"

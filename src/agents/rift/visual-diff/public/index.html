@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIFT Visual Diff</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/css/diff2html.min.css">
+</head>
+<body>
+    <div id="topSection" class="top-section">
+        <header>
+            <div class="logo">RIFT <span class="subtitle">Visual Diff</span></div>
+            <div class="tagline">Regression Investigation &amp; Fix Tracker</div>
+        </header>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Repository</label>
+                    <select id="repoSelect">
+                        <option value="">Select repository...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Old Branch (working)</label>
+                    <select id="oldBranchSelect" disabled>
+                        <option value="">Select old branch...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>New Branch (broken)</label>
+                    <select id="newBranchSelect" disabled>
+                        <option value="">Select new branch...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="mode-group">
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="missed_retrofits">
+                        <span class="radio-badge retrofit">Missed Retrofits</span>
+                        <span class="radio-desc">In old, not in new</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="enhancements">
+                        <span class="radio-badge enhancement">Enhancements</span>
+                        <span class="radio-desc">In new, not in old</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="all" checked>
+                        <span class="radio-badge all">All Changes</span>
+                        <span class="radio-desc">Both directions</span>
+                    </label>
+                </div>
+                <div class="compare-type-group">
+                    <label class="compare-type-label">Compare by</label>
+                    <label class="radio-label">
+                        <input type="radio" name="compareType" value="content" checked>
+                        <span class="radio-badge content">Content</span>
+                        <span class="radio-desc">Actual code differences</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="compareType" value="commit">
+                        <span class="radio-badge commit">Commits</span>
+                        <span class="radio-desc">Unique commit IDs</span>
+                    </label>
+                </div>
+                <button id="compareBtn" disabled>Compare</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span>Analyzing branches...</span>
+        </div>
+
+        <div id="summary" class="summary hidden"></div>
+    </div>
+
+    <div id="topToggleBar" class="top-toggle-bar hidden">
+        <button id="topToggleBtn" class="top-toggle-btn">
+            <span id="topToggleIcon" class="top-toggle-icon">&#x25B2;</span>
+            <span id="topToggleLabel">Hide controls</span>
+        </button>
+        <div id="topMiniSummary" class="top-mini-summary"></div>
+    </div>
+
+    <div id="mainContent" class="main-content hidden">
+
+        <!-- Left: File list -->
+        <div id="filePanel" class="panel panel-left">
+            <div class="panel-header">
+                <span id="fileCount">0 files</span>
+                <input type="text" id="fileFilter" placeholder="Filter files..." class="file-filter">
+                <button class="panel-toggle" data-target="filePanel" title="Collapse">&lsaquo;</button>
+            </div>
+            <div id="fileList" class="file-list"></div>
+        </div>
+        <button id="expandLeft" class="expand-rail expand-left hidden" title="Show files">&rsaquo;</button>
+
+        <!-- Center: Diff -->
+        <div class="center-panel">
+            <div id="diffHeader" class="diff-header hidden">
+                <div id="diffFilePath" class="diff-file-path"></div>
+                <div id="diffMeta" class="diff-meta"></div>
+            </div>
+            <div id="branchLabels" class="branch-labels hidden">
+                <div class="branch-label old-label" id="oldBranchLabel"></div>
+                <div class="branch-label new-label" id="newBranchLabel"></div>
+            </div>
+            <div id="diffContent" class="diff-content">
+                <div class="empty-state">Select a file to view its diff</div>
+            </div>
+        </div>
+
+        <!-- Right: Commits panel -->
+        <button id="expandRight" class="expand-rail expand-right hidden" title="Show commits">&lsaquo;</button>
+        <div id="commitPanel" class="panel panel-right hidden">
+            <div class="panel-header">
+                <button class="panel-toggle" data-target="commitPanel" title="Collapse">&rsaquo;</button>
+                <div class="tab-bar">
+                    <button class="tab active" data-tab="retrofits">
+                        Missed Retrofits <span id="tabRetrofitCount" class="tab-count">0</span>
+                    </button>
+                    <button class="tab" data-tab="enhancements">
+                        Enhancements <span id="tabEnhCount" class="tab-count">0</span>
+                    </button>
+                </div>
+            </div>
+            <div id="tabRetrofits" class="commit-tab-content active">
+                <div class="empty-tab">Select a file first</div>
+            </div>
+            <div id="tabEnhancements" class="commit-tab-content">
+                <div class="empty-tab">Select a file first</div>
+            </div>
+            <button id="clearCommitBtn" class="clear-commit-btn hidden">Show full diff</button>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/js/diff2html.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/js/diff2html-ui.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

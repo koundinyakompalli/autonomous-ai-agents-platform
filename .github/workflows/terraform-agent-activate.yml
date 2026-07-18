@@ -1,0 +1,309 @@
+name: Ops / Terraform / Agent Activate
+run-name: Activate / ${{ inputs.agent_key }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_key:
+        description: Agent key used in Terraform and ECR (lowercase or kebab-case)
+        type: string
+        required: true
+      agent_name:
+        description: Agent name stored in the Specter agents table
+        type: string
+        required: true
+      desired_count:
+        description: Desired ECS task count for the activated worker
+        type: string
+        required: true
+        default: "1"
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: specter-worker-catalog
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  TERRAFORM_VERSION: "1.6.6"
+  CATALOG_FILE: terraform/additional-worker-agents.auto.tfvars.json
+  PLAN_ARTIFACT: terraform-agent-activate-plan
+  CATALOG_ARTIFACT: terraform-agent-activate-catalog
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  prepare-catalog:
+    name: Prepare Catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Update tracked worker catalog
+        run: |
+          python3 .github/scripts/manage-worker-agent-catalog.py \
+            --file "${CATALOG_FILE}" \
+            set-desired-count \
+            --agent-key "${{ inputs.agent_key }}" \
+            --desired-count "${{ inputs.desired_count }}"
+
+      - name: Upload catalog artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: ${{ env.CATALOG_FILE }}
+          retention-days: 1
+
+  terraform-plan:
+    name: Terraform Plan
+    needs: prepare-catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Restore catalog artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: terraform
+
+      - name: Build worker Terraform target list
+        run: |
+          cat <<'EOF' > /tmp/worker-targets.txt
+          aws_cloudwatch_log_group.workers["${{ inputs.agent_key }}"]
+          aws_cloudwatch_log_metric_filter.sdk_stall["${{ inputs.agent_key }}-worker"]
+          aws_cloudwatch_metric_alarm.sdk_stall["${{ inputs.agent_key }}-worker"]
+          aws_ecr_repository.workers["${{ inputs.agent_key }}"]
+          aws_ecr_lifecycle_policy.workers["${{ inputs.agent_key }}"]
+          aws_ecs_task_definition.workers["${{ inputs.agent_key }}"]
+          aws_ecs_service.workers["${{ inputs.agent_key }}"]
+          EOF
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate runtime worker source exists
+        run: |
+          python3 .github/scripts/resolve-worker-entry.py \
+            --worker-type "${{ inputs.agent_name }}"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Verify worker image exists in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name "specter/${{ inputs.agent_key }}-worker" \
+            --max-items 1 >/dev/null
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform plan
+        working-directory: terraform
+        run: |
+          mapfile -t TF_TARGETS < /tmp/worker-targets.txt
+          TARGET_ARGS=()
+          for target in "${TF_TARGETS[@]}"; do
+            TARGET_ARGS+=("-target=${target}")
+          done
+
+          terraform plan \
+            -input=false \
+            -compact-warnings \
+            -out=tfplan \
+            -no-color \
+            "${TARGET_ARGS[@]}"
+
+      - name: Validate activation plan scope
+        run: |
+          terraform -chdir=terraform show -json tfplan > terraform/tfplan.json
+          python3 .github/scripts/validate-worker-activation-plan.py \
+            --plan-json terraform/tfplan.json \
+            --agent-key "${{ inputs.agent_key }}"
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform/tfplan
+          retention-days: 1
+
+      - name: Upload catalog artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: ${{ env.CATALOG_FILE }}
+          retention-days: 1
+
+      - name: Plan summary
+        run: |
+          echo "### Agent activation plan complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Desired count: \`${{ inputs.desired_count }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scope: \`targeted worker-only activation\`" >> "$GITHUB_STEP_SUMMARY"
+
+  approve-apply:
+    name: Approval Gate
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment: specter-terraform-apply
+
+    steps:
+      - run: echo "Admin approval recorded for activating ${{ inputs.agent_key }}"
+
+  terraform-apply-and-activate:
+    name: Apply And Activate
+    needs:
+      - terraform-plan
+      - approve-apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Restore catalog artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.CATALOG_ARTIFACT }}
+          path: terraform
+
+      - name: Restore plan artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform apply approved plan
+        working-directory: terraform
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Mark agent active in DB
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg name "${{ inputs.agent_name }}" \
+            '{operation: "set_agent_active", name: $name, is_active: true}' > /tmp/agent-registry-activate.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/agent-registry-activate.json \
+            /tmp/agent-registry-activate-response.json >/tmp/agent-registry-activate-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/agent-registry-activate-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during agent activation:"
+            cat /tmp/agent-registry-activate-response.json
+            exit 1
+          fi
+
+      - name: Verify agent activation
+        working-directory: terraform
+        run: |
+          terraform output -raw agent_registry_lambda_name > /tmp/agent-registry-lambda-name.txt
+          jq -n \
+            --arg name "${{ inputs.agent_name }}" \
+            '{operation: "get_agent", name: $name}' > /tmp/agent-registry-get.json
+
+          aws lambda invoke \
+            --region "${AWS_REGION}" \
+            --function-name "$(cat /tmp/agent-registry-lambda-name.txt)" \
+            --cli-binary-format raw-in-base64-out \
+            --payload file:///tmp/agent-registry-get.json \
+            /tmp/agent-registry-get-response.json >/tmp/agent-registry-get-meta.json
+
+          if jq -e '.FunctionError != null' /tmp/agent-registry-get-meta.json >/dev/null 2>&1; then
+            echo "Lambda function error during activation verification:"
+            cat /tmp/agent-registry-get-response.json
+            exit 1
+          fi
+
+          jq -e '.agent != null' /tmp/agent-registry-get-response.json >/dev/null
+          jq -e --arg name "${{ inputs.agent_name }}" '.agent.name == $name' /tmp/agent-registry-get-response.json >/dev/null
+          jq -e '.agent.is_active == true' /tmp/agent-registry-get-response.json >/dev/null
+
+      - name: Open catalog persistence PR
+        id: create_catalog_pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: automation/worker-catalog/activate-${{ inputs.agent_key }}-${{ github.run_id }}
+          commit-message: "infra: activate agent ${{ inputs.agent_key }}"
+          title: "infra: persist worker catalog activation for ${{ inputs.agent_key }}"
+          body: |
+            ## Summary
+            - persist the approved desired count for `${{ inputs.agent_key }}`
+            - record the successful activation workflow result in git
+            - keep `terraform/additional-worker-agents.auto.tfvars.json` aligned with the live ECS service
+
+            ## Merge guidance
+            - merge this PR after the activation workflow completes successfully
+            - the activation workflow already applied the approved Terraform plan and marked the agent active in MySQL
+          base: main
+          delete-branch: true
+          add-paths: |
+            terraform/additional-worker-agents.auto.tfvars.json
+
+      - name: Final summary
+        run: |
+          echo "### Agent activation complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent name: \`${{ inputs.agent_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Desired count: \`${{ inputs.desired_count }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- DB active flag: \`true\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Catalog PR: \`${{ steps.create_catalog_pr.outputs.pull-request-url || 'no change' }}\`" >> "$GITHUB_STEP_SUMMARY"

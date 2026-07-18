@@ -1,0 +1,41 @@
+# Wide-format spreadsheet field name normalization
+#
+# Maps the display labels used in wide-format BECU spreadsheet headers
+# to the exact field names used in data_loader_config_fields / mapping files.
+#
+# Key:   lowercase version of what appears in the spreadsheet header
+#        (e.g. "Letter Template(Old value)" → key = "letter template")
+# Value: exact field name to pass to the field mapper
+#
+# Add new entries here when new wide-format spreadsheet column types appear.
+
+# DER RD (Redetermination) fields
+"request reason on rd case":    "RequestReason"
+"request reason":               "RequestReason"
+"classification on cd case":    "Classification"
+"classification on rd case":    "Classification"
+"original case no":             "Original case number"
+"original request reason":      "Original Request Reason"
+"decision on original case":    "Decision on Original Case"
+"original status reason":       "Original Status Reason"
+"original decision date":       "Original Decision date"
+"drug name(original)":          "Drug Name(Original)"
+"timely request":               "Timely Request"
+"valid request":                "Valid Request"
+"pharmacist decision":          "Pharmacist Decision"
+"md decision":                  "MD Decision"
+
+# Letter templates
+"letter template":              "Letter template"
+"letter template verbiage":     "Letter Template Note"
+"external template 2":          "External template 2"
+"external template 2 verbiage": "External Template 2 Note"
+"external template":            "External Template"
+"external template verbiage":   "External Template Note"
+
+# ExRM / IRE fields
+"ire_mgmt:original case number": "Original Case No"
+
+# Authorization fields
+"authorizations:status":        "Event Status"
+"authorizations:status reason": "Status Reason"

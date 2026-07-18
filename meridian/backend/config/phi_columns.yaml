@@ -1,0 +1,274 @@
+# PHI columns configuration
+# Derived from the production masking script.
+#
+# Rules:
+#   - get_current_value() masks these to '<PHI>' — never appears in SQL output
+#   - generate.py blocks SET clauses targeting these columns
+#
+# To add a new PHI field: add its column_name under the relevant table.
+# Column names are matched case-insensitively.
+#
+# Format:
+#   table_name:
+#     - column_name
+
+member:
+  - first_name
+  - last_name
+  - middle_name
+  - date_of_birth
+  - date_of_death
+  - ssn
+  - unmasked_ssn
+  - duplicate_ssn
+  - medicare_no
+  - medicaid_no
+  - historical_hicn
+  - subscriber_id
+  - ext_id
+  - st_subscriber_id
+
+member_eligibility:
+  - medicareno
+  - medicaid
+  - ssn
+  - subscriber_id
+
+member_address:
+  - first_name
+  - last_name
+  - address_1
+  - address_2
+  - city
+  - zip
+  - email
+  - phone
+  - fax
+  - longitude
+  - latitude
+
+patientcontactdetail:
+  - CONTACTNUMBEREMAIL
+  - CONTACTLASTNAME
+  - CONTACTFIRSTNAME
+
+provider:
+  - FIRST
+  - LAST
+  - npi
+  - prov_id
+  - fedaral_tax_id
+  - federal_tax_id
+
+provider_address:
+  - address_1
+  - address_2
+  - city
+  - zip
+  - fax
+
+# Case tables — provider/requester contact details on case records
+der:
+  - provider_firstname
+  - provider_lastname
+  - provider_address_1
+  - provider_address_2
+  - provider_address_3
+  - provider_fax
+  - provider_phone
+  - provider_npi
+  - provider_tax
+  - provider_zip
+  - provider_orgname
+  - pharmacy_address_1
+  - pharmacy_address_2
+  - pharmacy_zip
+  - pharmacy_phone
+  - pharmacy_faxback
+  - pharmacy_npi
+  - aor_first_name
+  - aor_last_name
+  - aor_address1
+  - aor_address2
+  - aor_phone
+  - aor_zip
+  - additional_first_name
+  - additional_last_name
+  - additional_contact_information
+  - additional_fax_number
+  - member_contact_phone
+
+grievance_mgmt:
+  - requester_firstname
+  - requester_lastname
+  - requester_address_1
+  - requester_address_2
+  - requester_zip
+  - requester_phone_1
+  - requester_phone_2
+  - requester_tax
+  - qio_first_name
+  - qio_last_name
+  - qio_npi
+  - qio_tax
+  - qio_address1
+  - qio_address2
+  - qio_zip_code
+  - qio_phone
+  - qio_fax
+  - agency_address1
+  - agency_address2
+  - agency_zip_code
+  - agency_phone
+  - agency_fax
+
+appeals_mgmt:
+  - requester_firstname
+  - requester_lastname
+  - requester_address_1
+  - requester_address_2
+  - requester_zip
+  - requester_Phone_1
+  - requester_phone_2
+  - requester_tax
+  - provider_first_name
+  - provider_last_name
+  - fax_number
+  - vendor_tax_id
+  - dispute_requester_first_name
+  - dispute_requester_last_name
+  - dispute_requester_address1
+  - dispute_requester_address2
+  - dispute_requester_zip
+  - dispute_requester_phone
+  - dispute_requester_fax
+  - dispute_requester_tax_id
+  - requesting_first_name
+  - requesting_last_name
+  - requesting_npi
+  - requesting_address1
+  - requesting_address2
+  - requesting_zip_code
+  - requesting_phone
+  - requesting_fax
+  - requesting_tax
+  - qio_first_name
+  - qio_last_name
+  - qio_npi
+  - qio_tax
+  - qio_address1
+  - qio_address2
+  - qio_zip_code
+  - qio_phone
+  - qio_fax
+  - agency_address1
+  - agency_address2
+  - agency_zip
+  - agency_phone
+  - agency_fax
+  - agency_contact_phone
+  - agency_contact_fax
+
+authorizations:
+  - name
+  - address1
+  - address2
+  - zip
+  - fax
+  - phone
+  - npi
+  - requester_firstname
+  - requester_lastname
+  - requester_address_1
+  - requester_address_2
+  - requester_zip
+  - requester_phone_1
+  - requester_fax_nbr
+  - requesting_provider_first_name
+  - requesting_provider_last_name
+  - requesting_provider_npi
+  - requesting_provider_tax_id
+  - requesting_provider_address1
+  - requesting_provider_address2
+  - requesting_provider_zip
+  - requesting_provider_phone
+  - requesting_provider_fax
+  - servicing_provider_firstName
+  - servicing_provider_lastName
+  - servicing_provider_npi
+  - servicing_provider_tax_id
+  - servicing_provider_address1
+  - servicing_provider_address2
+  - servicing_provider_zip
+  - servicing_provider_phone
+  - servicing_provider_fax
+  - facility_name
+  - facility_address1
+  - facility_address2
+  - facility_zip
+  - facility_npi
+  - facility_fax
+  - facility_phone
+  - facility_provider_tax_id
+
+auth_review:
+  - agency_address1
+  - agency_address2
+  - agency_zip
+  - agency_fax
+  - agency_phone
+  - dropoff_address1
+  - dropoff_address2
+  - dropoff_zip
+  - dropoff_phone
+  - dropoff_name
+  - pickup_address1
+  - pickup_address2
+  - pickup_zip
+  - pickup_phone
+  - pickup_name
+  - return_dropoff_address1
+  - return_dropoff_address2
+  - return_dropoff_zip
+  - return_dropoff_phone
+  - return_dropoff_name
+  - return_pickup_address1
+  - return_pickup_address2
+  - return_pickup_zip
+  - return_pickup_phone
+  - return_pickup_name
+  - member_note
+
+ctm_mgmt:
+  - caller_name
+  - caller_last_name
+  - agent_first_name
+  - agent_last_name
+  - name
+  - phone
+  - alt_phone
+  - alt_phone_ext
+  - contact_phone
+  - member_address
+  - provider_address
+  - provider_address1
+  - provider_address2
+  - provider_fax
+  - provider_npi
+  - provider_first_name
+  - provider_last_name
+  - provider_org_name
+  - provider_zipcode
+  - requester_firstname
+  - requester_lastname
+  - requester_address_1
+  - requester_address_2
+  - requester_zip
+  - requester_Phone_1
+  - requester_phone_2
+
+outbound_call:
+  - contact_first_name
+  - contact_last_name
+  - contact_number
+  - contact_details

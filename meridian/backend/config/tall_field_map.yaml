@@ -1,0 +1,39 @@
+# Tall-format spreadsheet field name normalization
+#
+# Maps the field name labels typed in tall-format spreadsheets (Case#, Field Name,
+# Old Value, New Value) to the exact field names used in data_loader_config_fields.
+#
+# Key:   lowercase + stripped version of what appears in the "Field Name" column
+# Value: exact field name to pass to the field mapper
+#
+# Normalization is applied after stripping leading/trailing whitespace and newlines.
+# Add new entries here when new field name variations appear in spreadsheets.
+
+# Appeals
+"appeals decision date":                     "Decision Date"
+"appeal decision date":                      "Decision Date"
+"appeals decision maker":                    "Appeals Decision Maker"
+"requestor resolution mail date":            "Requester Resolution Mail Date"
+"requestor oral notification (date)":        "Enrollee Oral Notification Date"
+"requestor oral notification":               "Enrollee Oral Notification Date"
+"provider written resolution date":          "Provider Written Resolution Date"
+"provider oral notification (date)":         "Provider Oral Notification Date"
+"provider oral notification":                "Provider Oral Notification Date"
+"effectuation date":                         "Resolution Correspondence Date"
+"manual receive date":                       "Manual Received Date"
+"acknowledgement mailed date":               "Acknowledgement Correspondence Date"
+"appeals review tab ) appeal review number": "Appeal Review Number"
+"clinical appeal":                           "Clinical Appeal"
+"category":                                  "Appeals Category"
+"sub category":                              "Appeals Sub Category"
+"decision maker":                            "Appeals Decision Maker"
+
+# Grievance
+"outbound contact tab- contact outreach":    "Contact Outreach"
+"eligibility (blue banner)":                 "Member Eligibility"
+
+# Auth Review / Authorizations
+"request type":                              "Auth Request Type"
+
+# DER
+"additional info requested":                 "Additional Info Request"

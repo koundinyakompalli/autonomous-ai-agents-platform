@@ -1,0 +1,250 @@
+name: Ops / Terraform / Plan Or Apply
+run-name: "Terraform / ${{ inputs.mode }}${{ inputs.targets && ' (targeted)' || '' }} / ${{ github.actor }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Stop after plan review or continue to approved apply
+        type: choice
+        required: true
+        default: plan-only
+        options:
+          - plan-only
+          - apply-approved-plan
+      reason:
+        description: Short reason for the Terraform sync request
+        type: string
+        required: true
+      targets:
+        description: "Optional comma-separated Terraform resource addresses to target (e.g. aws_ecs_task_definition.oneshot,aws_ecs_service.oneshot). Leave blank for full plan."
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: specter-worker-catalog
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  TERRAFORM_VERSION: "1.6.6"
+  PLAN_ARTIFACT: terraform-sync-up-plan
+  PLAN_TEXT_ARTIFACT: terraform-sync-up-plan-text
+  TF_IN_AUTOMATION: "true"
+  TF_VAR_oneshot_maven_artifactory_host: ${{ vars.ARTIFACTORY_HOST }}
+  TF_VAR_oneshot_maven_user: ${{ vars.MAVEN_USER }}
+  TF_VAR_oneshot_maven_user_secret_name: ""
+  TF_VAR_oneshot_maven_user_secret_json_key: ""
+  TF_VAR_oneshot_maven_password_secret_name: specter/prod/oneshot-maven-password
+  TF_VAR_oneshot_maven_password_secret_json_key: ""
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Validate OneShot Maven Terraform inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TF_VAR_oneshot_maven_artifactory_host//[[:space:]]/}" ]; then
+            echo "::error::Missing GitHub variable ARTIFACTORY_HOST. Terraform now passes it to OneShot Maven-capable ECS tasks."
+            exit 1
+          fi
+
+          case "${TF_VAR_oneshot_maven_artifactory_host}" in
+            http://*|https://*|*/*)
+              echo "::error::GitHub variable ARTIFACTORY_HOST must be host-only, for example dev.medhokapps.com, without scheme or path."
+              exit 1
+              ;;
+          esac
+
+          if [ -z "${TF_VAR_oneshot_maven_user//[[:space:]]/}" ]; then
+            echo "::error::Missing GitHub variable MAVEN_USER. Terraform now passes it to OneShot Maven-capable ECS tasks."
+            exit 1
+          fi
+
+          if [ -z "${TF_VAR_oneshot_maven_password_secret_name//[[:space:]]/}" ]; then
+            echo "::error::Missing OneShot Maven password Secrets Manager name."
+            exit 1
+          fi
+
+          if ! aws secretsmanager describe-secret --secret-id "${TF_VAR_oneshot_maven_password_secret_name}" >/dev/null 2>&1; then
+            echo "::error::Missing AWS Secrets Manager secret ${TF_VAR_oneshot_maven_password_secret_name}. Create it as a raw-string Maven password before running Terraform."
+            exit 1
+          fi
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform plan
+        id: plan
+        working-directory: terraform
+        env:
+          TF_TARGETS: ${{ inputs.targets }}
+        shell: bash
+        run: |
+          TARGET_ARGS=()
+          if [ -n "${TF_TARGETS//[[:space:]]/}" ]; then
+            IFS=',' read -ra ADDRS <<< "${TF_TARGETS}"
+            for addr in "${ADDRS[@]}"; do
+              trimmed="${addr#"${addr%%[![:space:]]*}"}"
+              trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+              [ -n "$trimmed" ] && TARGET_ARGS+=("-target=${trimmed}")
+            done
+          fi
+
+          if [ "${#TARGET_ARGS[@]}" -gt 0 ]; then
+            printf 'Using Terraform targets:\n'
+            printf '  %s\n' "${TARGET_ARGS[@]}"
+          fi
+
+          set +e
+          terraform plan -input=false -compact-warnings -detailed-exitcode -out=tfplan -no-color "${TARGET_ARGS[@]}"
+          exit_code=$?
+          set -e
+
+          if [ "${exit_code}" -eq 1 ]; then
+            exit 1
+          fi
+
+          if [ "${exit_code}" -eq 0 ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            printf 'No changes. Terraform state already matches the current repo configuration.\n' > tfplan.txt
+            exit 0
+          fi
+
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload plan text artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PLAN_TEXT_ARTIFACT }}
+          path: terraform/tfplan.txt
+          retention-days: 3
+
+      - name: Upload plan artifact
+        if: ${{ steps.plan.outputs.has_changes == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform/tfplan
+          retention-days: 3
+
+      - name: Plan summary
+        env:
+          TF_TARGETS: ${{ inputs.targets }}
+        run: |
+          echo "### Terraform plan complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Mode: \`${{ inputs.mode }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reason: \`${{ inputs.reason }}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${TF_TARGETS}" ]; then
+            echo "- Targets: \`${TF_TARGETS}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "- Changes detected: \`${{ steps.plan.outputs.has_changes }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Review artifact: \`${PLAN_TEXT_ARTIFACT}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.plan.outputs.has_changes }}" = "true" ]; then
+            echo "- Apply artifact: \`${PLAN_ARTIFACT}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  approve-apply:
+    name: Approval Gate
+    if: ${{ inputs.mode == 'apply-approved-plan' && needs['terraform-plan'].outputs.has_changes == 'true' }}
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment: specter-terraform-apply
+
+    steps:
+      - name: Approval summary
+        env:
+          TF_TARGETS: ${{ inputs.targets }}
+        run: |
+          echo "Admin approval recorded for Terraform plan/apply"
+          echo "### Terraform approval recorded" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Mode: \`${{ inputs.mode }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reason: \`${{ inputs.reason }}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${TF_TARGETS}" ]; then
+            echo "- Targets: \`${TF_TARGETS}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  terraform-apply:
+    name: Terraform Apply
+    if: ${{ inputs.mode == 'apply-approved-plan' && needs['terraform-plan'].outputs.has_changes == 'true' }}
+    needs:
+      - terraform-plan
+      - approve-apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Restore plan artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.PLAN_ARTIFACT }}
+          path: terraform
+
+      - name: Package agent registry Lambda
+        run: bash .github/scripts/package-agent-registry-lambda.sh
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false -no-color -backend-config=backend.hcl
+
+      - name: Terraform apply approved plan
+        working-directory: terraform
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Apply summary
+        env:
+          TF_TARGETS: ${{ inputs.targets }}
+        run: |
+          echo "### Terraform apply complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reason: \`${{ inputs.reason }}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${TF_TARGETS}" ]; then
+            echo "- Targets: \`${TF_TARGETS}\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "- Applied saved plan artifact: \`${PLAN_ARTIFACT}\`" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,84 @@
+FROM node:20-slim
+
+# ============================================================================
+# INSTALL OS DEPENDENCIES
+# ============================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    ripgrep \
+    curl \
+    python3 \
+    python3-dev \
+    build-essential \
+    libkrb5-dev \
+    python3-venv \
+  && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# CONFIGURE GIT FOR EFS MOUNTED REPOSITORIES
+# ============================================================================
+# EFS-mounted repositories may have different ownership than the container user.
+# This global config allows git to work with any directory, which is required
+# for git worktrees and git pull operations on EFS volumes.
+RUN git config --global --add safe.directory '*'
+
+# ============================================================================
+# INSTALL CLAUDE CODE CLI GLOBALLY
+# ============================================================================
+RUN npm install -g @anthropic-ai/claude-code
+
+# ============================================================================
+# ENVIRONMENT VARIABLES - BEDROCK CONFIGURATION
+# ============================================================================
+# REQUIRED: Enable Bedrock mode for Claude Code
+ENV CLAUDE_CODE_USE_BEDROCK=1
+
+# REQUIRED: AWS Region (Claude Code doesn't read from .aws config)
+ENV AWS_REGION=us-east-2
+
+# Model selection - use regional inference profile for better availability
+ENV ANTHROPIC_MODEL=us.anthropic.claude-sonnet-4-5-20250929-v1:0
+ENV ANTHROPIC_SMALL_FAST_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+
+# Recommended token settings for Bedrock (prevents throttling issues)
+ENV CLAUDE_CODE_MAX_OUTPUT_TOKENS=4096
+ENV MAX_THINKING_TOKENS=1024
+
+# Node environment
+ENV NODE_ENV=production
+
+# ============================================================================
+# APPLICATION SETUP
+# ============================================================================
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
+RUN npm ci --production
+
+# Install packaged Meridian backend dependencies into an isolated Python runtime.
+COPY meridian/backend/requirements.txt ./meridian/backend/requirements.txt
+RUN python3 -m venv /opt/meridian-venv \
+  && /opt/meridian-venv/bin/pip install --upgrade pip \
+  && /opt/meridian-venv/bin/pip install --no-cache-dir -r ./meridian/backend/requirements.txt
+ENV PATH="/opt/meridian-venv/bin:${PATH}"
+
+# Copy built application
+COPY dist/ ./dist/
+COPY config/ ./config/
+COPY meridian/ ./meridian/
+
+# ============================================================================
+# ENTRYPOINT
+# ============================================================================
+# Worker type is set via WORKER_TYPE environment variable:
+# - DARCI: Defect Analysis
+# - SCRIBE: Code Explanation
+# - PRISM: Planning
+# - HERMES: Configuration Lookup
+
+CMD ["node", "dist/worker-main.js"]

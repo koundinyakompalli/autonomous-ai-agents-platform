@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist/server",
+    "rootDir": "..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "mysql2": ["./node_modules/mysql2"],
+      "mysql2/*": ["./node_modules/mysql2/*"]
+    }
+  },
+  "include": [
+    "server"
+  ],
+  "exclude": [
+    "server/**/*.test.ts"
+  ]
+}

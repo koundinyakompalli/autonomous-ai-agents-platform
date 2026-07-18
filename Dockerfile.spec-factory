@@ -1,0 +1,61 @@
+FROM node:26-slim@sha256:ffc78385a788964bb3cbab5e434ff79a10bdc25b8ae6db03fe5fe6cb14053c09 AS runtime-base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+ENV SPEC_FACTORY_PORT=3012
+ENV AWS_REGION=us-east-2
+ENV CLAUDE_CODE_USE_BEDROCK=1
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY dist/ ./dist/
+COPY config/ ./config/
+
+RUN mkdir -p \
+    /var/lib/spec-factory/compose \
+    /var/lib/spec-factory/tasks \
+    /var/lib/spec-factory/evidence-workspaces \
+    /var/lib/spec-factory/repo-cache \
+    /var/lib/spec-factory/repo-workspaces \
+    /var/lib/spec-factory/worktrees \
+  && chown -R node:node /app /var/lib/spec-factory
+
+USER node
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
+  CMD curl -f http://localhost:3012/health || exit 1
+
+CMD ["node", "dist/spec-factory/main.js"]
+
+# Minimal HTTP/SSE control plane. It contains no git, ripgrep, or Claude CLI.
+FROM runtime-base AS api
+USER node
+
+# Direct Bedrock workers for turns, context, handoff, draft, relay, and repair.
+FROM runtime-base AS core
+USER node
+
+# Research is the only runtime that receives repo tooling and Claude Code.
+FROM runtime-base AS research
+ARG CLAUDE_CODE_VERSION=2.1.206
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ripgrep \
+  && rm -rf /var/lib/apt/lists/* \
+  && git config --system --add safe.directory '*' \
+  && npm install -g --allow-scripts=@anthropic-ai/claude-code "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+  && npm cache clean --force
+USER node
+
+# Conversion orchestration stays small; media libraries live in the dedicated
+# compose-markitdown sidecar image.
+FROM runtime-base AS conversion
+USER node

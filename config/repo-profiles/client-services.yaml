@@ -1,0 +1,612 @@
+schema_version: 1
+profile_version: 7
+generated_at: "2026-04-29T17:19:11.999Z"
+source_repo_commit_sha: a34fad40f0936f32684a770af6bfa6b1ab53fa52
+generated:
+  aliases:
+    - ABARCA
+    - AETNA
+    - ARGUS
+    - AULTCARE
+    - BCBSMA
+    - BCBSNC
+    - BCBSTN
+    - BSCA
+    - CARE
+    - CIGNA
+    - CVS
+    - ESI
+    - EVOLENT
+    - GATEWAY
+    - HNE
+    - HPSM
+    - HUMANA
+    - IEHP
+    - LEGACY
+    - LEON
+    - MAGELLAN
+    - MARKET
+    - MCS
+    - MEDIMPACT
+    - MMM
+    - ONEHOME
+    - PARTNERS
+    - PBM
+    - PROMINANCE
+    - RIGHTWAY
+    - SOURCE
+    - TREDIUM
+    - TUFTS
+    - UPHP
+    - WELLCARE
+    - WITHME
+    - "client services"
+    - client-services
+    - cp-client-services-monorepo
+    - humana-emme-fax-integration
+    - mm-rxclaim-service
+    - mm-service-Aultcare
+    - mm-service-CVS-PBM
+    - mm-service-CVS-PBM-Evolent
+    - mm-service-CVS-PBM-v2
+    - mm-service-CVS-PBM-v3
+    - mm-service-CareSource
+    - mm-service-ESI-PBM
+    - mm-service-Evolent
+    - mm-service-Gateway
+    - mm-service-HPSM
+    - mm-service-IEHP
+    - mm-service-Rightway
+    - mm-service-Tredium-PBM
+    - mm-service-Wellcare
+    - mm-service-abarca
+    - mm-service-abarca-v2
+    - mm-service-aetna
+    - mm-service-bcbsma
+    - mm-service-bcbsnc
+    - mm-service-bcbstn
+    - mm-service-bsca
+    - mm-service-cigna
+    - mm-service-cvs
+    - mm-service-hne
+    - mm-service-humana
+    - mm-service-leon
+    - mm-service-leonmedimpact
+    - mm-service-magellan
+    - mm-service-marketProminance
+    - mm-service-mcs
+    - mm-service-onehome
+    - mm-service-tufts
+    - mm-service-uphp
+    - mm-service-withme
+    - onehome-fhir-client
+    - onehome.onecare
+  domains:
+    - abarca
+    - aetna
+    - "api keys"
+    - "api protocols"
+    - argus
+    - aultcare
+    - bcbsma
+    - bcbsnc
+    - bcbstn
+    - bsca
+    - build
+    - "build all projects"
+    - "build specific project"
+    - "build tool"
+    - care
+    - "category count pattern"
+    - cigna
+    - "client integration"
+    - "client services"
+    - "client services monorepo"
+    - client-integrations
+    - client-services
+    - "coding standards"
+    - "common architecture patterns"
+    - "configuration files"
+    - consume
+    - "customer specific implementation"
+    - customer-services
+    - customer-specific
+    - cvs
+    - "dependency structure"
+    - "ensure java"
+    - error
+    - esi
+    - evolent
+    - "externalcallout interface"
+    - externalclientservice
+    - externalclientservicesmodel
+    - gateway
+    - getobject
+    - "getting started"
+    - "health plans"
+    - "hibernate orm"
+    - hne
+    - hpsm
+    - humana
+    - humana-emme-fax-integration
+    - iehp
+    - "insurance payers"
+    - integration
+    - "integration services"
+    - java21
+    - legacy
+    - leon
+    - leonmedimpact
+    - magellan
+    - market
+    - maven
+    - mcs
+    - medimpact
+    - migration
+    - mm-rxclaim-service
+    - mmm
+    - number
+    - onehome
+    - onehome-fhir-client
+    - partners
+    - pbm
+    - project
+    - "project organization"
+    - projects
+    - prominance
+    - "quick reference"
+    - refactoring
+    - reference
+    - rest
+    - rightway
+    - search
+    - "shared libraries"
+    - source
+    - specific
+    - "specific documentation"
+    - "spring boot"
+    - "spring framework"
+    - "technology stack"
+    - "test specific project"
+    - tmplt
+    - "total projects"
+    - tredium
+    - tufts
+    - uphp
+    - vendor
+    - "vendor services"
+    - vendor-specific
+    - wellc
+    - wellcare
+    - withme
+  packages:
+    - com.argushealth
+    - com.bcbsma
+    - com.bcbsma.rest
+    - com.caremark
+    - com.caremark.ecs
+    - com.caremark.psd
+    - com.centene
+    - com.centene.medpharm
+    - com.healthpartners
+    - com.humana
+    - com.humana.schemas
+    - com.medhok
+    - com.medhok.external
+    - com.medhok.mm
+    - com.medhok.mmm
+    - com.medimpact
+    - com.medimpact.schema
+    - enterpriseprovidersearchservice.v2
+    - org.ncpdp
+    - org.ncpdp.schema
+  file_path_patterns:
+    - .github
+    - ExternalClientRestServices
+    - ExternalClientServicesModel
+    - cp-client-services-monorepo
+    - humana-emme-fax-integration
+    - mm-rxclaim-service
+    - mm-service-ArgusLegacy
+    - mm-service-Aultcare
+    - mm-service-CVS-PBM
+    - mm-service-CVS-PBM-Evolent
+    - mm-service-CVS-PBM-v2
+    - mm-service-CVS-PBM-v3
+    - mm-service-CareSource
+    - mm-service-ESI-PBM
+    - mm-service-Evolent
+    - mm-service-Gateway
+    - mm-service-HPSM
+    - mm-service-HPartners
+    - mm-service-IEHP
+    - mm-service-Rightway
+    - mm-service-Tredium-PBM
+    - mm-service-Tufts
+    - mm-service-Wellcare
+    - mm-service-abarca
+    - mm-service-abarca-v2
+    - mm-service-aetna
+    - mm-service-bcbsma
+    - mm-service-bcbsnc
+    - mm-service-bcbstn
+    - mm-service-bsca
+    - mm-service-cigna
+    - mm-service-cvs
+    - mm-service-cvs-MMM
+    - mm-service-hne
+    - mm-service-humana
+    - mm-service-leon
+    - mm-service-leonMedimpact
+    - mm-service-magellan
+    - mm-service-marketProminance
+    - mm-service-mcs
+    - mm-service-medimpact
+    - mm-service-onehome
+    - mm-service-uphp
+    - mm-service-withme
+    - onehome-fhir-client
+    - onehome.onecare
+    - workflows
+  symbols:
+    - ADDRESSTYPE
+    - APIerror
+    - APIresponse
+    - ASSOCIATION
+    - AbarcaRestApiService
+    - AbilifyJSONTxt
+    - AbstractCodeModel
+    - AbstractECSReply
+    - AbstractECSRequest
+    - AbstractEndPoint
+    - AbstractFaxIntegration
+    - AbstractIdModel
+    - AbstractJsonRequest
+    - AbstractJsonResponse
+    - AbstractRestService
+    - AccessRestrictionResponse
+    - AccessToken
+    - Account
+    - Accreditations
+    - AccumulatedClaimResult
+    - AccumulatedClaimsRequest
+    - AccumulatedClaimsResponseHeader
+    - AccumulatedClaimsSvcRequest
+    - AccumulatedClaimsSvcResponse
+    - AccumulatorRequestDto
+    - AccumulatorResponse
+    - AccumulatorServiceRequestDto
+    - AccumulatorServiceResponse
+    - AccumulatorWsService
+    - ActionCriteriaManagment
+    - ActionMgmt
+    - ActionOutcome
+    - ActionTask
+    - ActionTaskResult
+    - ActiveIngredient
+    - Adapter1
+    - AddAuthorization
+    - AddAuthorizationResponse
+    - AddClaimOverrideNotesReply
+    - AddClaimOverrideNotesRequest
+    - AddClaimOverridePricesReply
+    - AddClaimOverridePricesRequest
+    - AddClaimOverrideReply
+    - AddClaimOverrideRequest
+    - AddClinicalMailOrderlAuthorization
+    - AddClinicalMailOrderlAuthorizationResponse
+    - AddClinicalRetailAuthorization
+    - AddClinicalRetailAuthorizationResponse
+    - AddCustomizedAuthorization
+    - AddCustomizedAuthorizationResponse
+    - AddDesigneeRequest
+    - AddDesigneeResponse
+    - AddManagedDrugLimitationReply
+    - AddManagedDrugLimitationRequest
+    - AddNotesRequest
+    - AddPARequest
+    - AddRelationshipRequest
+    - AddRelationshipResponse
+    - AddRestrictedAuthorization
+    - AddRestrictedAuthorizationResponse
+    - AddStandardAuthorization
+    - AddStandardAuthorizationResponse
+    - AddUpdateCancelPAReply
+    - AdditionalAffectedMemberSourceModuleLink
+    - AdditionalAffectedMembers
+    - AdditionalAttribute
+    - AdditionalAuthOverridesDTO
+    - AdditionalClaimData
+    - AdditionalData
+    - AdditionalFields
+    - AdditionalFreeTextIndicatorTypeCode
+    - AdditionalInfo
+    - AdditionalMedication
+    - AdditionalOverridePaClient
+    - AdditionalOverridePaClientTemplate
+    - Additionalstatus
+    - AddressCriteriaDto
+    - AddressDto
+    - AddressInfo
+    - AddressTypeCode
+    - AddressTypeQualifier
+    - AddressValidationResult
+    - AddressValidationResultItem
+    - Address_
+    - AdhokBusinessPartnerCategory
+    - AdjSettlementCodeResponse
+    - AdjudicatedFinancials
+    - AdjudicatingMember
+    - AdjudicationAttributes
+    - AdminAuditLogTracking
+    - AdminDataSource
+    - AdminHideFields
+    - AdministrationIndicatorCodes
+    - AdministrationTiming
+    - AdvFinancials
+    - AdvanceLookUpCriteria
+    - AdvancedFinancials
+    - AdvancedMedicalHomeTier
+    - AetnaMigrationStatus
+    - AetnaRestTemplateConfig
+    - Affiliation
+    - AffiliationTypeCode
+    - Agent
+    - AlertParamResponse
+    - AlertParams
+    - AliasSelectorKeyManager
+    - AllMeasures
+    - AllMeasuresId
+    - Allergy
+    - AltLangTranslate
+    - AlternateAddressInfo
+    - AlternateAddresses
+    - AlternateContact
+    - AlternateContactAddress
+    - AlternateContactEmail
+    - AlternateContactIdentification
+    - AlternateContactPhoneNumber
+    - AlternateId
+    - AlternateIdentifier
+    - AlternativesLookup
+    - AmisysGroupRecord
+    - AmisysInfo
+    - AmisysProviderRecord
+    - AmountDueToDate
+    - AncillaryData
+    - AnnotationSet
+    - AorRelationshipType
+    - ApiCertificate
+    - ApiError
+    - ApicEnum
+    - AppConstant
+    - AppServiceCache
+    - AppServiceDAO
+    - AppUtil
+    - AppViewDefinition
+    - AppViewDefinitionTag
+    - AppViewFieldRules
+    - AppViewFormDefn
+    - AppViewGroupDefn
+    - AppViewScreenDefinition
+    - AppViewsDAO
+    - AppealProvider
+    - AppealsAuthorizations
+    - AppealsCategory
+    - AppealsDisputeType
+    - AppealsMemberClaimDetail
+    - AppealsMemberClaimDiagnosis
+    - AppealsMemberClaims
+    - AppealsMgmt
+    - AppealsMgmtChild
+    - AppealsProviderVendors
+    - AppealsRequestType
+    - AppealsReview
+    - AppealsReviewDecision
+    - AppealsReviewDecisionReason
+    - AppealsStatus
+    - AppealsStatusReason
+    - AppealsSubCategory
+    - AppealsSubCategoryBundle
+    - AppealsTextAnalysis
+    - ApplicableInputFieldInfo
+    - ApplicableOutputFieldInfo
+    - ApplicableScheme
+    - Applicant
+    - ApplicantContract
+    - ApplicantContractCoverageLevel
+    - ApplicantContractList
+    - ApplicantLineOfCoverage
+    - ApplicantLineOfCoverageList
+    - ApplicantList
+    - ApplicationAlerts
+    - ApplicationChannelCode
+    - ApplicationFault
+    - ApplicationProperties
+    - ApplicationPropertiesConstants
+    - ApplicationSubChannelCode
+    - Appointment
+    - AppointmentAttendee
+    - AppointmentAttendeeType
+    - AppointmentRecording
+    - AppointmentRequester
+    - AppointmentStatus
+    - AppointmentType
+    - AppointmentTypeModuleContext
+    - ApprovedMessageCode
+    - ApprovedType
+    - ApprovedWithChangesType
+    - ApprovedasInpatient
+    - ArgumentFault
+    - ArgusErrorCode
+    - ArrayOfAccumulatedClaimResult
+    - ArrayOfAccumulatedClaimsRequest
+    - ArrayOfAdditionalAttribute
+    - ArrayOfAddress
+    - ArrayOfArgusErrorCode
+    - ArrayOfAttribute
+    - ArrayOfCachePersonByNameCachePersonByName
+    - ArrayOfCachePersonCachePerson
+    - ArrayOfClaimDetailLine
+    - ArrayOfClaimHistoryItem
+    - ArrayOfClaimStatusResult
+    - ArrayOfClinicalDrugRequestType
+    - ArrayOfCodeSetsModifiersEntity
+    - ArrayOfConsent
+    - ArrayOfContext
+    - ArrayOfCustomDrugRequestType
+    - ArrayOfDataAuthorizationConstraint
+    - ArrayOfDiagnosisByDescriptionBO
+    - ArrayOfDiagnosisByIdBO
+    - ArrayOfDocumentInfoBO
+    - ArrayOfDrugPricingRequest
+    - ArrayOfDrugPricingResponse
+    - ArrayOfDuplicateCPTSearchBO
+    - ArrayOfDurQuantityModel
+    - ArrayOfDurStepTherapyModel
+    - ArrayOfEmail
+    - ArrayOfMemberEligibility
+    - ArrayOfMemberPharmacyLock
+    - ExternalClientServicesModel
+    - GitHub
+    - OAuth
+  endpoints:
+    - /api/v1/externalclientservice
+    - /getobject
+    - /submit
+  tables: []
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `client-services` (cp-client-services-monorepo) is the client /
+# customer integration layer — 44+ Maven modules implementing the
+# ExternalCallout interface for specific payers, PBMs, health plans, and
+# third-party integrations. Each `mm-service-<Customer>` module owns the
+# vendor-specific SOAP/REST/FHIR adapter, authentication, and payload
+# mapping for a single external client. Core shared libraries are
+# ExternalClientServicesModel (DAOs/models) and ExternalClientRestServices
+# (REST framework). Tickets here are typically customer-prefixed
+# ("BCBSMA |", "CVS |", "Cigna |", "Humana |") and describe a client-specific
+# integration defect, API mapping change, or authentication problem.
+#
+# Supported customers (primary keyword-to-repo signal):
+# Aetna, Cigna, Humana, Wellcare, WellCare, BCBSMA, BCBSNC, BCBSTN, BSCA,
+# Tufts, CVS, CVS-PBM, Abarca, ESI, Medimpact, Magellan, Tredium,
+# CareSource, Evolent, HPartners, HPSM, HNE, IEHP, Rightway, Aultcare,
+# MCS, OneHome, UPHP, ArgusLegacy, Leon, MarketProminance, Gateway,
+# withme, withMe, Humana EMME fax integration.
+#
+# Typical ticket vocabulary: client, customer-specific, vendor integration,
+# external callout, PBM, payer, pharmacy benefit manager, claims feed,
+# auth submission, client fax, customer-specific mapping, client API
+# authentication, client oauth, externalcallout, onehome, onecare,
+# ExternalClientRestServices, ExternalClientServicesModel.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - client-services
+    - cp-client-services
+    - client-services-monorepo
+    - externalclientservice
+    - externalclientservices
+  domains:
+    - client services
+    - client integration
+    - customer specific
+    - customer-specific implementation
+    - external callout
+    - externalcallout
+    - vendor integration
+    - vendor service
+    - pbm
+    - pharmacy benefit manager
+    - payer
+    - health plan
+    - insurance payer
+    - client fax integration
+    - client api authentication
+    - client oauth
+    - client certificate
+    - client api mapping
+    - client soap adapter
+    - client rest adapter
+    - client fhir adapter
+    - customer claims feed
+    - payer claims feed
+    - vendor payload mapping
+    - aetna
+    - cigna
+    - humana
+    - wellcare
+    - bcbsma
+    - bcbsnc
+    - bcbstn
+    - bsca
+    - tufts
+    - cvs
+    - cvs pbm
+    - abarca
+    - esi
+    - medimpact
+    - magellan
+    - tredium
+    - caresource
+    - evolent
+    - hpartners
+    - hpsm
+    - hne
+    - iehp
+    - rightway
+    - aultcare
+    - mcs
+    - onehome
+    - onecare
+    - uphp
+    - argus
+    - arguslegacy
+    - leon
+    - marketprominance
+    - gateway
+    - withme
+    - humana emme
+    - emme fax
+  packages:
+    - com.medhok.mm.server.service.external
+  file_path_patterns:
+    - ExternalClientServicesModel
+    - ExternalClientRestServices
+    - humana-emme-fax-integration
+    - onehome-fhir-client
+    - onehome.onecare
+    - mm-service-abarca
+    - mm-service-aetna
+    - mm-service-Aultcare
+    - mm-service-bcbsma
+    - mm-service-bcbsnc
+    - mm-service-bcbstn
+    - mm-service-bsca
+    - mm-service-CareSource
+    - mm-service-cigna
+    - mm-service-cvs
+    - mm-service-CVS-PBM
+    - mm-service-ESI-PBM
+    - mm-service-Evolent
+    - mm-service-Gateway
+    - mm-service-hne
+    - mm-service-HPartners
+    - mm-service-HPSM
+    - mm-service-humana
+    - mm-service-IEHP
+    - mm-service-magellan
+    - mm-service-medimpact
+    - mm-service-onehome
+    - mm-service-Rightway
+    - mm-service-Tredium-PBM
+    - mm-service-Tufts
+    - mm-service-uphp
+    - mm-service-Wellcare
+  symbols:
+    - ExternalCallout
+    - ExternalClientRestService
+  endpoints: []
+  tables: []

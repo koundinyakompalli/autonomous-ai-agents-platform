@@ -1,0 +1,692 @@
+schema_version: 1
+profile_version: 8
+generated_at: "2026-04-29T17:19:19.685Z"
+source_repo_commit_sha: 7cfc0348dc25ed06761ac19ed6ed7a3c3ffdebf3
+generated:
+  aliases:
+    - "core app"
+    - core-app
+    - cp-medhok-monorepo
+    - "medhok monorepo"
+    - mhk-fhir-server
+    - mm-dynamic-loader-service
+    - mm-rxclaim-service
+    - mm-shared-services
+    - ws-doc-api
+  domains:
+    - aftercommit
+    - alert
+    - api
+    - appeal
+    - appeals
+    - assessment
+    - assessments
+    - audit
+    - "auth intake"
+    - authorization
+    - "authorization intake"
+    - authorizations
+    - back
+    - batch
+    - business-logic
+    - call
+    - care
+    - "care management"
+    - careplan
+    - "case workspace"
+    - catalog
+    - "code coverage pipeline"
+    - "code organization"
+    - "code style summary"
+    - compare
+    - compliance
+    - compliances
+    - config
+    - contact
+    - continue
+    - "copy structure"
+    - "core modules"
+    - "core ui"
+    - create
+    - "create flyway"
+    - "create java"
+    - criteria
+    - "critical paths"
+    - ctm
+    - data
+    - "database entity"
+    - definition
+    - detail
+    - documents
+    - duplicate
+    - duplicates
+    - eligibility
+    - end
+    - enquiry
+    - entries
+    - entry
+    - export
+    - fetch
+    - file
+    - "find files"
+    - "find similar examples"
+    - flow
+    - "flyway migrations"
+    - "follow naming convention"
+    - "github actions"
+    - grievance
+    - gwt
+    - "hbm mappings"
+    - holding
+    - inquiry
+    - "java version"
+    - "javadoc requirements"
+    - "key principle"
+    - "large files warning"
+    - letter
+    - log
+    - manager
+    - managers
+    - "medhok medical management monorepo"
+    - medhok-web-services
+    - "medicalmgmt main"
+    - "medicalmgmtmodels hibernate"
+    - "medicalmgmtutilities shared"
+    - member
+    - "member banner"
+    - "member search"
+    - membersearch
+    - mm-shared-services
+    - "module purpose dependencies"
+    - multiple
+    - "navigation shortcuts"
+    - "new service"
+    - non-blocking
+    - optimized
+    - outbound
+    - "package structure"
+    - paoverridetime
+    - participants
+    - plan
+    - primary-ui
+    - process
+    - "project structure"
+    - queue
+    - "quick start"
+    - resource
+    - "rest apis"
+    - "rest endpoint"
+    - rules
+    - rxpa
+    - schemas
+    - "search patterns"
+    - "service layer pattern"
+    - smartgwt
+    - status
+    - "supporting modules"
+    - "test locally"
+    - translated
+    - type
+    - types
+    - "upper snake case"
+    - users
+    - web-services
+    - work
+  packages:
+    - com.caremark
+    - com.caremark.ecs
+    - com.caremark.member
+    - com.caremark.psd
+    - com.connectship
+    - com.connectship.ampcore
+    - com.medhok
+    - com.medhok.external
+    - com.medhok.mm
+    - com.medhok.quality
+    - com.medhok.s3
+    - com.mhk
+    - com.mhk.fhir
+    - com.ups
+    - com.ups.wsdl
+    - com.ups.xmlschema
+    - https.api_authorize_net
+    - https.api_authorize_net.soap
+    - org.slf4j
+    - org.slf4j.impl
+  file_path_patterns:
+    - .github
+    - .settings
+    - MedicalMgmt
+    - MedicalMgmtModels
+    - MedicalMgmtUtilities
+    - WebContent
+    - code-coverage-pipeline
+    - coverage
+    - cp-medhok-monorepo-master
+    - flyway
+    - infra
+    - medhok
+    - medhok-parent
+    - medhok-parent-java21
+    - medhok-vendor-services
+    - medhok-web-services
+    - mhk-fhir-server
+    - mm-dynamic-loader-service
+    - mm-rxclaim-service
+    - mm-shared-services
+    - processflow
+    - prometheus
+    - reporting-sp-sqls
+    - stage
+    - terraform
+    - tomcat
+    - workflows
+    - ws-doc-api
+  symbols:
+    - AMPServices
+    - ANetApiResponseType
+    - APIErrorResponse
+    - ARBCancelSubscription
+    - ARBCancelSubscriptionResponse
+    - ARBCancelSubscriptionResponseType
+    - ARBCreateSubscription
+    - ARBCreateSubscriptionResponse
+    - ARBCreateSubscriptionResponseType
+    - ARBGetSubscriptionList
+    - ARBGetSubscriptionListOrderFieldEnum
+    - ARBGetSubscriptionListRequestType
+    - ARBGetSubscriptionListResponse
+    - ARBGetSubscriptionListResponseType
+    - ARBGetSubscriptionListSearchTypeEnum
+    - ARBGetSubscriptionListSorting
+    - ARBGetSubscriptionStatus
+    - ARBGetSubscriptionStatusResponse
+    - ARBGetSubscriptionStatusResponseType
+    - ARBSubscriptionStatusEnum
+    - ARBSubscriptionType
+    - ARBSubscriptionUnitEnum
+    - ARBUpdateSubscription
+    - ARBUpdateSubscriptionResponse
+    - ARBUpdateSubscriptionResponseType
+    - AWSEncryptionUtility
+    - AWSSecretManagerUtility
+    - AbSeekerData
+    - AbstractECSReply
+    - AbstractECSRequest
+    - AbstractLogger
+    - AccessControlService
+    - AccessRestrictionData
+    - AccessRestrictionService
+    - ActionCriteriaManagment
+    - ActionHandlerRegistryBean
+    - ActionManagementRequest
+    - ActionManagementResponse
+    - ActionMasterRequest
+    - ActionMasterResponse
+    - ActionMatrixDestinationRequest
+    - ActionMatrixDestinationResponse
+    - ActionMatrixRequest
+    - ActionMatrixResponse
+    - ActionMatrixService
+    - ActionMgmt
+    - ActionOutcome
+    - ActionPlanRequest
+    - ActionPlanResponse
+    - ActionProcessor
+    - ActionProcessorRequest
+    - ActionTask
+    - ActionTaskResult
+    - ActionType
+    - ActivityLocationType
+    - ActivityType
+    - AddHolidayRequest
+    - AddHolidayResponse
+    - AddShipperRequest
+    - AddShipperResponse
+    - AddTranslatedLetterRequest
+    - AdditionalAffectedMemberSourceModuleLink
+    - AdditionalAffectedMembers
+    - AdditionalAffectedMembersRequest
+    - AdditionalAffectedMembersResponse
+    - AdditionalCodeDescType
+    - AdditionalCodeDescriptionValueType
+    - AdditionalInfoType
+    - AdditionalMedication
+    - AdditionalMedicationRequest
+    - AdditionalMedicationResponse
+    - AdditionalOverridePaClient
+    - AdditionalOverridePaClientRequest
+    - AdditionalOverridePaClientResponse
+    - AdditionalOverridePaClientTemplate
+    - AdditionalOverridePaClientTemplateRequest
+    - AdditionalOverridePaClientTemplateResponse
+    - AdditionalProviderDTO
+    - Additionalstatus
+    - AddressClassificationType
+    - AddressKeyFormatType
+    - AddressMailingHierarchyRequest
+    - AddressMailingHierarchyResponse
+    - AddressRequestType
+    - AddressTypeRequest
+    - AddressTypeResponse
+    - AddressValidationRequest
+    - AddressValidationResponse
+    - AddressValidationResult
+    - AddressValidationResultItem
+    - AddressValidationService
+    - AdhokBusinessPartnerCategory
+    - AdhokBusinessPartnerCategoryRequest
+    - AdhokBusinessPartnerCategoryResponse
+    - AdhokBusinessProcessRequest
+    - AdhokBusinessProcessResponse
+    - AdhokBusinessTaskRequest
+    - AdhokBusinessTaskResponse
+    - AdminAuditLogRequest
+    - AdminAuditLogResponse
+    - AdminAuditLogService
+    - AdminAuditLogTracking
+    - AdminDataService
+    - AdminDataSource
+    - AdminDataSourceName
+    - AdminHideFields
+    - AdminModules
+    - AdminSharedRequest
+    - AdminSharedResponse
+    - AdmissionPeriod
+    - AetnaMigrationStatus
+    - Agent
+    - AgentRequest
+    - AgentResponse
+    - AjaxSessionExpirationFilter
+    - AlcoholItem
+    - AlcoholItemList
+    - AlertAuditLogRequest
+    - AlertAuditLogResponse
+    - AlertHistoryRequest
+    - AlertHistoryResponse
+    - AlertParamResponse
+    - AlertParams
+    - AlertParamsRequest
+    - AlertParamsResponse
+    - AlertStatusRequest
+    - AlertStatusResponse
+    - AlertTypesRequest
+    - AlertTypesResponse
+    - AlertsCompanyRequest
+    - AlertsCompanyResponse
+    - AlertsManagementRequest
+    - AlertsManagementResponse
+    - AlertsManagementService
+    - AlertsParamsResponseRequest
+    - AlertsParamsResponseResponse
+    - AliasSelectorKeyManager
+    - AllMeasures
+    - AllMeasuresDetailRequest
+    - AllMeasuresDetailResponse
+    - AllMeasuresFetchUpdate
+    - AllMeasuresId
+    - AllMeasuresService
+    - AllergyIntoleranceRequest
+    - AllergyIntoleranceResourceProvider
+    - AllergyIntoleranceResponse
+    - AltFormatReqTypeMapEnum
+    - AltLangTranslate
+    - AlternateIdentifier
+    - AlternateTrackingInfoType
+    - AlternativesLookup
+    - AlternativesLookupRequest
+    - AlternativesLookupResponse
+    - AmountType
+    - AnalyticFilterService
+    - AnalyticsQueryExecuter
+    - AnnotationDefs
+    - AnnotationSet
+    - Answer
+    - ApiCertificateRx
+    - ApiEndpoint
+    - AppAssessmentBuilderService
+    - AppAssessmentBusinessService
+    - AppBusinessUtils
+    - AppCacheManager
+    - AppConfig
+    - AppException
+    - AppFieldDefs
+    - AppFieldRules
+    - AppFormSectionDefs
+    - AppOutcomesRequest
+    - AppOutcomesResponse
+    - AppPriorityRequest
+    - AppPriorityResponse
+    - AppScreenDefs
+    - AppScreenDefsRequest
+    - AppScreenDefsResponse
+    - AppSecuritySessionValidatior
+    - AppServiceCache
+    - AppServiceDAO
+    - AppTabSectionDefs
+    - AppUtility
+    - AppViewDefinition
+    - AppViewDefinitionRequest
+    - AppViewDefinitionResponse
+    - AppViewDefinitionTag
+    - AppViewDefinitionTagRequest
+    - AppViewDefinitionTagResponse
+    - AppViewFieldRules
+    - AppViewFieldRulesRequest
+    - AppViewFieldRulesResponse
+    - AppViewFormDefn
+    - AppViewFormDefnRequest
+    - AppViewFormDefnResponse
+    - AppViewGroupDefn
+    - AppViewGroupDefnRequest
+    - AppViewGroupDefnResponse
+    - AppViewScreenDefinition
+    - AppViewScreenDefinitionRequest
+    - AppViewScreenDefinitionResponse
+    - AppViewsDAO
+    - AppealClaimDetailRequest
+    - AppealClaimDetailResponse
+    - AppealGrievanceIntakeRequest
+    - AppealGrievanceIntakeResponse
+    - AppealProcedureRequest
+    - AppealProcedureResponse
+    - AppealProvider
+    - AppealProviderRequest
+    - AppealProviderResponse
+    - AppealRestServices
+    - AppealServices
+    - AppealServicesImpl
+    - AppealUtilsRequest
+    - AppealUtilsResponse
+    - AppealsAuthDiagnosisRequest
+    - AppealsAuthDiagnosisResponse
+  endpoints:
+    - "$submit"
+    - /MHKCallBackServices
+    - /ResourceTypes
+    - /Schemas
+    - /ServiceProviderConfig
+    - /Users
+    - "/Users/{userId}"
+    - /addAuditLogEntry
+    - /addDocument
+    - /addMemberNotes
+    - /addMultipleDocuments
+    - /addNotes
+    - /addOutboundContact
+    - /addSameDocumentToMultipleCase
+    - /addTranslatedLetter
+    - /api
+    - /catalog
+    - /checkContinueReviewEligibilityByRules
+    - /checkDuplicateAuthorization
+    - /checkDuplicates
+    - /claimTask
+    - /compareData
+    - /compliance
+    - "/compliance/{id}"
+    - /createRXCase
+    - /createRXPA
+    - /createRXPAWithQSet
+    - /endProcessWorkFlow
+    - /export
+    - /exportAssessment
+    - /fetchMember
+    - /getAlertType
+    - /getAppealById
+    - /getAppealsByCriteria
+    - /getAppealsOnHoldingQueue
+    - /getAssessmentDefinition
+    - /getAssessmentDetail
+    - /getAssessments
+    - /getAuditLogEntries
+    - /getAuthInquiry
+    - /getAuthInquiryByMember
+    - /getBatchFileStatus
+    - /getCTMByCTMNo
+    - /getCTMByCriteria
+    - /getCarePlan
+    - /getCareplanParticipants
+    - /getCaseManagerParticipants
+    - /getCaseManagers
+    - /getCaseWorkflowEnquiry
+    - /getCompliancesByMemberId
+  tables:
+    - Additional_Override_PaClient
+    - additional_medication
+    - additional_override_paclient_template
+    - adhok_business_process
+    - adhok_business_task
+    - adhok_business_task_status
+    - admin_alert_status
+    - alert_param_response
+    - alert_params
+    - alternatives_lookup
+    - app_event_monitor
+    - app_view_definition
+    - app_view_definition_tag
+    - app_view_field_rules
+    - app_view_form_defn
+    - app_view_group_defn
+    - app_view_screen_definition
+    - appeals_sub_category
+    - appeals_type
+    - assessment_client_config
+    - audit_job_execution
+    - auth_defaults
+    - auth_details_load
+    - auth_diagnosis_load
+    - auth_load
+    - auth_policy
+    - auth_request_type
+    - auth_rlos_factors_diagnosis
+    - auth_rlos_factors_procedure
+    - auth_rule_assessment
+    - auth_rule_diagnosis
+    - auth_rule_group
+    - auth_rule_ipa_group
+    - auth_rule_member_special_program
+    - auth_rule_outcome
+    - auth_rule_pos
+    - auth_rule_procedure
+    - auth_rule_program
+    - auth_rule_provider
+    - auth_rule_provider_class
+    - auth_rule_referring_specialties
+    - auth_rule_specialties
+    - auth_sub_type
+    - authorization_review
+    - barcoding_config
+    - batch_config
+    - batch_config_details
+    - batch_execution
+    - batch_execution_details
+    - biometric_category
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `core-app` is the Care Prominence Medical Management monorepo —
+# the primary UI and server platform for MHK. ~1.6M lines of Java across
+# ~12 Maven modules. Owns Utilization Management (authorizations, denials,
+# appeals, grievances), Care Management (case workspace, careplan,
+# assessments, member 360), and the GWT / SmartGWT browser UI and web
+# services (REST + SOAP). This is where most business logic tickets land:
+# authorization intake, member search, provider/member contract status,
+# correspondence template rendering, case lifecycle, reporting stored
+# procedures, Flyway migrations, and the MHK FHIR server (mhk-fhir-server
+# submodule) for the MedHOK FHIR facade.
+#
+# Typical ticket vocabulary: authorization, auth intake, appeal, grievance,
+# care plan, care management, case workspace, member search, member banner,
+# provider, contract status, eligibility, GWT, SmartGWT, hibernate,
+# NativeSQL, RX claim, pharmacy claim, PART C / Part D denial, IRE, MD
+# review, assessment, utilization management, denial, approval, draft, RxClaim.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - core-app
+    - medhok
+    - medhok-monorepo
+    - cp-medhok-monorepo
+    - medicalmgmt
+    - medhok-web-services
+    - medhok-vendor-services
+    - core web services
+    - mhk core api
+    - ws-doc-api
+    - authrestservices
+    - rxparestservices
+  domains:
+    - authorization
+    - authorizations
+    - authorization intake
+    - auth intake
+    - appeal
+    - appeals
+    - grievance
+    - grievances
+    - care management
+    - case management
+    - case workspace
+    - careplan
+    - care plan
+    - member search
+    - member banner
+    - member 360
+    - member profile
+    - provider contract
+    - provider contract status
+    - contract status
+    - eligibility
+    - eligibility group
+    - utilization management
+    - prior authorization
+    - pa case
+    - denial
+    - approval
+    - md review
+    - medical review
+    - ire
+    - part c denial
+    - part d
+    - rx claim
+    - rxclaim
+    - pharmacy claim
+    - correspondence template
+    - letter template
+    - letter generation
+    - notice
+    - adverse notice
+    - gwt
+    - smartgwt
+    - smart gwt
+    - hibernate
+    - nativesql
+    - web services
+    - web services rest
+    - web services soap
+    - core web services
+    - mhk core api
+    - rest api contracts
+    - swagger openapi
+    - authrestservices
+    - memberrestservices
+    - rxparestservices
+    - submitpreauth
+    - fetchmember
+    - getquestionsetrx
+    - getcptcodes
+    - wsmemberquery
+    - wspreauthinput
+    - wsquestionset
+    - wsguideline
+    - careprominence
+    - care prominence
+    - assessment
+    - assessments
+    - authorization review
+    - coverage check
+    - benefit
+    - benefit check
+    - service request
+    - intake
+    - draft authorization
+    - approve authorization
+    - deny authorization
+    - cm referral
+    - cm queue
+    - case queue
+    - workflow
+    - task
+    - user task
+    - user session
+  packages:
+    - com.medhok
+    - com.medhok.mm
+    - com.medhok.mm.server
+    - com.medhok.mm.client
+    - com.medhok.mm.shared
+    - com.medhok.mm.server.service
+    - com.medhok.mm.server.handlers
+    - com.medhok.external
+    - com.mhk.fhir
+  file_path_patterns:
+    - MedicalMgmt
+    - MedicalMgmtModels
+    - MedicalMgmtUtilities
+    - medhok-web-services
+    - medhok-vendor-services
+    - mm-shared-services
+    - mm-rxclaim-service
+    - mm-dynamic-loader-service
+    - mhk-fhir-server
+    - ws-doc-api
+    - flyway
+  symbols:
+    - UtilityService
+    - NativeSQLService
+    - DERService
+    - CareplanService
+    - AppealServices
+    - AppealRestServices
+    - AuthorizationService
+    - GrievanceService
+    - MemberService
+    - MemberSearchService
+    - ProviderService
+    - ProviderRestServices
+    - CaseService
+    - CaseManagementService
+    - AssessmentService
+    - LetterService
+    - CorrespondenceService
+    - RxClaimService
+    - PharmacyClaimService
+    - AuthorizationReviewService
+    - AuthRestServices
+    - MemberRestServices
+    - RxPARestServices
+    - WSMemberQuery
+    - WSPreAuthInput
+    - WSQuestionSet
+    - WSGuideline
+  endpoints:
+    - /webservices
+    - /rest
+    - /soap
+    - /rest/AuthRestServices/submitPreAuth
+    - /rest/MemberRestServices/fetchMember
+    - /rest/RxPARestServices/getQuestionSetRX
+    - /rest/AuthRestServices/getCptCodes
+  tables:
+    - authorization
+    - authorization_review
+    - auth_rule_provider
+    - auth_rule_diagnosis
+    - appeals_type
+    - appeals_sub_category
+    - grievance
+    - careplan
+    - member
+    - member_eligibility
+    - case_workflow

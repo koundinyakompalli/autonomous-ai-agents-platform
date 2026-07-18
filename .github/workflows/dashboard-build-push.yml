@@ -1,0 +1,393 @@
+name: Build / Service / Dashboard
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/dashboard-build-push.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/dashboard-build-push.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECR_REPOSITORY: specter/dashboard
+  ECS_CLUSTER: specter-cluster
+  ECS_SERVICE: DASHBOARD
+  NODE_VERSION: '26'
+  SERVICE_NAME: Dashboard
+  SERVICE_DESCRIPTION: "Pixel-art office UI — live view of all Specter agents and their tasks"
+
+jobs:
+  # ============================================================================
+  # STAGE 1: BUILD
+  # ============================================================================
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm --prefix dashboard ci
+          ln -sfn dashboard/node_modules node_modules
+
+      - name: Build (Vite frontend + tsc server)
+        working-directory: dashboard
+        run: |
+          npm run build
+          echo "Build successful"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dashboard-dist
+          path: dashboard/dist/
+          retention-days: 1
+
+  # ============================================================================
+  # STAGE 2: CODE QUALITY
+  # ============================================================================
+  code-quality:
+    name: "Code Quality"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm --prefix dashboard ci
+          ln -sfn dashboard/node_modules node_modules
+
+      - name: TypeScript type check
+        working-directory: dashboard
+        run: npm run typecheck
+
+  # ============================================================================
+  # STAGE 3: TEST
+  # ============================================================================
+  test:
+    name: "Test"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm --prefix dashboard ci
+          ln -sfn dashboard/node_modules node_modules
+
+      - name: Run tests
+        working-directory: dashboard
+        run: npm test
+
+  # ============================================================================
+  # STAGE 4: SECURITY SCAN
+  # ============================================================================
+  security-scan:
+    name: "Security Scan"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm --prefix dashboard ci
+          ln -sfn dashboard/node_modules node_modules
+
+      - name: NPM Audit
+        working-directory: dashboard
+        run: npm audit --audit-level=high 2>&1 || true
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 5: DOCKER BUILD
+  # ============================================================================
+  docker-build:
+    name: "Docker Build"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality, test, security-scan]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dashboard-dist
+          path: dashboard/dist/
+
+      - name: Build Docker image
+        run: |
+          docker build -f dashboard/Dockerfile \
+            -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
+            dashboard/
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Install and run Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update && sudo apt-get install trivy -y
+          trivy image --severity HIGH,CRITICAL --exit-code 0 ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 6: PUSH TO ECR
+  # ============================================================================
+  push-to-ecr:
+    name: "Push to ECR"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dashboard-dist
+          path: dashboard/dist/
+
+      - name: Build Docker image
+        run: |
+          docker build -f dashboard/Dockerfile \
+            -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
+            dashboard/
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push Docker image to ECR
+        run: |
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker tag ${{ env.ECR_REPOSITORY }}:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: ECR push summary
+        run: |
+          echo "## ECR Push Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # STAGE 7: DEPLOY TO ECS
+  # ============================================================================
+  deploy-to-ecs:
+    name: "Deploy to ECS"
+    runs-on: ubuntu-latest
+    needs: push-to-ecr
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Force new ECS deployment
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment
+          echo "Deployment initiated for ${{ env.ECS_SERVICE }}"
+
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}
+          echo "Service ${{ env.ECS_SERVICE }} is now stable"
+        timeout-minutes: 10
+
+      - name: Deployment summary
+        run: |
+          echo "## Dashboard Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://productFactory.mhkdevsandbox.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # PR SUMMARY
+  # ============================================================================
+  pr-summary:
+    name: "PR Summary"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: PR build summary
+        run: echo "## ${{ env.SERVICE_NAME }} - PR Verification Complete" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # TEAMS NOTIFICATIONS
+  # ============================================================================
+  notify-teams-success:
+    name: "Teams Notification (Success)"
+    runs-on: ubuntu-latest
+    needs: deploy-to-ecs
+    if: success() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Send Teams success notification
+        run: |
+          cat << 'EOF' > payload.json
+          {
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "type": "AdaptiveCard",
+            "version": "1.4",
+            "body": [
+              {
+                "type": "TextBlock",
+                "size": "Large",
+                "weight": "Bolder",
+                "text": "Dashboard - Deployed to ECS"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Pixel-art office UI — live view of all Specter agents and their tasks",
+                "isSubtle": true,
+                "wrap": true
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  {"title": "Service",  "value": "Dashboard"},
+                  {"title": "URL",      "value": "https://productFactory.mhkdevsandbox.com"},
+                  {"title": "Cluster",  "value": "specter-cluster"},
+                  {"title": "Status",   "value": "Deployed"},
+                  {"title": "Branch",   "value": "${{ github.ref_name }}"},
+                  {"title": "Author",   "value": "${{ github.actor }}"}
+                ]
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.OpenUrl",
+                "title": "Open Dashboard",
+                "url": "https://productFactory.mhkdevsandbox.com"
+              },
+              {
+                "type": "Action.OpenUrl",
+                "title": "View Pipeline",
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
+          EOF
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK_URL }}"
+        continue-on-error: true
+
+  notify-teams-failure:
+    name: "Teams Notification (Failure)"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality, test, security-scan, docker-build, push-to-ecr, deploy-to-ecs]
+    if: failure() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Send Teams failure notification
+        run: |
+          cat << 'EOF' > payload.json
+          {
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "type": "AdaptiveCard",
+            "version": "1.4",
+            "body": [
+              {
+                "type": "TextBlock",
+                "size": "Large",
+                "weight": "Bolder",
+                "text": "Dashboard - Pipeline Failed"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Pixel-art office UI — live view of all Specter agents and their tasks",
+                "isSubtle": true,
+                "wrap": true
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  {"title": "Service", "value": "Dashboard"},
+                  {"title": "Status",  "value": "Failed"},
+                  {"title": "Branch",  "value": "${{ github.ref_name }}"},
+                  {"title": "Author",  "value": "${{ github.actor }}"}
+                ]
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.OpenUrl",
+                "title": "View Pipeline Logs",
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
+          EOF
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK_URL }}"
+        continue-on-error: true

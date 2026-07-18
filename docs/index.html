@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Specter documentation landing page for the current orchestrator, worker, and Harvey architecture.">
+  <title>Specter Documentation</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-2: #1f2630;
+      --line: #30363d;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --accent: #58a6ff;
+      --accent-2: #79c0ff;
+      --good: #3fb950;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0d1117 0%, #101720 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .hero {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at top right, rgba(88, 166, 255, 0.18), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+        var(--panel);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: clamp(36px, 7vw, 68px); line-height: 1; }
+    h2 { font-size: 26px; margin-top: 28px; }
+    h3 { font-size: 18px; }
+    p { margin: 0 0 14px; color: var(--muted); }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .doc-list a,
+    .card a {
+      color: var(--accent-2);
+      text-decoration: none;
+    }
+
+    .doc-list a:hover,
+    .card a:hover {
+      text-decoration: underline;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--panel-2);
+      margin: 4px 6px 0 0;
+    }
+
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #0b0f14;
+      border-radius: 14px;
+      overflow: auto;
+      color: var(--text);
+    }
+
+    ul {
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .good { color: var(--good); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Current Documentation</div>
+      <h1>Specter</h1>
+      <p>
+        Specter is an asynchronous AI-agent platform with three runtime surfaces: the JIRA orchestrator,
+        specialized workers, and Harvey for Microsoft Teams intake.
+      </p>
+      <p>
+        The active runtime is based on the shared Claude Agent SDK wrapper, shared S3 task and result
+        buckets, and shared EFS repositories. Older Phoenix and MCP references are preserved only where
+        a filename remains for continuity.
+      </p>
+      <div>
+        <span class="pill">Claude Agent SDK</span>
+        <span class="pill">JIRA Orchestrator</span>
+        <span class="pill">Harvey Teams Bot</span>
+        <span class="pill">Shared EFS</span>
+        <span class="pill">Shared S3 Buckets</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Runtime Surfaces</h2>
+      <div class="grid three">
+        <div class="card">
+          <h3>Orchestrator</h3>
+          <p>Polls JIRA, enriches issues, writes task records, and posts completed JIRA results back.</p>
+        </div>
+        <div class="card">
+          <h3>Workers</h3>
+          <p>Claim tasks, prepare EFS workspaces, run agent logic, and upload markdown results to S3.</p>
+        </div>
+        <div class="card">
+          <h3>Harvey</h3>
+          <p>Accepts Teams requests, routes them into the same task pipeline, and proactively delivers results.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Current Agents</h2>
+      <div class="grid three">
+        <div class="card"><h3>DARCI</h3><p>Defect analysis and root-cause investigation.</p></div>
+        <div class="card"><h3>SCRIBE</h3><p>Code explanation and endpoint walkthroughs.</p></div>
+        <div class="card"><h3>PRISM</h3><p>Implementation planning and requirement refinement.</p></div>
+        <div class="card"><h3>HERMES</h3><p>Configuration and environment lookup.</p></div>
+        <div class="card"><h3>SENTRY</h3><p>SQL safety review against application models.</p></div>
+        <div class="card"><h3>BEACON</h3><p>MOANA SQL validation against HBM models.</p></div>
+        <div class="card"><h3>BCAT-PLANNER</h3><p>Spreadsheet-driven ticket planning.</p></div>
+        <div class="card"><h3>BCAT-EXECUTOR</h3><p>Bulk ticket creation and linking.</p></div>
+        <div class="card"><h3>VERITAS</h3><p>Evidence-driven RCA synthesis.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Essential Docs</h2>
+      <div class="grid two">
+        <div class="card doc-list">
+          <h3>Setup and Architecture</h3>
+          <ul>
+            <li><a href="./00-INDEX.md">00-INDEX.md</a></li>
+            <li><a href="./01-GETTING-STARTED.md">01-GETTING-STARTED.md</a></li>
+            <li><a href="./02-ARCHITECTURE.md">02-ARCHITECTURE.md</a></li>
+            <li><a href="../README.md">../README.md</a></li>
+          </ul>
+        </div>
+        <div class="card doc-list">
+          <h3>Operations</h3>
+          <ul>
+            <li><a href="./DEPLOYMENT_GUIDE.md">DEPLOYMENT_GUIDE.md</a></li>
+            <li><a href="./STATUS_API.md">STATUS_API.md</a></li>
+            <li><a href="./REAL_TIME_MONITORING.md">REAL_TIME_MONITORING.md</a></li>
+            <li><a href="../ORCHESTRATOR_README.md">../ORCHESTRATOR_README.md</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Architecture Snapshot</h2>
+      <pre>JIRA or Teams
+      |
+      v
+orchestrator / Harvey
+      |
+      v
+MySQL task state
+      |
+      v
+workers
+  |        |
+  v        v
+ EFS      S3</pre>
+      <p class="good">Current model: one shared task bucket and one shared result bucket.</p>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+# =============================================================================
+# .dockerignore — Specter project
+# =============================================================================
+# Keeps Docker build context small and prevents leaking secrets into images.
+
+# Version control
+.git
+.gitignore
+
+# Dependencies (rebuilt inside the image)
+node_modules
+dashboard/node_modules
+
+# Local OneShot runtime state and checked-out customer repos
+local-oneshot/data
+local-oneshot/data/**
+
+# Development / IDE
+.vscode
+.idea
+.claude
+*.swp
+*.swo
+*~
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+coverage
+.vitest
+.turbo
+.cache
+
+# Documentation and misc
+*.md
+!oneshot-prompts/**/*.md
+LICENSE
+docs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform/local scratch
+.terraform
+.terraform.lock.hcl
+*.tfplan
+tfplan.txt
+
+# Docker files (avoid recursive copy)
+Dockerfile*
+docker-compose*
+.dockerignore

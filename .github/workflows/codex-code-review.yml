@@ -1,0 +1,262 @@
+name: Codex-Code-Review
+run-name: Codex Review / ${{ inputs.jira_ticket }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      jira_ticket:
+        description: JIRA ticket key to review against, for example CPDEV-12345
+        type: string
+        required: true
+      pr_link:
+        description: GitHub pull request URL to review
+        type: string
+        required: true
+      model:
+        description: OpenAI model to use for review and optional fixes
+        type: choice
+        required: true
+        default: gpt-5.5
+        options:
+          - gpt-5.6-luna
+          - gpt-5.6-terra
+          - gpt-5.5
+      post_pr_comment:
+        description: Post the review summary as a PR comment when the token can write to that repo
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  NODE_VERSION: "20"
+  CODEX_CODE_REVIEW_MODEL: ${{ inputs.model || 'gpt-5.5' }}
+  CODEX_CODE_REVIEW_REASONING_EFFORT: xhigh
+  CODEX_CODE_REVIEW_OUTPUT_DIR: codex-code-review-output
+  OPENAI_MAX_TOOL_ITERATIONS: "100"
+  CODEX_CODE_REVIEW_MAX_FIX_TOOL_ITERATIONS: "100"
+  JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL || 'https://mhkjira.atlassian.net' }}
+  JIRA_USERNAME: ${{ secrets.JIRA_USERNAME || vars.JIRA_USERNAME }}
+  JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+  GITHUB_REPO_TOKEN: ${{ secrets.GITHUB_REPO_TOKEN }}
+  HAS_GITHUB_REPO_TOKEN: ${{ secrets.GITHUB_REPO_TOKEN != '' }}
+  GITHUB_REPO_TOKEN_SECRET_NAME: ${{ vars.GITHUB_REPO_TOKEN_SECRET_NAME || 'specter/prod/github-repository-token' }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  codex-code-review:
+    name: Review Jira Against PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      verdict: ${{ steps.review.outputs.verdict }}
+      reviewed_head_sha: ${{ steps.review.outputs.reviewed_head_sha }}
+      apply_candidate: ${{ steps.review.outputs.apply_candidate }}
+
+    steps:
+      - name: Checkout platform
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ env.HAS_GITHUB_REPO_TOKEN != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve GitHub repository token
+        if: ${{ env.HAS_GITHUB_REPO_TOKEN != 'true' }}
+        run: |
+          secret_value="$(aws secretsmanager get-secret-value \
+            --secret-id "$GITHUB_REPO_TOKEN_SECRET_NAME" \
+            --query SecretString \
+            --output text)"
+          token="$(SECRET_VALUE="$secret_value" node --input-type=module -e '
+            const value = process.env.SECRET_VALUE?.trim() ?? "";
+            if (!value) process.exit(0);
+            try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed === "string") {
+                console.log(parsed);
+              } else {
+                console.log(parsed.token || parsed.github_token || parsed.GITHUB_TOKEN || parsed.GITHUB_REPO_TOKEN || parsed.value || "");
+              }
+            } catch {
+              console.log(value);
+            }
+          ')"
+          if [ -z "$token" ]; then
+            echo "Could not resolve a GitHub repository token from $GITHUB_REPO_TOKEN_SECRET_NAME" >&2
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          {
+            echo "GITHUB_REPO_TOKEN<<EOF"
+            printf '%s\n' "$token"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Run Codex-Code-Review
+        id: review
+        env:
+          JIRA_TICKET_INPUT: ${{ inputs.jira_ticket }}
+          PR_LINK_INPUT: ${{ inputs.pr_link }}
+          CODEX_CODE_REVIEW_POST_PR_COMMENT: ${{ inputs.post_pr_comment }}
+        run: |
+          npm run codex-code-review -- \
+            --phase review \
+            --jira-ticket "$JIRA_TICKET_INPUT" \
+            --pr-link "$PR_LINK_INPUT"
+
+      - name: Upload review artifacts
+        if: always() && hashFiles('codex-code-review-output/**') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: codex-code-review-${{ inputs.jira_ticket }}
+          path: codex-code-review-output
+          retention-days: 30
+
+  apply-approved-fixes:
+    name: Apply Approved Fixes
+    needs: codex-code-review
+    if: ${{ needs['codex-code-review'].outputs.apply_candidate == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: specter-code-review-fixes
+      url: ${{ inputs.pr_link }}
+    env:
+      GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
+      HAS_GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN != '' }}
+      GITHUB_WRITE_TOKEN_SECRET_NAME: ${{ vars.GITHUB_WRITE_TOKEN_SECRET_NAME || 'specter/prod/github-write-token' }}
+
+    steps:
+      - name: Checkout platform
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download review artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: codex-code-review-${{ inputs.jira_ticket }}
+          path: codex-code-review-output
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ env.HAS_GITHUB_REPO_TOKEN != 'true' || env.HAS_GITHUB_WRITE_TOKEN != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve GitHub repository token
+        if: ${{ env.HAS_GITHUB_REPO_TOKEN != 'true' }}
+        run: |
+          secret_value="$(aws secretsmanager get-secret-value \
+            --secret-id "$GITHUB_REPO_TOKEN_SECRET_NAME" \
+            --query SecretString \
+            --output text)"
+          token="$(SECRET_VALUE="$secret_value" node --input-type=module -e '
+            const value = process.env.SECRET_VALUE?.trim() ?? "";
+            if (!value) process.exit(0);
+            try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed === "string") {
+                console.log(parsed);
+              } else {
+                console.log(parsed.token || parsed.github_token || parsed.GITHUB_TOKEN || parsed.GITHUB_REPO_TOKEN || parsed.value || "");
+              }
+            } catch {
+              console.log(value);
+            }
+          ')"
+          if [ -z "$token" ]; then
+            echo "Could not resolve a GitHub repository token from $GITHUB_REPO_TOKEN_SECRET_NAME" >&2
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          {
+            echo "GITHUB_REPO_TOKEN<<EOF"
+            printf '%s\n' "$token"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Resolve GitHub write token
+        env:
+          PROVIDED_GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
+        run: |
+          if [ -n "$PROVIDED_GITHUB_WRITE_TOKEN" ]; then
+            echo "::add-mask::$PROVIDED_GITHUB_WRITE_TOKEN"
+            {
+              echo "GITHUB_WRITE_TOKEN<<EOF"
+              printf '%s\n' "$PROVIDED_GITHUB_WRITE_TOKEN"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          secret_value="$(aws secretsmanager get-secret-value \
+            --secret-id "$GITHUB_WRITE_TOKEN_SECRET_NAME" \
+            --query SecretString \
+            --output text)"
+          token="$(SECRET_VALUE="$secret_value" node --input-type=module -e '
+            const value = process.env.SECRET_VALUE?.trim() ?? "";
+            if (!value) process.exit(0);
+            try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed === "string") {
+                console.log(parsed);
+              } else {
+                console.log(parsed.token || parsed.github_token || parsed.GITHUB_TOKEN || parsed.GITHUB_WRITE_TOKEN || parsed.value || "");
+              }
+            } catch {
+              console.log(value);
+            }
+          ')"
+          if [ -z "$token" ]; then
+            echo "Could not resolve a GitHub write token from $GITHUB_WRITE_TOKEN_SECRET_NAME" >&2
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          {
+            echo "GITHUB_WRITE_TOKEN<<EOF"
+            printf '%s\n' "$token"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Apply approved Codex fixes
+        env:
+          CODEX_CODE_REVIEW_POST_PR_COMMENT: ${{ inputs.post_pr_comment }}
+        run: |
+          npm run codex-code-review -- \
+            --phase apply \
+            --review-dir codex-code-review-output \
+            --output-dir codex-code-review-output
+
+      - name: Upload fix artifacts
+        if: always() && hashFiles('codex-code-review-output/fixes.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: codex-code-review-fixes-${{ inputs.jira_ticket }}
+          path: codex-code-review-output
+          retention-days: 30

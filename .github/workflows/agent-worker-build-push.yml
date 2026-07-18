@@ -1,0 +1,88 @@
+name: Build / Worker / Manual Push
+run-name: Worker Push / ${{ inputs.agent_key }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_key:
+        description: Agent key used for the worker ECR repository (lowercase or kebab-case)
+        type: string
+        required: true
+      worker_type:
+        description: WORKER_TYPE passed to the container runtime
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  NODE_VERSION: "20"
+
+jobs:
+  build-and-push:
+    name: Build and Push Worker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Resolve worker source entry
+        run: |
+          python3 .github/scripts/resolve-worker-entry.py \
+            --worker-type "${{ inputs.worker_type }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Verify ECR repository exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names "specter/${{ inputs.agent_key }}-worker" >/dev/null
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.worker -t "specter/${{ inputs.agent_key }}-worker:${{ github.sha }}" .
+          docker tag "specter/${{ inputs.agent_key }}-worker:${{ github.sha }}" "specter/${{ inputs.agent_key }}-worker:latest"
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push Docker image to ECR
+        run: |
+          docker tag "specter/${{ inputs.agent_key }}-worker:${{ github.sha }}" "${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:${{ github.sha }}"
+          docker tag "specter/${{ inputs.agent_key }}-worker:latest" "${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:latest"
+          docker push "${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:${{ github.sha }}"
+          docker push "${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:latest"
+
+      - name: Summary
+        run: |
+          echo "### Worker image push complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Agent key: \`${{ inputs.agent_key }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Worker type: \`${{ inputs.worker_type }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Latest tag: \`${ECR_REGISTRY}/specter/${{ inputs.agent_key }}-worker:latest\`" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,4 @@
+-- Historical migration slot retained for repository and deployment continuity.
+--
+-- Local Cockpit history persistence is disabled by governance policy, so this
+-- migration intentionally performs no database changes.

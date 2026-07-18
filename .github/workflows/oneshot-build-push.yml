@@ -1,0 +1,219 @@
+name: Build / Service / OneShot
+run-name: OneShot / ${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref_name }} / ${{ github.actor }}
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'src/oneshot/**'
+      - 'src/claude-sdk/**'
+      - 'src/config/**'
+      - 'src/orchestrator/database.ts'
+      - 'src/utils/**'
+      - 'Dockerfile.oneshot'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'oneshot-prompts/**'
+      - 'scripts/publish-oneshot-prompts.sh'
+      - '.github/workflows/oneshot-build-push.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'src/oneshot/**'
+      - 'src/claude-sdk/**'
+      - 'src/config/**'
+      - 'src/orchestrator/database.ts'
+      - 'src/utils/**'
+      - 'Dockerfile.oneshot'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'oneshot-prompts/**'
+      - 'scripts/publish-oneshot-prompts.sh'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECR_REPOSITORY: specter/oneshot
+  ECS_CLUSTER: specter-cluster
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    name: "🔨 Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  test:
+    name: "🧪 Test"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run OneShot tests
+        run: |
+          npm run test -- --run \
+            src/oneshot/config.test.ts \
+            src/oneshot/contracts.test.ts \
+            src/oneshot/repo-resolution.test.ts \
+            src/oneshot/branch-resolution.test.ts \
+            src/oneshot/schema/review.test.ts \
+            src/oneshot/review-context.test.ts \
+            src/oneshot/schema/implementation.test.ts \
+            src/oneshot/github.test.ts \
+            src/oneshot/pr-body.test.ts \
+            src/oneshot/schema/code-review.test.ts \
+            src/oneshot/schema/test-result.test.ts \
+            src/oneshot/schema/qualification.test.ts \
+            src/oneshot/test-executor.test.ts
+
+  docker-build:
+    name: "🐳 Docker Build"
+    runs-on: ubuntu-latest
+    needs: [build, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.oneshot -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+  push-and-deploy:
+    name: "🚀 Push and Deploy"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.oneshot -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Detect OneShot ECR repository
+        id: detect-repo
+        run: |
+          if aws ecr describe-repositories --repository-names "${ECR_REPOSITORY}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to Amazon ECR
+        if: steps.detect-repo.outputs.exists == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push Docker image to ECR
+        if: steps.detect-repo.outputs.exists == 'true'
+        run: |
+          docker tag "${ECR_REPOSITORY}:${{ github.sha }}" "${ECR_REGISTRY}/${ECR_REPOSITORY}:${{ github.sha }}"
+          docker tag "${ECR_REPOSITORY}:latest" "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${{ github.sha }}"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+
+      - name: Force new deployments for OneShot services
+        if: steps.detect-repo.outputs.exists == 'true'
+        run: |
+          DEPLOYED_SERVICES=""
+          SKIPPED_SERVICES=""
+          for SERVICE in PLANNER REVIEWER IMPLEMENTER CODE_REVIEWER TESTER; do
+            if aws ecs describe-services \
+              --cluster "${ECS_CLUSTER}" \
+              --services "${SERVICE}" \
+              --query 'services[0].status' \
+              --output text 2>/dev/null | grep -q ACTIVE; then
+              aws ecs update-service \
+                --cluster "${ECS_CLUSTER}" \
+                --service "${SERVICE}" \
+                --force-new-deployment >/dev/null
+              aws ecs wait services-stable \
+                --cluster "${ECS_CLUSTER}" \
+                --services "${SERVICE}"
+              DEPLOYED_SERVICES="${DEPLOYED_SERVICES} ${SERVICE}"
+            else
+              SKIPPED_SERVICES="${SKIPPED_SERVICES} ${SERVICE}"
+            fi
+          done
+
+          {
+            echo "deployed=${DEPLOYED_SERVICES# }"
+            echo "skipped=${SKIPPED_SERVICES# }"
+          } >> "$GITHUB_OUTPUT"
+        id: deploy
+
+      - name: Summary
+        run: |
+          echo "### OneShot image rollout" >> "$GITHUB_STEP_SUMMARY"
+          echo "- ECR repository exists: \`${{ steps.detect-repo.outputs.exists }}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.detect-repo.outputs.exists }}" = "true" ]; then
+            echo "- Image: \`${ECR_REGISTRY}/${ECR_REPOSITORY}:${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Deployed services: \`${{ steps.deploy.outputs.deployed || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Skipped services: \`${{ steps.deploy.outputs.skipped || 'none' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Skipped push/deploy because \`${ECR_REPOSITORY}\` does not exist yet." >> "$GITHUB_STEP_SUMMARY"
+          fi

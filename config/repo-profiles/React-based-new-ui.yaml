@@ -1,0 +1,35 @@
+schema_version: 1
+profile_version: 1
+generated_at: "2026-04-29T00:00:00Z"
+source_repo_commit_sha: unknown
+generated:
+  aliases:
+    - React-based-new-ui
+    - react based new ui
+    - cp-mhk-smart-prominence
+    - smart prominence
+  domains:
+    - react-ui
+    - ocr-ui
+    - md-review
+    - react ui
+    - new ui
+  packages:
+    - react
+  file_path_patterns:
+    - smart-prominence
+    - md-review
+    - ocr-ui
+  symbols:
+    - MdReview
+    - Ocr
+  endpoints: []
+  tables: []
+curated:
+  aliases: []
+  domains: []
+  packages: []
+  file_path_patterns: []
+  symbols: []
+  endpoints: []
+  tables: []

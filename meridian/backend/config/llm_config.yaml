@@ -1,0 +1,10 @@
+# LLM configuration for MERIDIAN natural-language / unstructured input fallback.
+# Edit model_id or region here — no code change needed.
+
+bedrock:
+  region: us-east-2
+  # Haiku: fast, cheap, sufficient for structured data extraction
+  model_id: us.anthropic.claude-haiku-4-5-20251001-v1:0
+  max_tokens: 4096
+  temperature: 0.0   # deterministic extraction only
+  max_sheet_rows: 10000   # max rows sent to LLM for extraction; override with MERIDIAN_LLM_MAX_ROWS env var

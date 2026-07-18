@@ -1,0 +1,106 @@
+# =============================================================================
+# Dockerfile.harvey — Harvey Conversational Intake Service
+# =============================================================================
+# Multi-stage build for the Harvey Bot Framework service.
+# Produces a minimal runtime image with only compiled JS and production deps.
+#
+# Build:
+#   docker build -f Dockerfile.harvey -t specter-harvey .
+#
+# Run:
+#   docker run -p 3978:3978 \
+#     -e TEAMS_APP_ID=... \
+#     -e TEAMS_APP_PASSWORD=... \
+#     -e AWS_REGION=us-east-2 \
+#     -e BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-5-20250929-v1:0 \
+#     -e DB_HOST=... \
+#     specter-harvey
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Stage 1: Builder — install all deps and compile TypeScript
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /build
+
+# Copy dependency manifests first for layer caching
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install ALL dependencies (dev + prod) needed for the TypeScript build
+RUN npm ci
+
+# Copy source and compile
+COPY src/ ./src/
+COPY scripts/copy-spec-factory-assets.mjs ./scripts/copy-spec-factory-assets.mjs
+
+RUN npm exec -- tsc
+
+# ---------------------------------------------------------------------------
+# Stage 2: Production dependencies only
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS deps
+
+WORKDIR /deps
+
+COPY package*.json ./
+
+# Install production dependencies only — no devDependencies
+RUN npm ci --omit=dev
+
+# ---------------------------------------------------------------------------
+# Stage 3: Runtime — minimal image
+# ---------------------------------------------------------------------------
+FROM node:20-alpine AS runtime
+
+# Install curl for health checks (not included in Alpine by default)
+RUN apk add --no-cache curl
+
+# -------------------------------------------------------------------------
+# Non-root user
+# -------------------------------------------------------------------------
+RUN addgroup -S harvey && adduser -S harvey -G harvey
+
+WORKDIR /app
+
+# Copy production node_modules from deps stage
+COPY --from=deps /deps/node_modules ./node_modules/
+
+# Copy compiled JavaScript from builder stage
+COPY --from=builder /build/dist ./dist/
+
+# Copy package.json (needed for ESM "type": "module" resolution)
+COPY package.json ./
+
+# -------------------------------------------------------------------------
+# Environment variables — sensible defaults
+# -------------------------------------------------------------------------
+ENV NODE_ENV=production
+ENV HARVEY_PORT=3978
+ENV HARVEY_HOST=0.0.0.0
+
+# AWS / Bedrock defaults (override at runtime)
+ENV AWS_REGION=us-east-2
+ENV CLAUDE_CODE_USE_BEDROCK=1
+
+# -------------------------------------------------------------------------
+# Expose Bot Framework standard port
+# -------------------------------------------------------------------------
+EXPOSE 3978
+
+# -------------------------------------------------------------------------
+# Health check — hits the /health endpoint defined in harvey-main.ts
+# -------------------------------------------------------------------------
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3978/health || exit 1
+
+# -------------------------------------------------------------------------
+# Run as non-root
+# -------------------------------------------------------------------------
+USER harvey
+
+# -------------------------------------------------------------------------
+# Entry point
+# -------------------------------------------------------------------------
+CMD ["node", "dist/harvey-main.js"]

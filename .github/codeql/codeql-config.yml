@@ -1,0 +1,15 @@
+name: Specter CodeQL config
+
+paths-ignore:
+  - "node_modules/**"
+  - "dashboard/node_modules/**"
+  - "dist/**"
+  - "dashboard/dist/**"
+  - "terraform/.terraform/**"
+  - "terraform/build/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.tsx"
+  - "docs/**"
+  - "plans/**"

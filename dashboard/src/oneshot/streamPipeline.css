@@ -1,0 +1,829 @@
+/* ============================================================
+   Pipeline — "Stream" concept (Gemini-flavored)
+   ============================================================
+   Glassy compact landscape cards carrying a drifting multi-color orb.
+   Three blurred radial blobs (b1/b2/b3) layered with mix-blend-mode:
+   screen translate + scale on independent loops so the color "thinks".
+   Connectors are kinetic SVG s-curves with a comet head + diffusing
+   trail — only animated when the previous stage is running.
+
+   Color semantics:
+   - active   = Google blue / purple / pink (multi-color thinking orb)
+   - done     = Google green / lgreen / mint (settled)
+   - failed   = Google red / pinkish-red (breathing red halo + X)
+   - queued / pending / waiting / skipped = dark glass, no orb
+     (waiting + skipped get an indicator on top of the dark shell)
+
+   Scope: every selector lives under .liquid-glass-scope .pipeline so
+   nothing leaks to the surrounding dashboard.
+   ============================================================ */
+
+.liquid-glass-scope .pipeline {
+  /* Gemini palette — local to this component. Does not replace
+     existing app accents (--accent / --running etc.). */
+  --g-blue:    #4285F4;
+  --g-lblue:   #84B5F2;
+  --g-purple:  #A142F4;
+  --g-magenta: #D158E0;
+  --g-pink:    #FF8FA8;
+  --g-green:   #34A853;
+  --g-lgreen:  #5FB874;
+  --g-mint:    #9BCBA8;
+  --g-red:     #EA4335;
+  --g-coral:   #F76B6B;
+  --g-peach:   #FFB199;
+
+  /* Override the existing flat-card row layout while preserving the
+     main-branch compact card footprint. */
+  align-items: center;
+  gap: 0;
+  padding-inline: 4px;
+  scroll-padding-inline: 4px;
+}
+
+/* ─── Card ─────────────────────────────────────────────────────── */
+
+.liquid-glass-scope .pipeline .stream-card {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 150px;
+  min-height: 108px;
+  padding: 16px 16px 14px;
+  border-radius: var(--r-md);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-family: var(--sans, 'Inter', sans-serif);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: pointer;
+  text-align: left;
+  /* Click-to-select transitions are short; orb + halo handle the rest. */
+  transition: transform 0.18s, box-shadow 0.4s, border-color 0.18s;
+}
+.liquid-glass-scope .pipeline .stream-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #0a0a0c;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  z-index: 0;
+}
+.liquid-glass-scope .pipeline .stream-card:hover {
+  transform: translateY(-1px);
+}
+.liquid-glass-scope .pipeline .stream-card:active {
+  transform: scale(0.99);
+}
+/* Kill the UA-drawn focus ring (rectangular, ignores border-radius).
+   The visible keyboard ring is drawn by ::after so it stays inside the
+   card and cannot be clipped by the horizontal scroll container. */
+.liquid-glass-scope .pipeline .stream-card:focus {
+  outline: none;
+}
+.liquid-glass-scope .pipeline .stream-card:focus-visible {
+  outline: none;
+}
+
+/* Thin top hairline catches a sliver of light like real glass */
+.liquid-glass-scope .pipeline .stream-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  z-index: 3;
+  transition: box-shadow 0.18s;
+}
+.liquid-glass-scope .pipeline .stream-card.selected::after,
+.liquid-glass-scope .pipeline .stream-card:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+}
+.liquid-glass-scope .pipeline .stream-card.running.selected::after,
+.liquid-glass-scope .pipeline .stream-card.running:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.52),
+    inset 0 0 0 4px rgba(66, 133, 244, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+}
+.liquid-glass-scope .pipeline .stream-card.completed.selected::after,
+.liquid-glass-scope .pipeline .stream-card.completed:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.48),
+    inset 0 0 0 4px rgba(52, 168, 83, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.13);
+}
+.liquid-glass-scope .pipeline .stream-card.failed.selected::after,
+.liquid-glass-scope .pipeline .stream-card.failed:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.52),
+    inset 0 0 0 4px rgba(234, 67, 53, 0.32),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.13);
+}
+
+/* ─── Orb layer ─────────────────────────────────────────────────
+   Three overlapping blurred radial color blobs that drift on
+   independent ease-in-out loops. Each blob lives in its own
+   keyframe so the resulting orb shape never repeats exactly. */
+
+.liquid-glass-scope .pipeline .stream-card .c2-orb {
+  position: absolute;
+  inset: -25%;
+  overflow: hidden;
+  border-radius: 60%;
+  filter: blur(34px) saturate(1.15);
+  opacity: 0;
+  transition: opacity 0.8s, filter 0.8s;
+  z-index: 0;
+  pointer-events: none;
+}
+.liquid-glass-scope .pipeline .stream-card .c2-orb-blob {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b1 {
+  background: radial-gradient(circle, var(--g-blue) 0%, transparent 60%);
+}
+.liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b2 {
+  background: radial-gradient(circle, var(--g-purple) 0%, transparent 55%);
+}
+.liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b3 {
+  background: radial-gradient(circle, var(--g-pink) 0%, transparent 55%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b1 {
+    animation: stream-drift-1 9s ease-in-out infinite alternate;
+  }
+  .liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b2 {
+    animation: stream-drift-2 11s ease-in-out infinite alternate;
+  }
+  .liquid-glass-scope .pipeline .stream-card .c2-orb-blob.b3 {
+    animation: stream-drift-3 13s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes stream-drift-1 {
+  0%   { transform: translate(-10%, -15%) scale(1); }
+  100% { transform: translate(15%, 5%)    scale(1.15); }
+}
+@keyframes stream-drift-2 {
+  0%   { transform: translate(20%, 10%) scale(1.1); }
+  100% { transform: translate(-5%, 25%) scale(0.95); }
+}
+@keyframes stream-drift-3 {
+  0%   { transform: translate(0%, 30%)  scale(0.9); }
+  100% { transform: translate(25%, -10%) scale(1.1); }
+}
+
+/* Active: while running, the interior orb is retired and the
+   border-runner "string lights" own the signal. Vignette is held
+   back so the edge light reads cleanly against the dark shell.
+   (The orb-related transitions remain, so completed/failed transitions
+   still fade smoothly.) */
+.liquid-glass-scope .pipeline .stream-card.running .c2-orb {
+  opacity: 0;
+}
+.liquid-glass-scope .pipeline .stream-card.running .c2-vignette {
+  opacity: 0.36;
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 95%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.004) 0%, transparent 34%, transparent 66%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+/* Completed / failed: orb is retired so the static green/red edge band
+   (defined alongside the running border-runner rules below) owns the
+   state signal. Center stays dark glass, matching the running tile. */
+.liquid-glass-scope .pipeline .stream-card.completed .c2-orb,
+.liquid-glass-scope .pipeline .stream-card.failed .c2-orb {
+  opacity: 0;
+}
+
+/* Queued / pending / waiting / skipped: dark glass, no orb */
+.liquid-glass-scope .pipeline .stream-card.queued,
+.liquid-glass-scope .pipeline .stream-card.pending,
+.liquid-glass-scope .pipeline .stream-card.waiting,
+.liquid-glass-scope .pipeline .stream-card.skipped {
+  background: transparent;
+}
+.liquid-glass-scope .pipeline .stream-card.queued::before,
+.liquid-glass-scope .pipeline .stream-card.pending::before,
+.liquid-glass-scope .pipeline .stream-card.waiting::before,
+.liquid-glass-scope .pipeline .stream-card.skipped::before {
+  background: #0e0f12;
+}
+.liquid-glass-scope .pipeline .stream-card.queued .c2-orb,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-orb,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-orb,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-orb {
+  opacity: 0;
+}
+
+/* ─── Inner vignette ─────────────────────────────────────────── */
+
+.liquid-glass-scope .pipeline .stream-card .c2-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.35) 95%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, transparent 32%, transparent 68%, rgba(0, 0, 0, 0.32) 100%);
+}
+.liquid-glass-scope .pipeline .stream-card.queued .c2-vignette,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-vignette,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-vignette,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-vignette {
+  background:
+    radial-gradient(120% 100% at 22% 18%, rgba(255, 255, 255, 0.04) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.004));
+}
+
+/* ─── State shells ─────────────────────────────────────────── */
+
+.liquid-glass-scope .pipeline .stream-card.running {
+  box-shadow: none;
+}
+.liquid-glass-scope .pipeline .stream-card.failed {
+  box-shadow: none;
+}
+
+/* Selected card — the crisp orange ring is inset via ::after so it
+   cannot be clipped by the horizontal scroll container. */
+.liquid-glass-scope .pipeline .stream-card.selected:not(.running):not(.failed) {
+  box-shadow: none;
+}
+.liquid-glass-scope .pipeline .stream-card.running.selected {
+  box-shadow: none;
+}
+.liquid-glass-scope .pipeline .stream-card.failed.selected {
+  box-shadow: none;
+}
+
+/* Breathing pulse on running + failed */
+@media (prefers-reduced-motion: no-preference) {
+  .liquid-glass-scope .pipeline .stream-card.running,
+  .liquid-glass-scope .pipeline .stream-card.failed {
+    animation: stream-breathe 8.5s ease-in-out infinite;
+  }
+}
+@keyframes stream-breathe {
+  0%, 100% { transform: translateY(0)   scale(1); }
+  50%      { transform: translateY(-1px) scale(1.012); }
+}
+
+/* ─── Card content ─────────────────────────────────────────── */
+
+.liquid-glass-scope .pipeline .stream-card .c2-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  gap: 8px;
+  min-height: 18px;
+}
+.liquid-glass-scope .pipeline .stream-card .c2-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.liquid-glass-scope .pipeline .stream-card .c2-model {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.78);
+  text-align: right;
+  line-height: 1.3;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liquid-glass-scope .pipeline .stream-card.queued .c2-num,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-num,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-num,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-num,
+.liquid-glass-scope .pipeline .stream-card.queued .c2-model,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-model,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-model,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-model {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.liquid-glass-scope .pipeline .stream-card .c2-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  line-height: 1.05;
+  min-height: 34px;
+  padding: 2px 0;
+  text-transform: uppercase;
+}
+.liquid-glass-scope .pipeline .stream-card.queued .c2-name,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-name,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-name,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-name {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+
+.liquid-glass-scope .pipeline .stream-card .c2-bottom {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  min-height: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.liquid-glass-scope .pipeline .stream-card .c2-bottom > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.liquid-glass-scope .pipeline .stream-card.queued .c2-bottom,
+.liquid-glass-scope .pipeline .stream-card.pending .c2-bottom,
+.liquid-glass-scope .pipeline .stream-card.waiting .c2-bottom,
+.liquid-glass-scope .pipeline .stream-card.skipped .c2-bottom {
+  color: rgba(255, 255, 255, 0.32);
+}
+.liquid-glass-scope .pipeline .stream-card .c2-bottom .live {
+  color: #fff;
+}
+
+/* Status iconography — small (11px) glyphs sit next to the index in c2-num.
+   Done = green check, running = spinner, failed = red X, queued = dashed
+   circle, waiting = small amber dot, skipped = horizontal slash. */
+.liquid-glass-scope .pipeline .stream-card .stream-icon {
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+}
+.liquid-glass-scope .pipeline .stream-card .stream-icon.ok {
+  color: var(--g-lgreen);
+}
+.liquid-glass-scope .pipeline .stream-card .stream-icon.bad {
+  color: #FF8B7A;
+}
+.liquid-glass-scope .pipeline .stream-card .stream-icon.dim {
+  color: rgba(255, 255, 255, 0.35);
+}
+.liquid-glass-scope .pipeline .stream-card .stream-spinner {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(132, 181, 242, 0.25);
+  border-top-color: var(--g-lblue);
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .liquid-glass-scope .pipeline .stream-card .stream-spinner {
+    animation: stream-spin 1.1s linear infinite;
+  }
+}
+@keyframes stream-spin {
+  to { transform: rotate(360deg); }
+}
+.liquid-glass-scope .pipeline .stream-card .stream-waiting-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 205, 128, 0.85);
+  box-shadow: 0 0 6px rgba(255, 205, 128, 0.5);
+  flex-shrink: 0;
+}
+
+/* Live elapsed ticker (running stage only) */
+.liquid-glass-scope .pipeline .stream-card .stream-meta-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--g-lblue);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+}
+.liquid-glass-scope .pipeline .stream-card .stream-meta-pulse {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--g-lblue);
+  box-shadow: 0 0 6px var(--g-lblue);
+  flex-shrink: 0;
+}
+
+/* ─── Border runner — "string lights" on the glass edge ────
+   Three beads (blue/purple/pink) trace the rounded card perimeter
+   when the stage is running. Bead halos are clipped by the card's
+   overflow:hidden so the inner half spills onto the dark shell,
+   producing the inward hue-bleed. CSS Motion Path keeps the bead
+   on the exact perimeter regardless of card width.
+   NOTE: offset-path inset radius mirrors .stream-card border-radius. */
+
+.liquid-glass-scope .pipeline .stream-card .border-runner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  transition: opacity 0.35s ease-out;
+}
+.liquid-glass-scope .pipeline .stream-card.running .border-runner,
+.liquid-glass-scope .pipeline .stream-card.completed .border-runner,
+.liquid-glass-scope .pipeline .stream-card.failed .border-runner {
+  opacity: 1;
+}
+
+/* Always-on perimeter strip — a thin tinted band hugging the inner
+   edge, like an LED strip embedded behind the glass. The center 75%
+   of the tile is left as dark glass; the strip lights only ~22px
+   inward from the rounded border. */
+.liquid-glass-scope .pipeline .stream-card .border-runner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 2px rgba(66, 133, 244, 0.46),
+    inset 0 0 0 4px rgba(161, 66, 244, 0.14),
+    inset 0 0 16px rgba(66, 133, 244, 0.42);
+  animation: border-edge-breathe 10s ease-in-out infinite;
+  z-index: 0;
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 10px;
+  border-radius: inherit;
+  background:
+    radial-gradient(58% 46% at 18% 18%, rgba(66, 133, 244, 0.07), transparent 60%),
+    radial-gradient(58% 46% at 86% 82%, rgba(255, 143, 168, 0.058), transparent 62%),
+    linear-gradient(135deg, rgba(66, 133, 244, 0.028), rgba(161, 66, 244, 0.028) 52%, rgba(255, 143, 168, 0.024));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  z-index: 0;
+}
+
+/* Each bead is a small halo that travels the perimeter, smeared
+   tangent to the path so it reads as a brighter region of the strip
+   rather than a discrete dot. offset-rotate:auto aligns the bead's
+   local +X axis with the path direction, so transform: scaleX on the
+   halo always stretches *along* the perimeter (left-right on top/bottom
+   edges, up-down on side edges, smoothly arcing through corners). */
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  margin: -9px;
+  border-radius: 50%;
+  offset-path: inset(0 round var(--r-md));
+  offset-distance: 0%;
+  offset-rotate: auto;
+  animation: border-runner-trace 12s linear infinite;
+  animation-fill-mode: both;
+  will-change: offset-distance;
+  z-index: 1;
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.58;
+  mix-blend-mode: screen;
+  transform: scaleX(2.8);
+}
+
+/* Three beads ride the same perimeter with even phase offsets, so the
+   motion remains visible whichever edge is currently in view. */
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b1 {
+  animation-delay: -1.5s;
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b1::before {
+  background: radial-gradient(circle, rgba(66, 133, 244, 0.64) 0%, rgba(66, 133, 244, 0) 68%);
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b2 {
+  animation-delay: -5.5s;
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b2::before {
+  background: radial-gradient(circle, rgba(161, 66, 244, 0.6) 0%, rgba(161, 66, 244, 0) 68%);
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b3 {
+  animation-delay: -9.5s;
+}
+.liquid-glass-scope .pipeline .stream-card .border-runner .bead.b3::before {
+  background: radial-gradient(circle, rgba(255, 143, 168, 0.58) 0%, rgba(255, 143, 168, 0) 68%);
+}
+
+@keyframes border-runner-trace {
+  to { offset-distance: 100%; }
+}
+
+@keyframes border-edge-breathe {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 2px rgba(66, 133, 244, 0.52),
+      inset 0 0 0 4px rgba(161, 66, 244, 0.18),
+      inset 0 0 16px rgba(66, 133, 244, 0.46);
+  }
+  33% {
+    box-shadow:
+      inset 0 0 0 2px rgba(161, 66, 244, 0.5),
+      inset 0 0 0 4px rgba(255, 143, 168, 0.16),
+      inset 0 0 18px rgba(161, 66, 244, 0.46);
+  }
+  66% {
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 143, 168, 0.48),
+      inset 0 0 0 4px rgba(66, 133, 244, 0.16),
+      inset 0 0 16px rgba(255, 143, 168, 0.42);
+  }
+}
+
+/* Completed / failed reuse the same edge-LED mechanism as running, but
+   freeze it: no traveling crests, no color rotation. Just a solid green
+   or red band at the same 22px inset depth. The center of the tile
+   stays dark glass — the band alone signals state. */
+.liquid-glass-scope .pipeline .stream-card.completed .border-runner .bead,
+.liquid-glass-scope .pipeline .stream-card.failed .border-runner .bead {
+  display: none;
+}
+.liquid-glass-scope .pipeline .stream-card.completed .border-runner::before {
+  box-shadow:
+    inset 0 0 0 2px rgba(52, 168, 83, 0.5),
+    inset 0 0 0 4px rgba(155, 203, 168, 0.16),
+    inset 0 0 14px rgba(52, 168, 83, 0.38);
+  animation: none;
+}
+.liquid-glass-scope .pipeline .stream-card.completed .border-runner::after {
+  background:
+    radial-gradient(58% 46% at 16% 18%, rgba(52, 168, 83, 0.075), transparent 60%),
+    radial-gradient(58% 46% at 84% 82%, rgba(155, 203, 168, 0.06), transparent 62%),
+    linear-gradient(135deg, rgba(52, 168, 83, 0.03), rgba(155, 203, 168, 0.03));
+}
+.liquid-glass-scope .pipeline .stream-card.failed .border-runner::before {
+  box-shadow:
+    inset 0 0 0 2px rgba(234, 67, 53, 0.54),
+    inset 0 0 0 4px rgba(255, 177, 153, 0.16),
+    inset 0 0 16px rgba(234, 67, 53, 0.42);
+  animation: none;
+}
+.liquid-glass-scope .pipeline .stream-card.failed .border-runner::after {
+  background:
+    radial-gradient(58% 46% at 16% 18%, rgba(234, 67, 53, 0.08), transparent 60%),
+    radial-gradient(58% 46% at 84% 82%, rgba(255, 177, 153, 0.06), transparent 62%),
+    linear-gradient(135deg, rgba(234, 67, 53, 0.032), rgba(255, 177, 153, 0.03));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-scope .pipeline .stream-card .border-runner .bead,
+  .liquid-glass-scope .pipeline .stream-card .border-runner::before {
+    animation: none;
+  }
+  .liquid-glass-scope .pipeline .stream-card.running .border-runner::before {
+    box-shadow:
+      inset 0 0 0 2px rgba(161, 66, 244, 0.46),
+      inset 0 0 0 4px rgba(66, 133, 244, 0.16),
+      inset 0 0 16px rgba(161, 66, 244, 0.38);
+  }
+}
+
+/* ─── Channel (kinetic SVG connector) ─────────────────────── */
+
+.liquid-glass-scope .pipeline .stream-channel {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  height: 64px;
+  position: relative;
+  margin: 0 -2px;
+  z-index: 0;
+  align-self: center;
+}
+.liquid-glass-scope .pipeline .stream-channel svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.liquid-glass-scope .pipeline .stream-channel .rail {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+.liquid-glass-scope .pipeline .stream-channel .rail-live {
+  fill: none;
+  stroke: rgba(132, 181, 242, 0.62);
+  stroke-width: 2;
+  stroke-dasharray: 0;
+  filter: drop-shadow(0 0 5px rgba(132, 181, 242, 0.7));
+}
+.liquid-glass-scope .pipeline .stream-channel.done .rail {
+  stroke: rgba(127, 227, 161, 0.36);
+  stroke-dasharray: 0;
+}
+.liquid-glass-scope .pipeline .stream-channel.halted .rail {
+  stroke: rgba(255, 138, 131, 0.4);
+}
+
+/* ─── Light theme variant ─────────────────────────────────── */
+
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card {
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card::before {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card::after {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.selected::after,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.running.selected::after,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.running:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.54),
+    inset 0 0 0 4px rgba(66, 133, 244, 0.32),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.completed.selected::after,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.completed:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.5),
+    inset 0 0 0 4px rgba(52, 168, 83, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.failed.selected::after,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.failed:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 112, 0.54),
+    inset 0 0 0 4px rgba(234, 67, 53, 0.34),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+}
+/* Light bg flips the blend mode: orbs need to DARKEN paper, not lighten */
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-orb-blob {
+  mix-blend-mode: multiply;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-vignette {
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 40%, rgba(255, 255, 255, 0.5) 95%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 35%, transparent 65%, rgba(0, 0, 0, 0.04) 100%);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.running .c2-vignette {
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(255, 255, 255, 0.5) 95%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 36%, transparent 64%, rgba(0, 0, 0, 0.04) 100%);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.queued,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.pending,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.waiting,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.skipped {
+  background: transparent;
+  border-color: rgba(0, 0, 0, 0.05);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.queued::before,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.pending::before,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.waiting::before,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.skipped::before {
+  background: #f7f2ea;
+  border-color: rgba(0, 0, 0, 0.05);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.queued .c2-vignette,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.pending .c2-vignette,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.waiting .c2-vignette,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.skipped .c2-vignette {
+  background:
+    radial-gradient(120% 100% at 22% 18%, rgba(0, 0, 0, 0.025) 0%, transparent 60%),
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.025));
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-num {
+  color: rgba(42, 39, 34, 0.45);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-model {
+  color: rgba(42, 39, 34, 0.62);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-name {
+  color: #1a1814;
+  text-shadow: none;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.queued .c2-name,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.pending .c2-name,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.waiting .c2-name,
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.skipped .c2-name {
+  color: rgba(42, 39, 34, 0.55);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-bottom {
+  color: rgba(42, 39, 34, 0.65);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .c2-bottom .live {
+  color: #1a1814;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.running {
+  box-shadow: none;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.failed {
+  box-shadow: none;
+}
+
+/* Border runner — light theme: use a normal translucent overlay so
+   the moving beads remain legible on cream paper. */
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .border-runner .bead::before {
+  opacity: 0.5;
+  filter: blur(18px);
+  mix-blend-mode: normal;
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card .border-runner::before {
+  animation-name: border-edge-breathe-light;
+}
+@keyframes border-edge-breathe-light {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 2px rgba(66, 133, 244, 0.42),
+      inset 0 0 0 4px rgba(161, 66, 244, 0.13),
+      inset 0 0 14px rgba(66, 133, 244, 0.26);
+  }
+  33% {
+    box-shadow:
+      inset 0 0 0 2px rgba(161, 66, 244, 0.4),
+      inset 0 0 0 4px rgba(255, 143, 168, 0.13),
+      inset 0 0 16px rgba(161, 66, 244, 0.28);
+  }
+  66% {
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 143, 168, 0.38),
+      inset 0 0 0 4px rgba(66, 133, 244, 0.13),
+      inset 0 0 14px rgba(255, 143, 168, 0.24);
+  }
+}
+
+/* Light-theme static state bands — lower opacity so the green/red tints
+   stay pinned near the cream-paper edge instead of glowing across it. */
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.completed .border-runner::before {
+  box-shadow:
+    inset 0 0 0 2px rgba(52, 168, 83, 0.4),
+    inset 0 0 0 4px rgba(95, 184, 116, 0.13),
+    inset 0 0 14px rgba(52, 168, 83, 0.22);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-card.failed .border-runner::before {
+  box-shadow:
+    inset 0 0 0 2px rgba(234, 67, 53, 0.44),
+    inset 0 0 0 4px rgba(247, 107, 107, 0.14),
+    inset 0 0 16px rgba(234, 67, 53, 0.26);
+}
+
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-channel .rail {
+  stroke: rgba(0, 0, 0, 0.12);
+}
+.liquid-glass-scope[data-theme="light"] .pipeline .stream-channel .rail-live {
+  stroke: rgba(66, 133, 244, 0.78);
+  filter: drop-shadow(0 0 4px rgba(66, 133, 244, 0.5));
+}

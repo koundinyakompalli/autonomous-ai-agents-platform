@@ -1,0 +1,424 @@
+# Changelog
+
+## Unreleased
+
+- Pass the documentation synthesis feature flag to the Orchestrator task that runs documentation generation.
+- Keep the Harvey container build isolated from unrelated root post-build hooks by compiling TypeScript directly.
+- Add Wiz Code (SAST) as a distinct TRIAGE source: new `parsers/wiz-code.ts` with header auto-detection (weaknesses/filePath/resource.name), routing every SAST finding to Team A grouped by repo × module × CWE.
+- Create Wiz Code (SAST) stories (Team A, WIZ-CODE/SAST/PFOS labels) under `WIZ-CODE-SCAN-*` epic labels and push them into OneShot via PFOS, the same as Wiz-CVE stories; kept separate from the Wiz dependency-CVE `WIZ-SCAN-*` poller path.
+- Auto-apply Wiz Code scans: a `WIZ-CODE-SCAN-PENDING` epic is applied directly by the poller (create stories + queue into OneShot) with no `WIZ-CODE-SCAN-APPROVED` human gate, unlike the gated Wiz-CVE and Sonar paths.
+- Emit OneShot-format CPDEV story descriptions for Wiz Code and rewrite the SonarQube description to the same template (Summary / Overview / Acceptance Criteria / Technical Details / Where to Update / Out of Scope / Testing Notes).
+- Wire `wiz-code` into the orchestrator triage label poller and runtime header detection: `wiz-code`/`sast` filenames resolve ahead of the broad `wiz` prefix, and generic filenames sniff only the header line (never buffering large Wiz dependency exports) before selecting the parser. Document Wiz Code scan intake in the OneShot About/How-to guide.
+- Bump OneShot version to 1.21.66 for Retrofit source evidence qualification.
+- Resolve retrofit source pull requests from explicit ticket links, prior OneShot runs, source Jira links, and GitHub merged PR search before commit-grep fallback.
+- Treat retrofit source and target lookup failures as retryable platform errors without adding PFOS-NOT-QUALIFIED.
+- Bump OneShot version to 1.21.65 for Overview metric accuracy.
+- Fix OneShot Overview top-line outcome, spend, stage-health, time-to-PR, and open-work metrics so the tab uses backend-corrected semantics and less misleading labels.
+- Bump OneShot version to 1.21.64 for Retrofit plan contract round trip.
+- Preserve retrofit evidence and execution contracts through planner schema repair and canonical plan persistence.
+- Reset planning attempt state for reviewer-requested plan revisions and classify retrofit schema failures as plan-validation issues.
+- Bump OneShot version to 1.21.63 for Retrofit execution contract hardening.
+- Add a durable retrofit execution contract spanning qualification, planning, validation, implementation, review, and recovery.
+- Resolve source PR commits completely for retrofit tickets and treat GitHub source lookup failures as retryable platform errors.
+- Keep regular tickets isolated from retrofit source resolution, patch-first execution, proof validation, and retry behavior.
+- Extend repo-cache lease wait metadata for multi-branch retrofit planning without changing normal ticket lease behavior.
+- Bump OneShot version to 1.21.62 for Unify retrofit workflow prompting.
+- Add a required retrofit-workflow prompt fragment and inject it into Planner, Validate, Implementer, and Code Review prompts.
+- Fail startup when required retrofit prompt assets or insertion placeholders are missing.
+- Remove the dead implementer buildPrompt path and make retrofit adaptation prompts facts-only.
+- Keep OpenAI and Claude review providers aligned with the shared retrofit prompt placeholders.
+- Carry qualification retrofit source evidence into Validate and Code Review prompts so source-SHA proof rules apply even when a draft plan omits retrofitEvidence.
+- Bump OneShot version to 1.21.61 for PFOS-REPLAN same-run hardening.
+- Make PFOS-REPLAN a consumed same-run command so failed or blocked runs replan in place instead of creating duplicate fresh runs.
+- Normalize legacy pre-planning shared-Epic branch rows onto per-run branches during replan recovery while keeping shared Epic branch creation disabled.
+- Bump OneShot version to 1.21.60 for Ticket-backed frontend feature grounding.
+- Accept ticket-backed new frontend UI and API target files only when their file contracts cite inspected repo template evidence.
+- Preserve strict rejection for arbitrary new frontend, API, generated style, and colocated test targets without ticket-backed source proof.
+- Bump OneShot version to 1.21.59 for Implementer Sonnet 5 default.
+- Move the OneShot implementer default model and local/Terraform runtime overrides to us.anthropic.claude-sonnet-5.
+- Allow the configured implementer Bedrock profile in the task IAM policy and add Sonnet 5 cost attribution plus dashboard pricing-table metadata.
+- Bridge dashboard GitHub command DB helpers across dashboard/root mysql2 type identities so local dashboard builds pass.
+- Bump OneShot version to 1.21.58 for Ticket-explicit new file grounding.
+- Allow Planner grounding to accept ticket-explicit new Java source files only when Jira evidence names the class/path and fileChangeContract cites repo-backed module evidence.
+- Persist ticket-explicit grounding candidates in Planner diagnostics and classify rejected decisions as Planner grounding failures.
+- Bump OneShot version to 1.21.57 for Preserve retrofit proof across implementation revisions.
+- Preserve accepted retrofit source proof across implementation revisions so code-review fixes do not rerun patch-first proof against already-adapted workspaces.
+- Surface retrofit revision proof regressions with explicit events, planner recovery context, and dashboard attribution.
+- Bump OneShot version to 1.21.56 for disable shared Epic branch execution.
+- Restore per-run OneShot implementation branches even when Jira Epic metadata is present.
+- Recover failed pre-planning shared-Epic handoffs onto per-run branches without deleting legacy remote branches.
+- Bump OneShot version to 1.21.55 for retrofit patch proof recovery.
+- Harden retrofit patch adaptation with per-source-commit proof, proof repair, and bounded same-run replanning for incomplete proof.
+- Surface retrofit patch proof recovery in planner context and dashboard failure attribution.
+- Bump OneShot version to 1.21.54 for Retrofit patch-first final proof hardening.
+- Hardened retrofit patch-first validation with oldest-to-newest source evidence, final source patch proof, and CodeQL cleanup for PR #413.
+- Bump OneShot version to 1.21.53 for Retrofit patch-first hardening.
+- Share retrofit file allowlisting between Reviewer and Implementer so only source touched files or explicitly justified adaptation files are accepted.
+- Persist completed-no-action retrofit implementation artifacts with manifest, branch, SHA, and Jira traceability metadata.
+- Require conflicted retrofit adaptations to cover the current source SHA through reverse patch proof or explicit coverage evidence.
+- Bump OneShot version to 1.21.52 for QUALIFIER branch lookup classification.
+- Classify GitHub branch lookup failures as retryable QUALIFIER infrastructure instead of ticket-quality branch failures.
+- Prevent PFOS-NOT-QUALIFIED on transient branch lookup failures while preserving confirmed missing-branch behavior.
+- Bump OneShot version to 1.21.51 for Factory Builder QUALIFIER routing hardening.
+- Harden Factory Builder QUALIFIER routing so repo-only blockers route to Ai-agents, missing Ai-agents fails clearly, and Sonar lanes stay untouched.
+- Record factory-label repo-selection metadata and pass locked Ai-agents routing context into the QUALIFIER prompt.
+- Bump OneShot version to 1.21.50 for Auto-recover plan contract violations.
+- Route OneShot plan-contract implementation violations back to same-run planning with bounded recovery and planner-visible diagnostics.
+- Add operator recovery for already-blocked plan-contract violations and surface the failure class in dashboard attribution.
+- Bump OneShot version to 1.21.50 for retrofit patch-first lane (CPDEV-25333).
+- Add deterministic retrofit patch-first lane: source commit patches are mechanically applied via `git apply` before any LLM call, eliminating the PR #82 → #83 dropped-hunk regression. Fully already-applied retrofits complete as `completed_no_action` with no LLM invocation; clean patches apply mechanically (`clean_applied`); conflicts route Claude to constrained adaptation mode only. Per-commit apply status (`already_applied`, `clean_applied`, `adapted`, `failed`, `not_attempted`) is recorded in commit messages, PR bodies, and Jira comments. Reviewer enforces retrofit coverage (`retrofit_patch_incomplete`) and file-scope allowlist via `validateRetrofitCoverage` / `validateRetrofitFileScope`. New injection-safe git primitives (`exportSourceCommitPatch`, `isPatchApplicable`, `isPatchAlreadyApplied`, `applyPatch`) use `execFile`-style argument arrays. Non-retrofit behavior is byte-for-byte unchanged.
+- Wire retrofit patch-first lane into implementer.ts, reviewer.ts, and tester.ts (CPDEV-25333, 2026-06-29): surface repoSelectionMetadata in loadQualificationSummary, pass additionalBranchNames for source branch fetch, build/classify/persist RetrofitCommitManifest, complete already-applied runs as completed_no_action, invoke LLM only for conflict adaptation, run post-implementation coverage/scope validation, populate retrofitTrace in commit messages and retrofitTraceability in Jira comments and PR bodies.
+- Bump OneShot version to 1.21.49 for DB-backed OneShot Jira notification credentials.
+- Post OneShot lifecycle notifications and reviewer Jira attachments with the QUALIFIER agent Jira credentials from the agents table so plan, TRACE test-case, review, implementation, and PR readiness updates do not depend on a stale global ECS Jira token.
+- Bump OneShot version to 1.21.48 for Dashboard CI dependency bridge hardening.
+- Keep the Dashboard GitHub Actions build green when webhook routes compile shared OneShot modules from a dashboard-only install.
+- Add rate limiting to the GitHub /oneshot webhook route before raw-body parsing.
+- Bump OneShot version to 1.21.47 for Harden GitHub slash-command replans.
+- Remove unnecessary GitHub App org-member permission from /oneshot command token requests.
+- Reload claimed planner runs before loading /oneshot command context so coalesced PR head evidence is current.
+- Bump OneShot version to 1.21.46 for Recover GitHub slash-command duplicate deliveries.
+- Recover accepted /oneshot duplicate deliveries by retrying planning publication and acknowledgement when the first webhook attempt committed without a response.
+- Bump OneShot version to 1.21.45 for GitHub slash command replan.
+- Add GitHub /oneshot PR comment webhook intake for planning revisions.
+- Wire dashboard GitHub App webhook secrets and command context into OneShot planning.
+- Bump OneShot version to 1.21.44 for Harden planner grounding for validated UI assets and colocated tests.
+- Allow contract-backed adjacent UI asset targets when same-directory asset evidence was inspected.
+- Preserve successful planner Glob filenames so discovered UI asset siblings can validate new adjacent asset targets without broadening source-code grounding.
+- Allow colocated JavaScript and TypeScript test targets when the inspected source component is cited by contract or rationale evidence.
+- Bump OneShot version to 1.21.43 for LLM-first QUALIFIER repo selection.
+- Remove pre-LLM deterministic repo selection from QUALIFIER fresh intake.
+- Route CPDEV-style multi-repo tickets through the LLM-owned multi-repo run group path.
+- Bump OneShot version to 1.21.42 for Planner budgets and scout capacity hardening.
+- Expanded OneShot planner attempt budgets to 30/30/20/15 minutes, raised scout capacity to six parallel five-minute scouts, and added patch-first grounding repair diagnostics.
+- Bump OneShot version to 1.21.41 for Harden Runs pagination controls.
+- Harden OneShot Runs pagination page-size controls and Artifact Runs coverage.
+- Keep shared Runs page-size changes consistent across Pipeline and Artifact sections.
+- Bump OneShot version to 1.21.40 for light sidebar polish.
+- Keep the OneShot light-mode sidebar as a flat Spec Factory purple rail without aurora glow.
+- Preserve readable light-mode sidebar hover and active labels.
+- Bump OneShot version to 1.21.39 for Retrofit source evidence metadata caps.
+- Keep deterministic retrofit source evidence within planner metadata schema caps so oversized source PRs still reach Planner.
+- Bump OneShot version to 1.21.38 for Retrofit source evidence review boundaries.
+- Fix retrofit verification-only review detection so null retrofit metadata does not affect normal tickets.
+- Inspect all OneShot-enabled repositories for explicit retrofit source evidence so multi-repo fan-out cannot miss lower-ranked repos.
+- Bump OneShot version to 1.21.37 for Accurate retrofit source evidence.
+- Anchor explicit retrofit planning to deterministic source PR/commit evidence and block semantic no-op fallbacks when source evidence is missing.
+- Carry retrofit source evidence through multi-repo and multi-branch child metadata so Planner and Reviewer enforce the original touched files.
+- Bump OneShot version to 1.21.36 for Branch-scoped active run key.
+- Fix multi-branch retrofit run creation by making active duplicate-run detection branch-aware.
+- Bump OneShot version to 1.21.35 for Multi-branch retrofit fan-out.
+- Add QUALIFIER support for one-repo retrofit fan-out across up to seven target branches.
+- Render multi-branch retrofit run groups as target-branch lanes in the Runs dashboard.
+- Bump OneShot version to 1.21.34 for OneShot Claude Agent SDK 0.3.183.
+- Update the OneShot Claude Agent SDK alias from 0.3.179 to 0.3.183 while leaving the shared legacy SDK dependency isolated.
+- Bump OneShot version to 1.21.33 for default-enable planner scout workplan.
+- Default-enable the OneShot planner scout workplan and read-only harness scout pass while preserving ONESHOT_PLANNER_SCOUT_ENABLED=false as a kill switch.
+- Bump OneShot version to 1.21.32 for planner scout SDK thinking controls.
+- Pass planner scout thinking-token controls through the Claude Agent SDK query options so Haiku 4.5 Bedrock calls use valid budgets.
+- Bump OneShot version to 1.21.31 for planner scout cost attribution.
+- Normalize legacy planner scout Haiku 3.5 overrides to Haiku 4.5.
+- Ignore zero SDK model-usage rows so planner model-cost attribution uses exact call tokens and cost.
+- Bump OneShot version to 1.21.30 for Harden OneShot planner guardrail enforcement.
+- Enable planner Skill invocation under restricted Claude SDK tools while keeping native scouts read-only.
+- Require the planner's first native-subagent action to be `oneshot-grounding-scout`, inline the Planner Skill checklist, and capture structured-output retry details when exposed by the SDK.
+- Align planner guardrail prompts, TRACE testing strategy checks, and implementer file-contract enforcement.
+- Make Jira plan/TRACE attachments and ticket-evidence handoff truthfully handle skipped or failed side effects.
+- Resolve bundled planner Skills from the package root, tighten manual-only testing adequacy, and keep skipped Jira attachments out of success wording.
+- Add an LLM-generated planner scout workplan step that decomposes broad tickets into bounded read-only harness scout briefs before final planning.
+- Treat OneShot planner `fileChangeContract` as the canonical grounding source for adjacent/new file plans.
+- Default planner scout, workplan, and native subagent model selection to Claude Haiku 4.5 on Bedrock and record planner `model_cost_usage` so Opus main-planner cost and Haiku scout cost are visible separately.
+- Bump OneShot version to 1.21.29 for PRISM-style OneShot testing strategy.
+- Require OneShot plans to include a structured testing strategy with test-first intent, planned automated/manual coverage, TRACE guidance, and explicit coverage gaps.
+- Validate weak testing strategies before implementation and carry planned tests into TRACE and Implementer handoff.
+- Bump OneShot version to 1.21.28 for PRISM-style OneShot plan guardrails.
+- Require OneShot plans to include file contracts, planned code sketches, guardrail reports, and implementer guardrails.
+- Validate plan guardrails before reviewer LLM/bypass and block implementation diffs outside the approved editable file contract.
+- Bump OneShot version to 1.21.27 for implementation plan Jira attachment postback.
+- Attach the full reviewed OneShot implementation plan to Jira as markdown and keep the plan-ready comment compact.
+- Require reviewer Jira credentials when implementation-plan postback is enabled and wire ECS credentials for that path.
+- Bump OneShot version to 1.21.26 for implementation plan Jira postback.
+- Post the reviewed planner plan back to Jira when Reviewer hands a run to implementation.
+- Add a default-on OneShot kill switch for implementation-plan Jira postbacks.
+- Bump OneShot version to 1.21.25 for ticket evidence validation hardening.
+- Validate ticket evidence stats before qualification handoff metadata marks evidence present.
+- Keep duplicate attachment filename fallback limited to Jira attachments without IDs.
+- Bump OneShot version to 1.21.24 for ticket evidence handoff hardening.
+- Expose planner ticket evidence sidecars through SDK read roots and keep evidence reads out of repo-grounding progress.
+- Verify ticket evidence refs before qualification handoff and keep duplicate attachment filenames distinct.
+- Bump OneShot version to 1.21.23 for ticket evidence handoff.
+- Persist QUALIFIER ticket evidence in S3 and materialize planner evidence sidecars.
+- Pass ticket evidence refs through OneShot qualification artifacts and run PLANNER on Opus 4.8.
+- Bump OneShot version to 1.21.22 for Planner Skill output invariants.
+- Tighten planner Skills so decomposition, scouting, grounding, domain, root-cause, and validation guidance always preserve one final structured OneShot plan.
+- Bump OneShot version to 1.21.21 for Planner subagent hook policy.
+- Enforce configured Agent scout policy in PreToolUse before telemetry or budget accounting.
+- Bump OneShot version to 1.21.20 for Planner subagent review fixes.
+- Preserve planner grounding progress checks when native Agent scouts are enabled.
+- Enforce strict Agent scout input policy and planner SDK settings isolation.
+- Bump OneShot version to 1.21.19 for Planner custom Skills and scout telemetry.
+- Add planner-only Skills for bounded scouting, plan quality, test-first validation, and root-cause planning.
+- Record non-fatal planner telemetry when native subagents are enabled but no Agent scout attempt is observed.
+- Bump OneShot version to 1.21.18 for Advisory planner subagent fallback.
+- Require the OneShot planner to produce a structured plan even when native subagent scouts fail or exhaust turns.
+- Bump OneShot version to 1.21.17 for Configurable planner subagent turn budget.
+- Make OneShot planner SDK-native subagent max turns configurable with a 16-turn default.
+- Bump OneShot version to 1.21.16 for Enable planner Skills and subagents.
+- Enable OneShot planner Claude Skills and native read-only subagents behind planner kill switches.
+- Add OneShot planner plugin assets and runtime validation for Skill discovery.
+- Fix Spec Factory fresh-schema bootstrap on MySQL 8.4 by making the draft/source FK target unique.
+- Bump OneShot version to 1.21.15 for OneShot Claude Agent SDK 0.3.179 isolation.
+- Route OneShot Claude providers through a pinned Claude Agent SDK 0.3.179 facade with legacy rollback.
+- Keep legacy agents on the root Claude Agent SDK while validating OneShot alias-native executable resolution.
+- Bump OneShot version to 1.21.14 for QUALIFIER-only blocked-client rejection.
+- Move blocked-client rejection to the QUALIFIER-only path so dashboard intake reaches the Jira-commenting gate.
+- Bump OneShot version to 1.21.13 for Dashboard build compatibility for client eligibility.
+- Remove the mysql2 type dependency from shared client eligibility so dashboard CI can compile without repo-root dependencies.
+- Bump OneShot version to 1.21.12 for canonical Jira Client field extraction.
+- Use Jira Assets Client as the canonical blocked-client eligibility source before legacy Customer fields.
+- Request Client Assets labels and attributes in OneShot Jira fetch paths.
+- Bump OneShot version to 1.21.11 for blocked-client eligibility enforcement.
+- Add DB-backed blocked-client eligibility policy with trusted-operator management APIs and audit events.
+- Centralize client extraction and fail open when the policy store is unavailable during OneShot intake.
+- Bump OneShot version to 1.21.10 for transient retry ETA correctness.
+- Fix transient retry ETA typing, stale-state filtering, and failed visibility status handling.
+- Keep transient retry backoff fixed to three attempts with shared exhaustion constants.
+- Bump OneShot version to 1.21.9 for Add QUALIFIER explicit repo fast path.
+- Skip the profiled repo catalog when QUALIFIER can resolve an explicit repository hint before LLM readiness checks.
+- Add explicit repository hint detection and regression coverage for locked repo qualification.
+- Require GitHub URL fast-path detection to resolve to exactly one unique repository.
+- Bump OneShot version to 1.21.8 for Fix QUALIFIER profile regression.
+- Add the missing cp-autonomous-ai-agents-platform RepoRouter profile required by production QUALIFIER.
+- Add profile-loading regression tests so every OneShot-enabled repo must have a production profile.
+- Fix dashboard image packaging so the ECS runtime uses the nested server build output and fails CI when the entrypoint is missing.
+- Bump OneShot version to 1.21.7 for QUALIFIER multi-repo decision policy.
+- Teach QUALIFIER to emit multi_repo when ticket requirements map cleanly to independently plannable repo-owned slices.
+- Cover the CPDEV-19674 ePA ingestion plus UI search split with prompt and worker regression tests.
+- Bump OneShot version to 1.21.6 for Move TRACE/VERIFY after Validate.
+- Move TRACE and VERIFY artifact generation to the post-Validate handoff so draft plans no longer publish TRACE CSV output before plan review settles.
+- Wire reviewer-side TRACE Jira credentials and restrict post-Validate TRACE/VERIFY generation to approved or review-loop-exhausted handoffs.
+- Bump OneShot version to 1.21.5 for About changelog refresh.
+- Refresh the OneShot About Changelog panel with the June 2026 1.21.x release notes.
+- Bump OneShot version to 1.21.4 for Polish multi-repo Runs table rendering.
+- Refine multi-repo Runs table parent and repo lane rendering.
+- Restore aggregate chips, separators, and normal row height for multi-repo runs.
+- Bump OneShot version to 1.21.3 for enabling multi-repo OneShot delivery by default.
+- Enable ONESHOT_MULTI_REPO_ENABLED by default for local OneShot and qualifier ECS runtime.
+- Add multi-repo readiness guards, Ai-agents repository metadata fixes, and transient qualifier retry handling.
+- Bump OneShot version to 1.21.2 for default-branch-first branch resolution and qualifier FixVersion hints.
+- Make OneShot branch resolution prefer repository default branches and fall back safely when explicit release branches are missing.
+- Pass Jira FixVersion values into OneShot branch resolution and persist default-branch fallback warnings in qualification metadata.
+- Record branch resolution metadata for multi-repo child runs.
+- Bump OneShot version to 1.21.1 for handoff retry recovery.
+- Retry GitHub workflow-impact timeout and repo-cache lease handoff failures before planning.
+- Add CLI recovery for failed qualification-to-planning handoff runs.
+- Persist handoff retry and exhaustion evidence on the qualification timeline.
+## 1.21.0
+
+- Add bounded auto-retry (3 attempts, 5s/20s backoff) for qualification-to-planning handoff infrastructure failures.
+- Add explicit terminal states `workspace_setup_failed` and `planning_publish_failed` with correct dashboard attribution and stage inference.
+- Update Jira comments to accurately reflect handoff outcomes: exhausted failures say 'operator recovery is required' instead of 'will rely on reconciliation'.
+
+- Bump OneShot version to 1.20.25 for PFOS outcome label classifier fix.
+- Classify PFOS outcome labels from run state and PR URL.
+- Cover blocked/replan and WIP PR PFOS label statistics cases.
+- Bump OneShot version to 1.20.24 for missing test-runner handling.
+- Treat runtime missing test runners as unverified infrastructure proof instead of source-code test failures.
+- Route missing-runner test proof through the existing needs-review PR path without implementation retry churn.
+- Bump OneShot version to 1.20.23 for cost model breakdown export cleanup.
+- Remove the redundant model_breakdown column from OneShot cost CSV and HTML exports while keeping wide model columns.
+- Bump OneShot version to 1.20.22 for Costs export pill buttons.
+- Style the Costs CSV and HTML export actions as pill-shaped buttons aligned with the ticket type selector.
+- Bump OneShot version to 1.20.21 for Costs ticket type pill dropdown.
+- Keep the Costs report ticket type filter as a readable pill-shaped dropdown.
+- Bump OneShot version to 1.20.19 for OneShot cost report reconciliation fixes.
+- Reconcile OneShot cost report per-model columns with ticket totals using an Unattributed LLM residual bucket.
+- Harden OneShot cost report CSV text cells against spreadsheet formula injection.
+- Bump OneShot version to 1.20.18 for OneShot cost reports by ticket type.
+- Add CSV and HTML OneShot cost reports with ticket type, state, duration, and per-model wide columns.
+- Add Costs tab export controls for range-aware ticket-type cost reports.
+- Bump OneShot version to 1.20.17 for Audited ticket type backfill.
+- Add an audited Jira-key backfill so current OneShot runs receive verified normalized ticket types without overwriting manual overrides.
+- Bump OneShot version to 1.20.16 for Retrofit ticket typing.
+- Add retrofit as a normalized OneShot ticket type with title-based inference, dashboard filtering, and backfill support.
+- Bump OneShot version to 1.20.15 for Correct OneShot ticket type inference.
+- Treat PFOS as an intake label instead of a security ticket type.
+- Bump OneShot version to 1.20.14 for Capture OneShot ticket type metadata.
+- Persist raw Jira issue type and normalized OneShot ticket type for run analytics.
+- Expose ticket type filtering and manual override controls in the OneShot dashboard.
+- Bump OneShot version to 1.20.13 for Opus 4.8 pricing support.
+- Add Claude Opus 4.8 pricing aliases for OneShot runtime cost estimation.
+- Add Dashboard cost metadata support for Claude Opus 4.8 model rows.
+- Cover Opus 4.8 pricing with OneShot and dashboard costing regression tests.
+- Bump OneShot version to 1.20.12 for OneShot verification-only completion.
+- Complete approved verification-only OneShot plans without implementation or PR creation.
+- Post Jira and dashboard evidence for completed no-action runs.
+- Bump OneShot version to 1.20.11 for Repair OneShot candidate handoff for dirty workspace mode rows.
+- Normalize dirty OneShot workspace mode rows to v2 at runtime and in migration repair.
+- Finalize and backfill candidate-version handoff rows for implementation-to-review recovery.
+- Classify candidate SHA integrity failures as known OneShot platform handoff issues.
+- Bump OneShot version to 1.20.10 for persistent run branch contract repair.
+- Persist OneShot run-branch metadata and route stage workspaces through the durable run branch.
+- Backfill active v2 candidate metadata and repair run branch contracts across stage restarts.
+- Bump OneShot version to 1.20.9 for v2-only OneShot workspaces.
+- Make OneShot workspace v2 unconditional and remove the workspace-v2 rollout toggle.
+- Normalize OneShot workspace-mode schema and runtime defaults to v2.
+- Bump OneShot version to 1.20.8 for persistent run branch implementation handoff.
+- Keep primary v2 implementation on the persistent run branch instead of revalidating the mutable target branch.
+- Bump OneShot version to 1.20.7 for local e2e queue grace.
+- Allow the CPDEV local smoke harness to wait through transient queued states while pre-PLAN run workspace setup publishes the stage message.
+- Bump OneShot version to 1.20.6 for persistent run workspace setup.
+- Create OneShot run branches and v2 workspaces before planning.
+- Keep implementation revisions on the persisted run branch instead of revalidating the target branch.
+- Redact x-access-token values from git command failures.
+- Bump OneShot version to 1.20.5 for Temporarily disable PFOS runtime scope hard-fail.
+- Downgrade PFOS/Wiz implementation scope violations from hard failures to warning-only run events.
+- Update operator guidance to reflect warning-only PFOS scope handling during implementation.
+- Bump OneShot version to 1.20.4 for OneShot pipeline model selection.
+- Set OneShot implementer, QUALIFIER, and Statistics tab model selection to Claude Sonnet 4.6.
+- Set OneShot plan reviewer and code reviewer model selection to Claude Opus 4.8.
+- Add dedicated Terraform model parameters for QUALIFIER and OneShot Statistics tab overrides.
+- Bump OneShot version to 1.20.3 for separate security and Sonar OneShot lanes.
+- Persist OneShot processingMode from qualification and reuse it across planner, reviewer, and implementer.
+- Keep PFOS pom-only scope enforcement on the security lane while allowing Sonar source-code remediations to proceed.
+- Keep legacy Sonar qualification artifacts restartable by falling back to stored labels and Wiz title heuristics.
+- Bump OneShot version to 1.20.1 for GitHub App checkout authentication.
+- Prefer GitHub App installation tokens for OneShot checkout, fetch, and branch discovery across all OneShot stages.
+- Inject the GitHub App credential secret into every OneShot consumer and the QUALIFIER worker when configured.
+- Bump OneShot version to 1.20.0 for TRACE and VERIFY planning integration.
+- Sanitize source-derived TRACE text before JSON, CSV, dashboard, or Jira output can contain realistic PHI/PII.
+- Prevent TRACE title wrappers from counting as VERIFY source evidence for Jira key and percentage anti-fabrication checks.
+- Wire planner-only Jira credentials for TRACE CSV posting in ECS and fail production startup when posting is enabled without credentials.
+- Make VERIFY anti-fabrication checks source-aware and apply strict, balanced, or lenient recommendation thresholds.
+- Add planning-time TRACE generation with canonical 16-column CSV output, JSON artifacts, Jira CSV attachment/comment support, and TRACE guardrail checks.
+- Add VERIFY review of TRACE output with advisory `APPROVED`, `CONDITIONAL`, and `REJECTED` recommendations plus anti-fabrication findings before Plan Review.
+- Carry TRACE and VERIFY refinement context into Plan Review and Section C unit-test specs into Build, with `implementedTraceTestIds` recorded in implementation artifacts.
+- Add `trace` and `verify` artifact stages, S3 artifact keys, DB migration 036, docs updates, and focused TRACE/VERIFY test coverage.
+- Bump OneShot version to 1.18.28 for tighten node test wrapper preflight.
+- Harden OneShot tester Node wrapper command gating for flagged npm/pnpm/yarn/bun forms and package-script preflight.
+- Add regression coverage for missing repo-local runners, selected package roots, and non-test direct-runner subcommands.
+- Bump OneShot version to 1.18.27 for GitHub App credentials parsing.
+- Allow OneShot GitHub App credentials JSON to tolerate raw PEM newlines from Secrets Manager.
+- Bump OneShot version to 1.18.26 for GitHub App write authentication.
+- Add GitHub App installation token auth for OneShot branch pushes and pull request mutations.
+- Inject the org-owned GitHub App credential secret into OneShot ECS implementer, code reviewer, and tester tasks via Terraform.
+- Bump OneShot version to 1.18.25 for bare repo fetch collision fix.
+- Fix OneShot bare repo cache fetches so checked-out implementation branches no longer block code-review or tester workspace preparation.
+- Treat code-review and tester candidate SHAs as authoritative when the commit already exists in the shared repo cache.
+- Bump OneShot version to 1.18.24 for shared ref lease protection.
+- Protect OneShot v2 branch and detach ref mutations with the repo-cache lease.
+- Keep reset and clean outside the repo-cache lease after detaching reused worktrees.
+- Cover concurrent implementer branch prep, reused detachment, and tester branch setup in workspace tests.
+- Bump OneShot version to 1.18.23 for targeted worktree registration cleanup.
+- Avoid repo-wide git worktree prune during per-run OneShot workspace prep and cleanup.
+- Remove only exact stale worktree admin registrations so other Fargate task worktrees stay registered.
+- Bump OneShot version to 1.18.22 for bare mirror repo-cache telemetry.
+- Add repo-cache lease hold and cold hydration telemetry for storage pivot validation.
+- Hydrate new OneShot repo caches as bare mirrors while keeping per-run worktrees on local task storage.
+- Cover same-repo concurrent workspace prep, cold mirror hydration, partial mirror recovery, and legacy cache coexistence in workspace tests.
+- Bump OneShot version to 1.18.21 for local worktree stale registration fix.
+- Prune stale local-worktree registrations before creating replacement OneShot worktrees across Fargate stages.
+- Make resolved OneShot repo cache and worktree paths required in runtime validation.
+- Bump OneShot version to 1.18.20 for Workspace checkout attribution.
+- Classify git worktree checkout timeouts as workspace failures for OneShot diagnostics.
+- Bump OneShot version to 1.18.19 for local worktree storage.
+- Move OneShot v2 run worktrees to local task storage while keeping shared repo caches on EFS.
+- Add typed repo-cache lease retry handling and checkout timeout attribution.
+- Configure all OneShot consumers with local Fargate workspace storage.
+- Add automatic documentation artifact polling so `DOCS-GENERATE` plus one canonical `DOC-TYPE-*` label is picked up by the orchestrator, attached back to Jira, and moved to terminal `DOCS-*` labels.
+- Add Artifact Runs tracking for Wiz scan batches, SonarQube scan batches, and documentation generation with source ticket, generated child ticket, human review, evidence count, and Jira summary details.
+- Add Documentation Mode guide coverage for canonical labels, Confluence-derived templates, Jira attachment output, evidence review, and dry-run review.
+- Add dedicated Wiz scan and SonarQube scan How-to sections covering EPIC setup, scan export labels, TRIAGE approval labels, child story generation, OneShot execution, and human-review routing.
+- Bump OneShot version to 1.18.18 for Statistics self-fix tickets.
+- Add Statistics self-fix candidate detection and CPDEV Defect creation for recurring OneShot-attributed failures.
+- Add configurable self-fix sample size, duplicate protection, and optional OneShot run enqueueing for created defects.
+- Bump OneShot version to 1.18.17 for SonarQube triage OneShot flow.
+- Add SonarQube scan triage intake that groups approved findings into bounded SONAR-AUTOFIX OneShot child tickets.
+- Document Wiz and SonarQube scan-driven OneShot usage in the Guide.
+- Carry SonarQube remediation context through OneShot planner, reviewer, and triage reporting flows.
+- Bump OneShot version to 1.18.16 for Polish Statistics and Guide copy.
+- Remove user-facing Wilson/confidence wording from Statistics insight cards while preserving statistical gating.
+- Polish the OneShot Formatter Guide helper copy and light-theme styling.
+- Bump OneShot version to 1.18.15 for pipeline stage animation polish.
+- Make pipeline stage state animation more visible while preserving a compact horizontal card layout.
+- Slow and offset pipeline glow/comet motion to avoid first-view artifacts.
+- Tune stage border and inner glow brightness so the running signal stays readable without overpowering the card.
+- Bump OneShot version to 1.18.14 for Guide launch cleanup and formatter helper.
+- Focus the Guide launch matrix on work fit, repo routing, exclusions, and retry controls.
+- Add a OneShot Formatter Rovo Agent helper link to the Guide templates section.
+- Polish the Guide launch-check summary and remove section counters.
+- Bump OneShot version to 1.18.13 for Stream pipeline visual polish.
+- Redesign the OneShot pipeline stage rail with Stream cards, animated stage connectors, and stage metadata placement.
+- Clip selected stage surfaces to rounded cards so borders and color layers no longer paint outside the stage rectangle.
+- Bump OneShot version to 1.18.12 for Guide copy editorial rewrite.
+- Rewrite the visible OneShot Guide copy across Features, How-to, Tech Spec, and Changelog with a more human product editorial voice.
+- Add focused render coverage that prevents en and em dashes from appearing in visible Guide panel copy.
+- Bump OneShot version to 1.18.11 for shared Guide hero header redesign.
+- Redesign all OneShot Guide panels to share the same full hero-card header, logo placement, masthead layout, and responsive treatment.
+- Add focused render coverage ensuring Features, How-to, Tech Spec, and Changelog each render one shared Guide hero with the OneShot wordmark.
+- Bump OneShot version to 1.18.10 for sun moon theme toggle polish.
+- Replace the lamp theme control with an animated Sun/Moon toggle while preserving the compact toolbar footprint, soft theme wipe, reduced-motion behavior, and repeated-click guard.
+- Match the light-mode sidebar Shot wordmark to the dark-mode off-white treatment while keeping Guide mastheads readable on warm paper.
+- Clear temporary theme-transition CSS variables after completed, reduced-motion, and unmounted transitions.
+- Bump OneShot version to 1.18.9 for lamp toggle polish.
+- Polish the OneShot light-mode lamp toggle with scoped theme transitions, fallback wipe cleanup, and focused transition coverage.
+- Bump OneShot version to 1.18.8 for Guide light-mode transition fix.
+- Keep the Guide transition morph layers in the active light or dark theme so the dashboard-to-Guide handoff no longer flashes dark chrome.
+- Fade the light-mode sidebar divider while Guide immersive transitions are active.
+- Bump OneShot version to 1.18.7 for How-to implementation-ready guidance.
+- Clarify that OneShot supports test additions for known behavior but not epics, requirement gathering, or product discovery.
+- Balance the Before you run checklist grid across desktop, tablet, and mobile breakpoints.
+- Bump OneShot version to 1.18.6 for merging Guide and Statistics updates.
+- Merge PR #181's deterministic OneShot Statistics repo status and operational bottleneck updates into the current Guide PR.
+- Refresh the OneShot Guide Features and How-to tabs with Analytics details, copyable CPDEV/Retrofit templates, readiness guidance, and a dark compatibility reference.
+- Fact-check How-to compatibility copy for profiled repos, explicit repo routing, healthcare prompt guardrails, and current operator limits.
+- Improve the Guide Changelog timeline alignment, spacing, and entry readability.
+- Polish the OneShot Guide Features copy, Analytics showcase, and clickable pipeline stage rail.
+- Add deterministic operational bottlenecks to the OneShot Statistics tab so operators can prioritize unresolved repo routing, stage clusters, failure categories, and wasted spend.
+- Add deterministic repo-level status to the OneShot Statistics tab.
+- Surface unresolved repository groups, stage clusters, pass rates, and example tickets.
+- Bump OneShot version to 1.18.3 for Stage-specific OneShot failure labels.
+- Show stage-specific OneShot failure labels so Qualifier Error is reserved for qualifier-stage runtime/output failures.
+- Suppress OneShot-owned failure attribution chips in Runs while keeping Ticket Not Ready, Mixed Issue, and Needs Triage chips visible.
+- Bump OneShot version to 1.18.2 for failure attribution uncategorized cleanup.
+- Classify live qualifier rejection wording as ticket quality instead of uncategorized OneShot failures.
+- Rename unknown error-category display to Uncategorized and reserve triage copy for unknown ownership.
+- Bump OneShot version to 1.18.1 for ticket not ready attribution.
+- Surface ticket-attributed qualifier rejections as Ticket Not Ready across Runs, detail, and analytics.
+- Add row-level failure attribution for failed dashboard rows without changing stored qualification states.
+- Bump OneShot version to 1.18.0 for statistics json repair.
+- Repair malformed AI Statistics JSON before validation and hide raw LLM parser errors from the Statistics UI.
+- Treat truncated Statistics LLM responses as retryable invalid snapshots with a larger default token budget.
+- Bump OneShot version to 1.17.10 for qualifier failure classification.
+- Classify qualifier rejection reasons such as missing acceptance criteria and ambiguous scope as ticket-quality failures in OneShot Statistics.
+- Bump OneShot version to 1.17.9 for Enable explicit GitHub repo resolution.
+- Allow explicit Jira repository names to resolve via GitHub under the configured mhk-repos owner.
+- Keep OneShot repo branch defaults aligned with live GitHub defaults for Smart Prominence and Ai-agents.
+- Bump OneShot version to 1.17.8 for explicit repo directive authority.
+- Make explicit Jira Repo fields authoritative for QUALIFIER intake and bypass heuristic routing.
+- Resolve explicit repo hints through GitHub before falling back to a unique registered repo.
+- Add CPDEV-22347 regression coverage for stale related_code correction.
+- Bump OneShot version to 1.17.7 for dashboard ALB workstation ingress preservation.
+- Preserve the production dashboard ALB `Offshore Workstation` HTTPS allowlist entry in Terraform so targeted ECS deploys do not remove live access.
+- Bump OneShot version to 1.17.6 for recognized non-MP repo routing enablement.
+- Enable OneShot routing for recognized `React-based-new-ui`, `Document-ai`, and `Ai-agents` repositories while keeping MP repositories disabled for now.
+- Bump OneShot version to 1.17.5 for ticket quality statistics.
+- Add statistically gated ticket-readiness and template-fit analysis to OneShot Statistics.
+- Persist versioned ticket-readiness scores for qualified OneShot intake.
+- Bump OneShot version to 1.17.4 for Add AI-backed OneShot statistics tab.
+- Replace the Failures tab with a DB-backed AI Statistics tab for OneShot intake, deterministic buckets, and insight refresh snapshots.
+- Add OneShot statistics snapshot/refresh tables with a lease to avoid duplicate LLM refreshes.
+- Bump OneShot version to 1.17.3 for scoped validation checks and validation-dispute PR escalation.
+- Add scoped OneShot structural validation checks and route disputed validation-only retries to draft PR review instead of terminally blocking without a PR.
+- Bump OneShot version to 1.17.2 for the repo identity canonicalization fix.
+- Canonicalize duplicate OneShot `core-app` repository rows, enforce unique repository names and URLs, and dedupe repo aliases during routing.
+- Harden OneShot RepoRouter profile loading for stale DB repo names and canonicalize duplicate BI Datamart repository metadata.
+- Bump OneShot version to 1.17.1 for the repo-confirmation operator auth fix.
+- Route OneShot repo confirmation selection through Cognito-backed dashboard operator identity before resolving pending repo choices.
+- Add OneShot routing support for `cp-medhok-bi-datamart-monorepo` and resolve `data-lake-pipeline` repo hints to DataVisor.
+- Align the OneShot About overview and Tech Specs hero surfaces so their typography, wordmark scale, texture, and metadata layout match.
+- Refresh the OneShot About page with a sticky product header, simplified black-glass hero, generated texture and stage imagery, lightweight native pipeline scroll stack, dedicated source-backed Tech Specs tab, responsive cleanup, and masthead version sourced from `ONESHOT_VERSION`.
+- Enable OneShot description repo directives in production config so explicit Jira repo scope can select the intended repository during orchestrator and qualifier routing.
+- Detect high-confidence repo directives in Jira descriptions during OneShot QUALIFIER repo selection. Only narrow patterns like "this ticket tracks only the code change in <repo>" select a repo; contextual mentions such as "tracked separately" and "out of scope" are ignored. Formal `Repo:`, retrofit resolution, and resolved router confirmations continue to take precedence.
+- Qualify complete single-repo retrofit tickets deterministically after repo and branch validation, preserving generic acceptance-criteria and LLM qualification for non-retrofit tickets.
+- Fix retrofit qualification when Jira descriptions use smart links and omit an explicit `Repo:` field by extracting Jira keys from ADF cards and selecting the profiled repository with matching retrofit commit evidence.
+- Prefer retrofit branch/profile aliases such as `medhok-monorepo` and `batch-monorepo` before git commit evidence, with capped parallel evidence fallback and ambiguity diagnostics when profile signals conflict.

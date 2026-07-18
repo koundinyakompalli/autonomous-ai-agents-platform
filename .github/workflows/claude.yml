@@ -1,0 +1,49 @@
+name: AI / Claude / Bedrock Assistant
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'What should Claude do?'
+        required: true
+        default: 'Summarize the repository and suggest improvements'
+
+jobs:
+  claude-interaction:
+    # Trigger on comment starting with /claude OR manual dispatch
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.comment.body, '/claude')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for AWS OIDC handshake
+      contents: write   # Allows Claude to read/write code
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: "us-east-1" # US-East-1 supports the 'us.' cross-region profile
+
+      - name: Run Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          use_bedrock: true
+          # 'prompt' is the correct input name to clear warnings
+          prompt: ${{ github.event.inputs.prompt || github.event.comment.body }}
+          # Model ID is passed through 'claude_args'
+          claude_args: |
+            --model us.anthropic.claude-sonnet-4-5-20250929-v1:0

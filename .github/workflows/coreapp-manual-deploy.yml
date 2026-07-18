@@ -1,0 +1,281 @@
+name: Ops / Manual / Core-App Manual Deploy
+run-name: Core-App Manual Deploy / ${{ inputs.upstream_run && format('reuse run {0}', inputs.upstream_run) || inputs.branch_name }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: cp-medhok-monorepo branch to build (ignored if upstream_run is set)
+        required: false
+        type: string
+      upstream_run:
+        description: Reuse an existing cp-medhok-monorepo build-and-deploy run (numeric ID or full URL). Leave blank to dispatch a new build.
+        required: false
+        type: string
+      deploy_to_ecs:
+        description: After upstream build completes, also redeploy the dev ECS service
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: coreapp-manual-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  COREAPP_ECR_REPO: medhok20/medhok-monorepo.coreapp
+  COREAPP_ECS_CLUSTER: CLIENT-A
+  COREAPP_ECS_SERVICE: CLIENT-A-cp-dev-mhk-core
+  COREAPP_CONTAINER_NAME: app-container
+  COREAPP_PREVIEW_URL: https://client-a-cp-dev-mhk-core.mhkdevsandbox.com/medhok/
+  UPSTREAM_REPO: mhk-repos/cp-medhok-monorepo
+  UPSTREAM_WORKFLOW: build-and-deploy.yml
+
+jobs:
+  manual-deploy:
+    name: Dispatch upstream build and deploy
+    runs-on: ubuntu-latest
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout Specter repo
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate inputs
+        env:
+          BRANCH_NAME: ${{ inputs.branch_name }}
+          UPSTREAM_RUN: ${{ inputs.upstream_run }}
+        run: |
+          if [ -z "${UPSTREAM_RUN}" ] && [ -z "${BRANCH_NAME}" ]; then
+            echo "ERROR: must provide either branch_name (to dispatch a new build) or upstream_run (to reuse an existing one)."
+            exit 1
+          fi
+
+      - name: Dispatch upstream build-and-deploy
+        id: dispatch
+        if: ${{ inputs.upstream_run == '' }}
+        env:
+          GH_TOKEN: ${{ secrets.COREAPP_PREVIEW_GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ inputs.branch_name }}
+        run: |
+          BEFORE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "dispatched_after=${BEFORE}" >> "$GITHUB_OUTPUT"
+
+          echo "Dispatching ${UPSTREAM_WORKFLOW} in ${UPSTREAM_REPO} on branch ${BRANCH_NAME}..."
+          gh workflow run "${UPSTREAM_WORKFLOW}" \
+            --repo "${UPSTREAM_REPO}" \
+            --ref "${BRANCH_NAME}"
+
+          echo "Waiting 10s for GitHub to materialize the run..."
+          sleep 10
+
+      - name: Locate dispatched upstream run
+        id: find-dispatched
+        if: ${{ inputs.upstream_run == '' }}
+        env:
+          GH_TOKEN: ${{ secrets.COREAPP_PREVIEW_GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ inputs.branch_name }}
+          DISPATCHED_AFTER: ${{ steps.dispatch.outputs.dispatched_after }}
+        run: |
+          for attempt in $(seq 1 24); do
+            RUN_JSON="$(gh run list \
+              --repo "${UPSTREAM_REPO}" \
+              --workflow "${UPSTREAM_WORKFLOW}" \
+              --branch "${BRANCH_NAME}" \
+              --event workflow_dispatch \
+              --limit 5 \
+              --json databaseId,createdAt,headSha,status,url)"
+
+            CANDIDATE="$(echo "$RUN_JSON" | jq -r \
+              --arg after "${DISPATCHED_AFTER}" \
+              '[.[] | select(.createdAt >= $after)] | sort_by(.createdAt) | last // empty')"
+
+            if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "null" ]; then
+              RUN_ID="$(echo "$CANDIDATE" | jq -r '.databaseId')"
+              HEAD_SHA="$(echo "$CANDIDATE" | jq -r '.headSha')"
+              RUN_URL="$(echo "$CANDIDATE" | jq -r '.url')"
+              echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+              echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+              echo "run_url=${RUN_URL}" >> "$GITHUB_OUTPUT"
+              echo "Found upstream run ${RUN_ID} at ${HEAD_SHA}"
+              echo "Upstream run URL: ${RUN_URL}"
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/24: upstream run not yet visible, retrying in 5s..."
+            sleep 5
+          done
+
+          echo "ERROR: could not locate dispatched upstream run within 2 minutes."
+          echo "Check that COREAPP_PREVIEW_GITHUB_TOKEN has actions:write on ${UPSTREAM_REPO}."
+          exit 1
+
+      - name: Watch upstream build to completion
+        if: ${{ inputs.upstream_run == '' }}
+        env:
+          GH_TOKEN: ${{ secrets.COREAPP_PREVIEW_GITHUB_TOKEN }}
+          RUN_ID: ${{ steps.find-dispatched.outputs.run_id }}
+        run: |
+          # Upstream build takes ~20 min (median); poll every 30s instead of
+          # the 3s default to cut API calls ~10x without meaningful latency cost.
+          echo "Watching upstream run: ${{ steps.find-dispatched.outputs.run_url }}"
+          gh run watch "${RUN_ID}" --repo "${UPSTREAM_REPO}" --exit-status --interval 30
+
+      - name: Look up reused upstream run
+        id: find-reused
+        if: ${{ inputs.upstream_run != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.COREAPP_PREVIEW_GITHUB_TOKEN }}
+          UPSTREAM_RUN: ${{ inputs.upstream_run }}
+        run: |
+          # Accept either a numeric run ID or a full GitHub URL; strip everything
+          # except the trailing digit run.
+          RUN_ID="$(printf '%s' "${UPSTREAM_RUN}" | grep -oE '[0-9]+' | tail -n1)"
+          if [ -z "${RUN_ID}" ]; then
+            echo "ERROR: could not parse a numeric run ID from '${UPSTREAM_RUN}'."
+            exit 1
+          fi
+
+          RUN_JSON="$(gh run view "${RUN_ID}" \
+            --repo "${UPSTREAM_REPO}" \
+            --json databaseId,headSha,status,conclusion,workflowName,url)"
+
+          WORKFLOW_NAME="$(echo "${RUN_JSON}" | jq -r '.workflowName')"
+          STATUS="$(echo "${RUN_JSON}" | jq -r '.status')"
+          CONCLUSION="$(echo "${RUN_JSON}" | jq -r '.conclusion')"
+          HEAD_SHA="$(echo "${RUN_JSON}" | jq -r '.headSha')"
+          RUN_URL="$(echo "${RUN_JSON}" | jq -r '.url')"
+
+          echo "Reusing upstream run ${RUN_ID}"
+          echo "  URL:        ${RUN_URL}"
+          echo "  Workflow:   ${WORKFLOW_NAME}"
+          echo "  Status:     ${STATUS}"
+          echo "  Conclusion: ${CONCLUSION}"
+          echo "  HeadSha:    ${HEAD_SHA}"
+
+          if [ "${WORKFLOW_NAME}" != "Build and Deploy" ]; then
+            echo "ERROR: run ${RUN_ID} is from workflow '${WORKFLOW_NAME}', expected 'Build and Deploy'."
+            exit 1
+          fi
+          if [ "${STATUS}" != "completed" ]; then
+            echo "ERROR: run ${RUN_ID} is not completed yet (status=${STATUS})."
+            exit 1
+          fi
+          if [ "${CONCLUSION}" != "success" ]; then
+            echo "ERROR: run ${RUN_ID} did not succeed (conclusion=${CONCLUSION})."
+            exit 1
+          fi
+
+          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          echo "run_url=${RUN_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Consolidate upstream run info
+        id: find-run
+        env:
+          DISPATCHED_RUN_ID: ${{ steps.find-dispatched.outputs.run_id }}
+          DISPATCHED_HEAD_SHA: ${{ steps.find-dispatched.outputs.head_sha }}
+          DISPATCHED_RUN_URL: ${{ steps.find-dispatched.outputs.run_url }}
+          REUSED_RUN_ID: ${{ steps.find-reused.outputs.run_id }}
+          REUSED_HEAD_SHA: ${{ steps.find-reused.outputs.head_sha }}
+          REUSED_RUN_URL: ${{ steps.find-reused.outputs.run_url }}
+        run: |
+          if [ -n "${REUSED_RUN_ID}" ]; then
+            echo "run_id=${REUSED_RUN_ID}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${REUSED_HEAD_SHA}" >> "$GITHUB_OUTPUT"
+            echo "run_url=${REUSED_RUN_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_id=${DISPATCHED_RUN_ID}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${DISPATCHED_HEAD_SHA}" >> "$GITHUB_OUTPUT"
+            echo "run_url=${DISPATCHED_RUN_URL}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve image URI
+        id: image
+        env:
+          HEAD_SHA: ${{ steps.find-run.outputs.head_sha }}
+        run: |
+          IMAGE_URI="${ECR_REGISTRY}/${COREAPP_ECR_REPO}:${HEAD_SHA}"
+          echo "Verifying ${IMAGE_URI} exists in ECR..."
+          aws ecr describe-images \
+            --repository-name "${COREAPP_ECR_REPO}" \
+            --image-ids imageTag="${HEAD_SHA}" \
+            --region "${AWS_REGION}" > /dev/null
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+          echo "Image confirmed: ${IMAGE_URI}"
+
+      - name: Register new task definition
+        id: taskdef
+        if: ${{ inputs.deploy_to_ecs }}
+        run: |
+          CURRENT_TASK_DEF_ARN="$(aws ecs describe-services \
+            --cluster "${COREAPP_ECS_CLUSTER}" \
+            --services "${COREAPP_ECS_SERVICE}" \
+            --query 'services[0].taskDefinition' \
+            --output text)"
+
+          aws ecs describe-task-definition \
+            --task-definition "${CURRENT_TASK_DEF_ARN}" \
+            > /tmp/current-task-definition.json
+
+          python3 .github/scripts/coreapp-preview/register-task-definition.py \
+            --source /tmp/current-task-definition.json \
+            --container-name "${COREAPP_CONTAINER_NAME}" \
+            --image-uri "${{ steps.image.outputs.image_uri }}" \
+            --output /tmp/task-definition-register.json
+
+          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/task-definition-register.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+
+          echo "current_task_definition_arn=${CURRENT_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+          echo "new_task_definition_arn=${NEW_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
+        if: ${{ inputs.deploy_to_ecs }}
+        run: |
+          aws ecs update-service \
+            --cluster "${COREAPP_ECS_CLUSTER}" \
+            --service "${COREAPP_ECS_SERVICE}" \
+            --task-definition "${{ steps.taskdef.outputs.new_task_definition_arn }}"
+
+      - name: Wait for ECS service to stabilize
+        if: ${{ inputs.deploy_to_ecs }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${COREAPP_ECS_CLUSTER}" \
+            --services "${COREAPP_ECS_SERVICE}"
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "### Core-app manual deploy"
+            if [ -n "${{ inputs.upstream_run }}" ]; then
+              echo "- Mode: reused existing upstream run"
+            else
+              echo "- Mode: dispatched new upstream build"
+              echo "- Branch: \`${{ inputs.branch_name }}\`"
+            fi
+            echo "- Commit: \`${{ steps.find-run.outputs.head_sha }}\`"
+            echo "- Upstream build run: ${{ steps.find-run.outputs.run_url }}"
+            echo "- Image: \`${{ steps.image.outputs.image_uri }}\`"
+            if [ "${{ inputs.deploy_to_ecs }}" = "true" ]; then
+              echo "- Task definition: \`${{ steps.taskdef.outputs.new_task_definition_arn }}\`"
+              echo "- Preview URL: ${COREAPP_PREVIEW_URL}"
+            else
+              echo "- ECS redeploy: skipped"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

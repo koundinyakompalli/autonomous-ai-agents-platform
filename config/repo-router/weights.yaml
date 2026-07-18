@@ -1,0 +1,21 @@
+schema_version: 1
+weights_version: 1
+thresholds:
+  score_min: 8
+  margin_auto: 5
+weights:
+  file_path: 10
+  package_namespace: 6
+  symbol_table_endpoint: 6
+  semantic_historical_similarity: 6
+  semantic_profile_similarity: 4
+  directional_phrase: 3
+  actionable_single_repo_alias: 3
+  business_term_profile_hit: 2
+  actionable_multi_repo_alias: 1
+  contextual_alias: 0
+  generic_keyword_penalty: -1
+decay:
+  historical_half_life_days: 30
+caps:
+  historical_double_count: 8

@@ -1,0 +1,36 @@
+# Ordered text-context rules for module disambiguation when case IDs alone are ambiguous.
+#
+# Example: P-prefixed numbers can represent provider appeals, member referrals,
+# care plans, or other workflows depending on ticket context. Add new module
+# context here instead of changing text_ticket_parser.py.
+rules:
+  - module: authorizations
+    case_prefixes:
+      - "0"
+      - PO
+      - H
+    keywords:
+      - authorization
+
+  - module: provider_appeals_mgmt
+    case_prefixes:
+      - P
+    keywords:
+      - provider appeal
+      - provider dispute
+
+  - module: careplan
+    case_prefixes:
+      - P
+    keywords:
+      - care plan
+      - careplan
+
+  - module: member_referral
+    case_prefixes:
+      - P
+    keywords:
+      - member referral
+      - referral number
+      - referral status
+      - referral

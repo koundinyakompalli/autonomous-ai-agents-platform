@@ -1,0 +1,35 @@
+schema_version: 1
+profile_version: 1
+generated_at: "2026-04-29T00:00:00Z"
+source_repo_commit_sha: unknown
+generated:
+  aliases:
+    - Document-ai
+    - document-ai
+    - document ai
+  domains:
+    - ocr
+    - document-understanding
+    - intake
+    - document extraction
+    - document understanding
+    - extracted document
+  packages:
+    - document
+    - ocr
+  file_path_patterns:
+    - ocr
+    - document
+  symbols:
+    - Ocr
+    - DocumentExtraction
+  endpoints: []
+  tables: []
+curated:
+  aliases: []
+  domains: []
+  packages: []
+  file_path_patterns: []
+  symbols: []
+  endpoints: []
+  tables: []

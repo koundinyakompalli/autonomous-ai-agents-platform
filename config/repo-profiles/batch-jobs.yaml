@@ -1,0 +1,712 @@
+schema_version: 1
+profile_version: 7
+generated_at: "2026-04-29T17:19:14.563Z"
+source_repo_commit_sha: 1fac0869497b88138afb0b9b6f6fff72513908ec
+generated:
+  aliases:
+    - ApprovalEffectuationReport
+    - AssesmentReportingUtility
+    - CensusDataLoader
+    - ContextBasedAlertBatch
+    - Correspondance_retrigger
+    - EdiProcessor-AmericanCoder
+    - EventProcessing
+    - FaxCorrespondenceConfirmation
+    - FaxIntakeService
+    - FaxIntakeServiceCVS
+    - JRXMLConverterAndScanner
+    - KillPID
+    - MHKVendorBatchProcessor
+    - MTMBatchProcessor
+    - Outbound-file-feed
+    - S3ArchiveManager
+    - ScannedImages-Appeals
+    - ThirdPartyReviewSystem
+    - X12Generator278
+    - auto-tasking-process
+    - "batch jobs"
+    - batch-correspondence-utility
+    - batch-correspondence-watcher
+    - batch-job-utility
+    - batch-jobs
+    - centene-transaction-processor
+    - correspondence-tracking-extended
+    - cp-batch-monorepo
+    - effectuation-process
+    - emailIntakeService
+    - epa-schedulers
+    - epa-schedulers-cvs
+    - epa-schedulers-cvs-2017
+    - epa-schedulers-v2017
+    - generic-mhk-utility
+    - historical-correspondence-trigger
+    - mcg-batch-service
+    - medhok-dynamic-loader
+    - medhok-ocr-manager
+    - member_care_overview_audit
+    - mhkutility
+    - mm-member-merge
+    - mmm-hra-referral
+    - mock_adjudication_service
+    - outbound-case-processor
+    - outbound-case-processor-generic
+    - process-flow-mgmt
+    - queue-monitor
+    - rx-sync
+    - wellcare-ncappeals-correspondence-processor
+  domains:
+    - "appeals tiff"
+    - "assessment job"
+    - assessments
+    - "auditlogbatchprocessor audit"
+    - auto
+    - "aws ses"
+    - based
+    - batch
+    - "batch job"
+    - "batch processing"
+    - batch-correspondence-utility
+    - batch-correspondence-watcher
+    - batch-jobs
+    - batch-monorepo
+    - branches
+    - build
+    - "case processing"
+    - "caseupdatebatchprocessor case"
+    - centene-transaction-processor
+    - cherry
+    - completed
+    - config
+    - correspondence
+    - "correspondence job"
+    - correspondence-tracking-extended
+    - count
+    - creation
+    - cvs-correspondence-group-watcher
+    - cvs-correspondence-watcher
+    - cvs-outbound-case-processor
+    - dashboard
+    - "document processing"
+    - documentai
+    - download
+    - enhanced
+    - enrichment
+    - "eventprocessing event"
+    - fallback
+    - favicon
+    - faxcom
+    - "faxcorrespondenceconfirmation fax"
+    - "faxintakeservice fax"
+    - "faxintakeservicecvs cvs"
+    - "faxmetadataprocessor barcode"
+    - fetch
+    - "flatworm mainapp"
+    - flow
+    - "gateway gateway"
+    - health
+    - historical-correspondence-trigger
+    - ico
+    - image
+    - impl
+    - jobs
+    - json
+    - logic
+    - logo
+    - lookup
+    - master
+    - mcg-batch-service
+    - medhok-ocr-manager
+    - "medhokcmsprocessor cms"
+    - member
+    - "mhkvendorbatchprocessor vendor"
+    - "module directory"
+    - "module purpose key entry"
+    - "mtmbatchprocessor member"
+    - "navigation guide"
+    - ocr
+    - "omsbatchprocessor order"
+    - outbound-case-processor
+    - outbound-case-processor-generic
+    - pick
+    - png
+    - process
+    - processing
+    - processtype
+    - "queue processing"
+    - re-trigger
+    - re-triggering
+    - release
+    - reload
+    - remap
+    - "scheduled job"
+    - "spring boot"
+    - "spring boot regularfaxintakeservice"
+    - status
+    - summary
+    - support
+    - "thirdpartyreviewsystem mrioa"
+    - trigger
+    - validation
+    - wellcare-ncappeals-correspondence-processor
+    - "workflow job"
+  packages:
+    - com.biscom
+    - com.biscom.fax
+    - com.elizacorp
+    - com.medhok
+    - com.medhok.batch
+    - com.medhok.complianceaudit
+    - com.medhok.dynamic
+    - com.medhok.edi
+    - com.medhok.feed
+    - com.medhok.mm
+    - com.medhok.ocr
+    - com.medhok.web
+    - com.medhok.ws
+    - com.mhk
+    - com.mhk.batch
+    - com.wellcare
+    - com.wellcare.ws
+    - org.ncpdp
+    - org.ncpdp.schema
+    - org.tempuri
+  file_path_patterns:
+    - .github
+    - .settings
+    - ApprovalEffectuationReport
+    - AssesmentReportingUtility
+    - AssessmentLoader
+    - AuditLogBatchProcessor
+    - CVS-IVR-Status-Import
+    - CaseUpdateBatchProcessor
+    - CensusDataLoader
+    - ContextBasedAlertBatch
+    - CorrespondanceSupressProcess
+    - Correspondance_retrigger
+    - EdiProcessor-AmericanCoder
+    - EventProcessing
+    - FaxCorrespondenceConfirmation
+    - FaxIntakeService
+    - FaxIntakeServiceCVS
+    - FaxMetaDataProcessor
+    - JRXMLConverterAndScanner
+    - KillPID
+    - MHKVendorBatchProcessor
+    - MTMBatchProcessor
+    - MedHOKCMSProcessor
+    - OMSBatchProcessor
+    - Outbound-File-Feed
+    - S3ArchiveManager
+    - ScannedImages-Appeals
+    - ThirdPartyReviewSystem
+    - ValidationRules
+    - X12Generator278
+    - X12Generator278-wellcare
+    - alerts
+    - alerts-new
+    - assessment-table-generator
+    - auto-tasking-process
+    - barcode-generator
+    - batch-correspondence-utility
+    - batch-correspondence-watcher
+    - batch-job-utility
+    - carewebql-service
+    - catalina.base_IS_UNDEFINED
+    - centene-transaction-processor
+    - corres-supres-process
+    - correspondence-tracking-extended
+    - cp-batch-monorepo
+    - cvs-correspondence-group-watcher
+    - cvs-correspondence-watcher
+    - cvs-outbound-case-processor
+    - deployment
+    - documentation
+    - effectuation-process
+    - emailIntakeService
+    - epa-schedulers
+    - epa-schedulers-cvs
+    - epa-schedulers-cvs-2017
+    - epa-schedulers-v2017
+    - epa-schedulers-v2017-v2
+    - epa-servlet-v2017
+    - epaReport
+    - error
+    - generic-mhk-utility
+    - historical-correspondence-trigger
+    - hpsm-hra-cc-import
+    - install
+    - mcg-batch-service
+    - medhok-dynamic-loader
+    - medhok-ocr-manager
+    - member_care_overview_audit
+    - mhkutility
+    - mm-member-merge
+    - mmm-cmdm-extract
+    - mmm-hra-referral
+    - mock_adjudication_service
+    - mock_alert
+    - outbound-case-processor
+    - outbound-case-processor-Gateway
+    - outbound-case-processor-generic
+    - pgigenerationvalidation
+    - plans
+    - process-flow-mgmt
+    - queue-monitor
+    - rx-sync
+    - wellcare-ncappeals-correspondence-processor
+    - westfax-integration
+    - workflow-watcher
+    - workflows
+  symbols:
+    - AAASegment
+    - AWSPropertyManagerService
+    - AbstractAlertProcess
+    - AbstractAuditLogProcessor
+    - AbstractBatch
+    - AbstractCSVMapper
+    - AbstractThreadedTransactionalBatch
+    - AbstractTransactionalBatch
+    - AbstractValidationRule
+    - AbstractWatcher
+    - AccessDirectFaxHandler
+    - AccuracyTrend
+    - ActionStats
+    - ActivityRecord
+    - Adapter1
+    - AddAddressToGroup
+    - AddAddressToGroupResponse
+    - AddAttachment
+    - AddAttachmentByUNC
+    - AddAttachmentByUNCResponse
+    - AddAttachmentResponse
+    - AddEntity
+    - AddEntityAddress
+    - AddEntityAddressResponse
+    - AddEntityEmail
+    - AddEntityEmailResponse
+    - AddEntityPhone
+    - AddEntityPhoneResponse
+    - AddEntityResponse
+    - AddNotes
+    - AddNotesResponse
+    - AddOutboundContact
+    - AddOutboundContactResponse
+    - AddRecipient
+    - AddRecipientEx
+    - AddRecipientExResponse
+    - AddRecipientResponse
+    - AddUMEdits
+    - AddUMEditsResponse
+    - AddUpdateEntityRoleChar
+    - AddUpdateEntityRoleCharResponse
+    - AddUpdateRelationship
+    - AddUpdateRelationshipResponse
+    - AdditionalFreeTextIndicatorTypeCode
+    - AdditionalProviderList
+    - AddressInfo
+    - AddressInput
+    - AddressTypeQualifier
+    - AdhokReview
+    - AdhokReviewFileDTO
+    - AdhokReviewFileHeader
+    - AdhokReviewFileReader
+    - AdhokReviewTaskDTO
+    - AdhokReviewTaskThread
+    - AdministrationIndicator
+    - AdministrationIndicatorCodes
+    - AdministrationTiming
+    - AdmissionPeriod
+    - AffiliationList
+    - AgencyOfServiceType
+    - AgentResult
+    - Alert
+    - AlertException
+    - AlertNotification
+    - AlertTransport
+    - AlertTypeEnum
+    - AlertsManager
+    - Allergy
+    - AllergyChoice
+    - AllergyDrugProductCodedQualifier
+    - AllergyOptional
+    - AllergyRestricted
+    - AllergyRestrictedChoice
+    - AllowedContactDays
+    - AlternateContactStructure
+    - Answer
+    - AnswerChoiceCommonType
+    - AnswerChoiceForNumericType
+    - AnswerChoiceForPARequest
+    - AnswerForTextType
+    - ApiResponse
+    - AppConstants
+    - AppContext
+    - AppEventMonitorDAO
+    - AppException
+    - AppMain
+    - AppProperties
+    - AppealsDTO
+    - ApplicationConfig
+    - ApplicationContextProvider
+    - ApplicationIdentifierType
+    - ApprovedAbstractType
+    - ApprovedType
+    - ApprovedWithChangesAbstractType
+    - ApprovedWithChangesType
+    - ApprovedWithoutReasonType
+    - ApprovedWithoutReasonTypeForClinicalInfoResponse
+    - ArchiveManager
+    - ArrayOfActivityRecord
+    - ArrayOfAddressInfo
+    - ArrayOfAddressInput
+    - ArrayOfAttachment
+    - ArrayOfEmailInput
+    - ArrayOfEntityAddress
+    - ArrayOfEntityCharacteristics
+    - ArrayOfEntityCondition
+    - ArrayOfEntityEmail
+    - ArrayOfEntityPhone
+    - ArrayOfEntityPreferences
+    - ArrayOfEntityRoleCharacteristics
+    - ArrayOfIDInput
+    - ArrayOfMessageStatus
+    - ArrayOfMessageStatusQuery
+    - ArrayOfMessageStatusQueryResult
+    - ArrayOfPendingMessage
+    - ArrayOfPhoneInput
+    - ArrayOfPhonebookInfo
+    - ArrayOfPreferenceOutput
+    - ArrayOfPreferenceType
+    - ArrayOfReceivedMessageData
+    - ArrayOfReceivedMessageData2
+    - ArrayOfRecipientInfo
+    - ArrayOfString
+    - ArtifactMetadataResponse
+    - ArtifactSummary
+    - AssessmentAction
+    - AssessmentDocument
+    - AssessmentImportService
+    - AssessmentLoad
+    - AssessmentReportingExport
+    - AssessmentReportingQuestion
+    - AssessmentReportingQuestionSetExtractor
+    - AssessmentReportingResult
+    - AssessmentReportingUtility
+    - AssessmentResultSetExtractor
+    - AssessmentSelectionService
+    - AssessmentService
+    - AssessmentTableGenerator
+    - AssociatedCase
+    - AttachFaxService
+    - Attachment
+    - AttachmentProcess
+    - AttachmentProcess365
+    - AttachmentRequired
+    - AttachmentWithControlNumber
+    - Attachments
+    - AuditLogDTO
+    - AuditLogProcessor
+    - AuditLogProcessorDao
+    - AuditLogProcessorData
+    - AuditLogProcessorService
+    - AuditLogProcessorThreadWork
+    - AuditLogService
+    - Auth
+    - AuthDiag
+    - AuthIp
+    - AuthOutDetails
+    - AuthProc
+    - AuthRev
+    - AuthReviewComparator
+    - AuthRulesDBHandler
+    - AuthRulesLoaderService
+    - AuthServices
+    - AuthenticationException
+    - AuthorizationRoot
+    - AuthorizationServices
+    - AutoCaseCreationService
+    - AutoCaseService
+    - AutoDialConsent
+    - AutoTaskProcessingService
+    - AutoTaskingDAO
+    - AutoTaskingService
+    - AutoTaskingUtil
+    - AwsClientConfig
+    - AwsSigV4Signer
+    - AzureArchiveConsumer
+    - BHTSegment
+    - BPMConfig
+    - BPMService
+    - BarcodeAttribute
+    - BarcodeErrorContext
+    - BarcodeService
+    - BarcodeTypeConverter
+    - BarcodingProcessor
+    - BarcodingService
+    - BaseBenefitsCoordination
+    - BaseBenefitsCoordinationAbstract
+    - BaseDAO
+    - BaseDao
+    - BaseEmailMessage
+    - BasicApprovedType
+    - BasicResponseType
+    - BatchConfig
+    - BatchConfigDAO
+    - BatchConfigDTO
+    - BatchConfigDetailDAO
+    - BatchConfigDetailDTO
+    - BatchDataInitializer
+    - BatchDefaults
+    - BatchExecutionDAO
+    - BatchExecutionDTO
+    - BatchExecutionDetailDAO
+    - BatchExecutionDetailDTO
+    - BatchExecutionExtensionDTO
+    - BatchHelper
+    - BatchJobActionProcessorService
+    - BatchJobActionReviewThread
+    - BatchProcessHistoryDTO
+    - BatchProcessInfoDAO
+    - BatchProcessInfoDTO
+    - BatchService
+    - BatchStats
+    - BatchThreadWork
+    - BatchUtilityThreadExecutor
+    - BeanFactory
+    - BedDay278
+    - BedrockClient
+    - BenefitsCoordination
+    - BenefitsCoordinationForCensus
+    - BenefitsCoordinationRestricted
+    - BinaryDataType
+    - BiscomInitException
+    - BiscomLogHandler
+    - BiscomSoapClient
+    - BiscomSoapFaxHandler
+    - BiscomSoapServiceClientConfiguration
+    - BiscomSoapServiceImpl
+    - Body
+    - Body2
+    - BodyType
+    - BooleanCode
+    - BooleanRowMapper
+    - BounceReason
+    - BoundaryArtifact
+    - BoundaryArtifactInfo
+    - BoundaryDetails
+    - BoundaryDetailsResponse
+    - BoundaryInfo
+    - BoundaryRemappingService
+    - BoundaryTypeAccuracy
+    - BpmDTO
+    - BreakingBatchException
+    - BusHeader
+    - CodeBuild
+    - DefaultFaxHandler
+    - FaxCom
+    - JUnit
+    - ProcessType
+    - QSetHandlerDrugLookupTest
+    - RequestLimitExceeded
+    - ScannedImages
+  endpoints:
+    - /api/config
+    - /api/ocr
+    - /claim
+    - /documentai
+    - /favicon.ico
+    - /fetch-completed
+    - /health
+    - "/jobs/image/{imageId}"
+    - "/jobs/status/{status}"
+    - "/jobs/{id}"
+    - /mhk-logo.png
+    - /ocr-dashboard
+    - /process
+    - /processing
+    - /processing/count
+    - /release
+    - /reload
+    - /remap
+    - /status/check
+    - /status/update
+    - /summary
+    - /trigger-flow
+    - "/{key}"
+  tables:
+    - data_loader_config
+    - data_loader_config_fields
+    - data_loader_config_rules
+    - der_case_update_test
+    - file_load_detail
+    - file_load_summary
+    - incoming_images_ocr_job_boundaries
+    - incoming_images_ocr_job_boundary_metrics
+    - incoming_images_ocr_jobs
+    - incoming_images_ocr_ws_audit_log
+    - medhok_ocr_queue
+    - ocr_confidence_configuration
+    - ocr_configuration
+    - ocr_crosswalk_configuration
+    - ocr_field_accuracy_detail
+    - ocr_operational_metrics
+    - system_variables
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `batch-jobs` (cp-batch-monorepo) is the Care Prominence background-
+# processing monorepo — ~70 independent batch modules spanning inbound intake
+# (fax, email, OCR), correspondence generation and tracking, outbound case
+# processing, EDI (X12 278 prior-auth, 834/837), EPA (Electronic Prior
+# Authorization) schedulers, workflow/BPM monitoring, assessment/census/member
+# loaders, and customer-specific variants (CVS, WellCare, Centene, etc).
+# These are standalone Java jobs — each module is its own `Main.java` +
+# POM — orchestrated by schedulers or SQS triggers, not part of the main
+# Care Prominence web app.
+#
+# Typical ticket vocabulary: fax intake, fax not transferring, fax queue,
+# barcoded fax, TIFF, OCR, correspondence not generating, letter not
+# generating, letter print, print queue, case not routing, EPA, X12 278,
+# EDI, 834, 837, WellCare appeals correspondence, CVS correspondence,
+# centene file, batch job failure, scheduled job, outbound case, effectuation,
+# assessment loader, census loader, MTM, correspondence watcher,
+# FaxMetaDataProcessor, vendor batch, CMS processor.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - batch-jobs
+    - cp-batch-monorepo
+    - batch-monorepo
+    - batch-jobs-monorepo
+  domains:
+    - fax intake
+    - fax not transferring
+    - fax queue
+    - fax transfer
+    - barcoded fax
+    - fax confirmation
+    - tiff
+    - ocr
+    - document ai
+    - email intake
+    - correspondence
+    - correspondence generation
+    - correspondence tracking
+    - correspondence watcher
+    - correspondence retrigger
+    - correspondence group
+    - letter generation
+    - letter not generating
+    - letter print
+    - print queue
+    - outbound case
+    - outbound-case-processor
+    - case routing
+    - case processor
+    - effectuation
+    - effectuation process
+    - third party review
+    - mrioa
+    - edi
+    - edi processor
+    - 834
+    - 837
+    - x12 278
+    - x12 278 prior auth
+    - epa
+    - epa scheduler
+    - electronic prior authorization
+    - workflow
+    - workflow watcher
+    - process flow
+    - bpm
+    - jbpm
+    - auto tasking
+    - auto tasking process
+    - assessment loader
+    - census loader
+    - mtm
+    - mtm batch
+    - member management batch
+    - vendor batch
+    - cms batch
+    - cms processor
+    - medhok dynamic loader
+    - audit log batch
+    - centene transaction
+    - mcg batch
+    - wellcare appeals
+    - wellcare nc appeals
+    - cvs correspondence
+    - cvs fax
+    - cvs ivr
+    - cvs outbound
+    - scannedimages
+    - appeals images
+    - fax metadata
+    - jasperreports
+    - jrxml
+    - archive manager
+    - s3 archive
+    - historical correspondence
+    - queue monitor
+    - job failure
+    - scheduled job
+    - flatworm
+  packages:
+    - com.medhok.batch
+    - com.medhok.mm.batch
+  file_path_patterns:
+    - FaxIntakeService
+    - FaxIntakeServiceCVS
+    - FaxMetaDataProcessor
+    - FaxCorrespondenceConfirmation
+    - medhok-ocr-manager
+    - emailIntakeService
+    - batch-correspondence-utility
+    - batch-correspondence-watcher
+    - cvs-correspondence-watcher
+    - cvs-correspondence-group-watcher
+    - wellcare-ncappeals-correspondence-processor
+    - historical-correspondence-trigger
+    - correspondence-tracking-extended
+    - outbound-case-processor
+    - outbound-case-processor-Gateway
+    - cvs-outbound-case-processor
+    - outbound-case-processor-generic
+    - ScannedImages-Appeals
+    - MTMBatchProcessor
+    - AuditLogBatchProcessor
+    - CaseUpdateBatchProcessor
+    - MHKVendorBatchProcessor
+    - OMSBatchProcessor
+    - EventProcessing
+    - centene-transaction-processor
+    - MedHOKCMSProcessor
+    - mcg-batch-service
+    - EdiProcessor-AmericanCoder
+    - X12Generator278
+    - X12Generator278-wellcare
+    - epa-schedulers
+    - epa-schedulers-cvs
+    - workflow-watcher
+    - process-flow-mgmt
+    - auto-tasking-process
+    - effectuation-process
+    - medhok-dynamic-loader
+    - AssessmentLoader
+    - CensusDataLoader
+  symbols:
+    - FaxIntakeService
+    - RegularFaxIntakeService
+    - FaxMetaDataProcessorService
+    - EmailIntakeMain
+    - OcrJobService
+    - OcrJobController
+    - CvsCorrespondenceWatcher
+    - WellcareProcessor
+    - MTMBatchMain
+    - VendorBatchMain
+    - EffectuationProcess
+  endpoints: []
+  tables: []

@@ -1,0 +1,139 @@
+# Specter Terraform Variables
+# The shared dev-account baseline now lives in `shared.auto.tfvars` and is
+# loaded automatically by Terraform and GitHub Actions workflows.
+# Copy this file to `terraform.tfvars` only when you need to override those
+# tracked defaults locally.
+
+# General
+aws_region  = "us-east-2"
+environment = "prod"
+owner       = "platform-team"
+
+# Existing Infrastructure (REUSED)
+existing_vpc_id                  = "vpc-0f059e0a3942b2e62"
+subnet_ids                       = ["subnet-0791c0e76fc4f0e81"]
+existing_efs_id                  = "fs-07db87df276aef225"
+existing_efs_security_group_id   = "sg-01376d060dc750c88"
+existing_task_role_arn           = "arn:aws:iam::323960442001:role/AmazonBedrockExecutionRoleForFlows_YX9G86Z5WQ"
+existing_rds_security_group_id   = "sg-05688873549501754"
+db_credentials_secret_name       = "document-ai-prod/database/credentials"
+db_host                          = "document-ai-prod-mysql.cxtyszxlzcsj.us-east-2.rds.amazonaws.com"
+db_port                          = "3306"
+db_name                          = "Specter"
+
+# JIRA Configuration
+jira_base_url              = "https://medhokapps.atlassian.net"
+jira_username              = "koundinya.kompalli@mhk.com"
+jira_token_secret_name     = "defectdef/prod/jira-token"
+github_repo_token_secret_name = "specter/prod/github-repository-token"
+jira_polling_interval_ms   = 60000
+result_check_interval_ms   = 30000
+
+# Bedrock
+bedrock_model_id                = "us.anthropic.claude-opus-4-6-v1"
+qualifier_model_id              = "us.anthropic.claude-sonnet-4-6"
+oneshot_statistics_llm_model_id = "us.anthropic.claude-sonnet-4-6"
+bedrock_region                  = "us-east-2"
+
+# ECS Configuration
+orchestrator_cpu           = "512"
+orchestrator_memory        = "1024"
+orchestrator_desired_count = 1
+
+darci_cpu           = "1024"
+darci_memory        = "2048"
+darci_desired_count = 1
+
+scribe_cpu           = "512"
+scribe_memory        = "1024"
+scribe_desired_count = 1
+
+prism_cpu           = "512"
+prism_memory        = "1024"
+prism_desired_count = 1
+
+hermes_cpu           = "512"
+hermes_memory        = "1024"
+hermes_desired_count = 1
+
+worker_polling_interval_ms = 10000
+
+# Harvey (Teams Bot)
+harvey_cpu                      = "512"
+harvey_memory                   = "1024"
+harvey_desired_count            = 1
+harvey_teams_secret_name        = "specter/prod/harvey-teams-credentials"
+harvey_result_poll_interval_ms  = 15000
+harvey_certificate_arn          = "arn:aws:acm:us-east-2:323960442001:certificate/REPLACE-WITH-REAL-CERT-ARN"
+harvey_alb_subnet_ids           = []  # Leave empty to reuse subnet_ids, or set public subnets
+
+dashboard_allowed_cidr_blocks = [
+  "172.22.0.0/16",
+  "172.109.133.2/32",
+  "172.29.0.0/16",
+  "3.228.81.40/32",
+  "104.226.237.202/32",
+  "198.19.0.0/16",
+  "97.76.206.30/32",
+]
+dashboard_https_extra_cidr_blocks = []
+
+# Spec Factory
+enable_spec_factory        = true
+# Task is shared by the Node app + the markitdown/ffmpeg sidecar, which holds
+# the full media upload + base64 segments in RAM. 512/1024 OOM-killed the whole
+# task on large media; 1024/3072 gives ffmpeg headroom and fits the sidecar cap.
+spec_factory_cpu    = "1024"
+spec_factory_memory = "3072"
+# Keep the compatibility/API service at one task until the v4 Valkey, durable
+# event/token, and queue cutover is certified. Scale horizontally only after
+# the rollout runbook's shared-state gate passes.
+spec_factory_desired_count                    = 1
+spec_factory_runtime_subnet_ids               = [] # Set at least two public AZ subnets before horizontal scaling
+spec_factory_log_retention_days               = 365
+spec_factory_data_subnet_ids                  = [] # Private subnets in at least two AZs; required before enabling Valkey/RDS Proxy
+spec_factory_valkey_enabled                   = false
+spec_factory_rds_proxy_enabled                = false
+spec_factory_rds_direct_fallback_enabled      = true # Keep until the proxy canary and rollback drill pass
+spec_factory_rds_proxy_db_instance_identifier = ""
+spec_factory_db_secret_kms_key_arn            = "" # Required when the existing DB secret uses a customer-managed KMS key
+spec_factory_autoscaling_enabled              = false
+spec_factory_api_max_count                    = 30
+spec_factory_api_requests_per_target          = 300
+spec_factory_ecs_task_protection_enabled      = false
+spec_factory_ecs_task_protection_expires_minutes = 30
+spec_factory_ecs_task_protection_refresh_ms   = 300000
+spec_factory_ecs_task_protection_request_timeout_ms = 3000
+spec_factory_worker_scale_in_enabled          = false # enable only with task protection
+spec_factory_workflow_state_rate_limit_max    = 120
+spec_factory_artifact_store                   = "efs" # switch to s3 only at the immutable-artifact rollout gate
+spec_factory_single_replica_alarm_enabled     = true
+spec_factory_louise_jql                       = "labels = \"louise-estimated\" AND labels not in (\"SPEC-FACTORY-STARTED\") ORDER BY updated DESC"
+spec_factory_model_id               = "us.anthropic.claude-sonnet-5"
+compose_chat_model_id               = "us.anthropic.claude-sonnet-5"
+compose_voxtral_model_id            = "mistral.voxtral-small-24b-2507"
+compose_audio_segment_seconds       = 300
+# Local override default: keep repo deep-dive off for cheaper/faster ad hoc
+# testing. The shared deployed baseline intentionally enables this so Compose
+# handoff and Louise drafts are code-grounded by default.
+spec_factory_repo_deep_dive_enabled = false
+
+# Watchdog
+enable_watchdog                  = true
+watchdog_mcp_image_tag           = "latest"
+watchdog_prod_reader_secret_name = "/specter/dev/watchdog/prod-reader"
+watchdog_prod_account_id         = "239350186085"
+watchdog_evidence_bucket         = "specter-watchdog-evidence"
+watchdog_investigator            = "llm_log_analysis"
+watchdog_agentic_mcp_loop        = "disabled"
+watchdog_claude_max_turns        = 3
+watchdog_llm_max_output_tokens   = 1800
+watchdog_claude_timeout_ms       = 240000
+
+# CloudWatch
+log_retention_days        = 30
+enable_container_insights = true
+
+# S3
+s3_task_bucket   = "specter-tasks"
+s3_result_bucket = "specter-results"

@@ -1,0 +1,396 @@
+name: Build / Worker / VERITAS
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'src/agents/veritas/**'
+      - 'src/orchestrator/workers/VERITASWorker.ts'
+      - 'src/worker-main.ts'
+      - 'src/config/**'
+      - 'src/claude-sdk/**'
+      - 'Dockerfile.worker'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/veritas-build-push.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'src/agents/veritas/**'
+      - 'src/orchestrator/workers/VERITASWorker.ts'
+      - 'src/worker-main.ts'
+      - 'src/config/**'
+      - 'src/claude-sdk/**'
+      - 'Dockerfile.worker'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECR_REPOSITORY: specter/veritas-worker
+  ECS_CLUSTER: specter-cluster
+  ECS_SERVICE: VERITAS
+  NODE_VERSION: '20'
+  AGENT_NAME: VERITAS
+  AGENT_DESCRIPTION: "Verified Evidence-based Root-cause Investigation Truth & Analysis System"
+
+jobs:
+  # ============================================================================
+  # STAGE 1: BUILD
+  # ============================================================================
+  build:
+    name: "🔨 Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: |
+          npm run build
+          echo "✅ TypeScript compilation successful"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  # ============================================================================
+  # STAGE 2: CODE QUALITY
+  # ============================================================================
+  code-quality:
+    name: "🔍 Code Quality"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint 2>&1 || true
+        continue-on-error: true
+
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 3: TEST
+  # ============================================================================
+  test:
+    name: "🧪 Test"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test --if-present 2>/dev/null || echo "⚠️ No tests configured"
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 4: SECURITY SCAN
+  # ============================================================================
+  security-scan:
+    name: "🔒 Security Scan"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: NPM Audit
+        run: npm audit --audit-level=high 2>&1 || true
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 5: DOCKER BUILD
+  # ============================================================================
+  docker-build:
+    name: "🐳 Docker Build"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality, test, security-scan]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Build Docker Image
+        run: |
+          docker build -f Dockerfile.worker -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Install and Run Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update && sudo apt-get install trivy -y
+          trivy image --severity HIGH,CRITICAL --exit-code 0 ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        continue-on-error: true
+
+  # ============================================================================
+  # STAGE 6: PUSH TO ECR
+  # ============================================================================
+  push-to-ecr:
+    name: "🚀 Push to ECR"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Build Docker Image
+        run: |
+          docker build -f Dockerfile.worker -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push Docker Image to ECR
+        run: |
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker tag ${{ env.ECR_REPOSITORY }}:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: ECR Push Summary
+        run: |
+          echo "## 📦 ECR Push Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # STAGE 7: DEPLOY TO ECS
+  # ============================================================================
+  deploy-to-ecs:
+    name: "🚢 Deploy to ECS"
+    runs-on: ubuntu-latest
+    needs: push-to-ecr
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment: specter-aws-operations
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Force New ECS Deployment
+        run: |
+          echo "🚀 Forcing new deployment for ${{ env.ECS_SERVICE }}..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment
+          echo "✅ Deployment initiated for ${{ env.ECS_SERVICE }}"
+
+      - name: Wait for Service Stability
+        run: |
+          echo "⏳ Waiting for service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}
+          echo "✅ Service ${{ env.ECS_SERVICE }} is now stable"
+        timeout-minutes: 10
+        continue-on-error: true
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 ${{ env.AGENT_NAME }} Agent Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: \`${{ env.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: \`${{ env.ECS_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # PR SUMMARY
+  # ============================================================================
+  pr-summary:
+    name: "📋 PR Summary"
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: PR Build Summary
+        run: echo "## ✅ ${{ env.AGENT_NAME }} Agent - PR Verification Complete" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # MICROSOFT TEAMS NOTIFICATIONS (Adaptive Cards for Power Automate Workflows)
+  # ============================================================================
+  notify-teams-success:
+    name: "📢 Teams Notification (Success)"
+    runs-on: ubuntu-latest
+    needs: deploy-to-ecs
+    if: success() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Send Teams Success Notification
+        run: |
+          cat << 'EOF' > payload.json
+          {
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "type": "AdaptiveCard",
+            "version": "1.4",
+            "body": [
+              {
+                "type": "TextBlock",
+                "size": "Large",
+                "weight": "Bolder",
+                "text": "🚀 VERITAS Agent - Deployed to ECS"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Verified Evidence-based Root-cause Investigation Truth & Analysis System",
+                "isSubtle": true,
+                "wrap": true
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  {"title": "Service", "value": "VERITAS Worker"},
+                  {"title": "Cluster", "value": "specter-cluster"},
+                  {"title": "Status", "value": "✅ Deployed"},
+                  {"title": "Branch", "value": "${{ github.ref_name }}"},
+                  {"title": "Author", "value": "${{ github.actor }}"}
+                ]
+              },
+              {
+                "type": "TextBlock",
+                "text": "Image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}",
+                "wrap": true,
+                "size": "Small"
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.OpenUrl",
+                "title": "View Pipeline",
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
+          EOF
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK_URL }}"
+        continue-on-error: true
+
+  notify-teams-failure:
+    name: "📢 Teams Notification (Failure)"
+    runs-on: ubuntu-latest
+    needs: [build, code-quality, test, security-scan, docker-build, push-to-ecr, deploy-to-ecs]
+    if: failure() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Send Teams Failure Notification
+        run: |
+          cat << 'EOF' > payload.json
+          {
+            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+            "type": "AdaptiveCard",
+            "version": "1.4",
+            "body": [
+              {
+                "type": "TextBlock",
+                "size": "Large",
+                "weight": "Bolder",
+                "text": "⚠️ VERITAS Agent - Pipeline Failed"
+              },
+              {
+                "type": "TextBlock",
+                "text": "Verified Evidence-based Root-cause Investigation Truth & Analysis System",
+                "isSubtle": true,
+                "wrap": true
+              },
+              {
+                "type": "FactSet",
+                "facts": [
+                  {"title": "Service", "value": "VERITAS Worker"},
+                  {"title": "Status", "value": "❌ Failed"},
+                  {"title": "Branch", "value": "${{ github.ref_name }}"},
+                  {"title": "Author", "value": "${{ github.actor }}"}
+                ]
+              }
+            ],
+            "actions": [
+              {
+                "type": "Action.OpenUrl",
+                "title": "View Pipeline Logs",
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            ]
+          }
+          EOF
+          curl -H "Content-Type: application/json" -d @payload.json "${{ secrets.TEAMS_WEBHOOK_URL }}"
+        continue-on-error: true

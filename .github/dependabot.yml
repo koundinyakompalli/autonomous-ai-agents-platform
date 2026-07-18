@@ -1,0 +1,176 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 4
+    groups:
+      root-npm-production:
+        applies-to: version-updates
+        dependency-type: production
+        patterns:
+          - "*"
+      root-npm-development:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - "*"
+      root-npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /dashboard
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:30"
+      timezone: America/New_York
+    open-pull-requests-limit: 4
+    groups:
+      dashboard-npm-production:
+        applies-to: version-updates
+        dependency-type: production
+        patterns:
+          - "*"
+      dashboard-npm-development:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - "*"
+      dashboard-npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /meridian/backend
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    groups:
+      meridian-backend-pip:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      meridian-backend-pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /sidecar/markitdown
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:15"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    groups:
+      markitdown-sidecar-pip:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      markitdown-sidecar-pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /terraform/lambda/agent_registry
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:30"
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    groups:
+      agent-registry-lambda-pip:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      agent-registry-lambda-pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /scripts/python-automation/clio
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "04:45"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    groups:
+      clio-pip:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      clio-pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "05:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "04:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    groups:
+      root-docker:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      root-docker-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /dashboard
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "04:30"
+      timezone: America/New_York
+    open-pull-requests-limit: 1
+    groups:
+      dashboard-docker:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      dashboard-docker-security:
+        applies-to: security-updates
+        patterns:
+          - "*"

@@ -1,0 +1,82 @@
+FROM node:26-slim
+
+# ============================================================================
+# INSTALL OS DEPENDENCIES
+# ============================================================================
+# - git: for repository operations and Claude Code git tools
+# - ca-certificates: for HTTPS connections
+# - ripgrep: for fast code searching (used by Claude Code)
+# - curl: for health checks and debugging
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    ripgrep \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# INSTALL CLAUDE CODE CLI GLOBALLY
+# ============================================================================
+# This is required by the Claude Agent SDK
+RUN npm install -g @anthropic-ai/claude-code
+
+# ============================================================================
+# ENVIRONMENT VARIABLES - BEDROCK CONFIGURATION
+# ============================================================================
+# These are set at build time but can be overridden at runtime
+
+# REQUIRED: Enable Bedrock mode for Claude Code
+ENV CLAUDE_CODE_USE_BEDROCK=1
+
+# REQUIRED: AWS Region (Claude Code doesn't read from .aws config)
+ENV AWS_REGION=us-east-2
+
+# Model selection - use regional inference profile for better availability
+ENV ANTHROPIC_MODEL=us.anthropic.claude-sonnet-4-5-20250929-v1:0
+ENV ANTHROPIC_SMALL_FAST_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+
+# Recommended token settings for Bedrock (prevents throttling issues)
+ENV CLAUDE_CODE_MAX_OUTPUT_TOKENS=4096
+ENV MAX_THINKING_TOKENS=1024
+
+# Node environment
+ENV NODE_ENV=production
+
+# ============================================================================
+# APPLICATION SETUP
+# ============================================================================
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies (including @anthropic-ai/claude-agent-sdk)
+RUN npm ci --production
+
+# Copy built application
+COPY dist/ ./dist/
+COPY config/ ./config/
+COPY oneshot-prompts/ ./oneshot-prompts/
+
+# ============================================================================
+# HEALTHCHECK
+# ============================================================================
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# ============================================================================
+# COPY ENTRYPOINT SCRIPT
+# ============================================================================
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# ============================================================================
+# ENTRYPOINT
+# ============================================================================
+# Note: AWS credentials come from ECS Task IAM Role automatically
+# The entrypoint script sets up all required environment variables
+# and verifies dependencies before starting the application
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["orchestrator"]

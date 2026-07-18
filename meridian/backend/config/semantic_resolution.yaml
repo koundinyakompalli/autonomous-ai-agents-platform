@@ -1,0 +1,58 @@
+member_assessment:
+  - semantic_field: status
+    field_aliases:
+      - status
+    target_module: member_assessment
+    target_table: member_assessment
+    target_pk: ID
+    target_column: status_id
+    audit_label: Status
+    match:
+      column: assessment_code_id
+      context_key: assessment_name
+      reference:
+        table: assessment_master
+        id_col: id
+        desc_col: name
+    value_lookup:
+      table: assessment_status
+      id_col: id
+      desc_col: description
+    parent:
+      case_from: case_id
+      candidates:
+        - table: member_referral
+          pk: ID
+          case_col: referral_number
+          target_fk_col: member_referral_id
+        - table: careplan
+          pk: ID
+          case_col: referral_number
+          target_fk_col: careplan_id
+  - semantic_field: created_at
+    field_aliases:
+      - created at
+      - created date
+      - creation date
+    target_module: documents
+    target_table: documents
+    target_pk: id
+    target_column: insert_datetime
+    audit_label: Created At
+    match:
+      column: file_name
+      context_key: document_name
+    parent:
+      case_from: case_id
+      member_match:
+        parent_col: member_id
+        target_col: member_id
+      candidates:
+        - table: member_referral
+          pk: ID
+          case_col: referral_number
+          target_fk_col: member_referral_id
+        - table: careplan
+          pk: ID
+          case_col: referral_number
+          target_fk_col: careplan_id

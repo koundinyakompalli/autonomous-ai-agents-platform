@@ -1,0 +1,74 @@
+schema_version: 1
+profile_version: 1
+generated_at: "2026-05-13T00:00:00Z"
+source_repo_commit_sha: unknown
+generated:
+  aliases:
+    - cp-medhok-bi-datamart-monorepo
+    - bi-datamart
+    - "bi datamart"
+    - medhok-bi-datamart
+    - datamart
+    - "data mart"
+    - "member data mart"
+    - "bi data mart"
+  domains:
+    - datamart
+    - "data mart"
+    - "member data mart"
+    - "member data mart report"
+    - "bi datamart"
+    - "bi reporting"
+    - "report metadata"
+    - "reporting metadata"
+    - "digital communication fields"
+    - "digital communication reporting"
+    - "data warehouse reporting"
+    - "warehouse reporting extracts"
+    - "reporting extracts"
+  packages: []
+  file_path_patterns:
+    - cp-medhok-bi-datamart-monorepo
+    - datamart
+  symbols: []
+  endpoints: []
+  tables: []
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `cp-medhok-bi-datamart-monorepo` owns MedHOK BI/Data Mart
+# reporting and report metadata work, especially Member Data Mart report
+# behavior, Digital Communication reporting fields, warehouse/reporting
+# extracts, and BI-facing datamart changes. Keep this profile focused on BI
+# datamart/reporting ownership so broader data-lake, Redshift, DMS, and
+# QuickSight pipeline tickets continue to route to `data-visor`.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - cp-medhok-bi-datamart-monorepo
+    - bi-datamart
+    - "bi datamart"
+    - medhok-bi-datamart
+    - datamart
+    - "data mart"
+    - "member data mart"
+    - "bi data mart"
+  domains:
+    - "member data mart"
+    - "member data mart report"
+    - "data mart report"
+    - "bi reporting"
+    - "report metadata"
+    - "reporting metadata"
+    - "digital communication fields"
+    - "digital communication reporting"
+    - "data warehouse reporting"
+    - "warehouse reporting extracts"
+    - "reporting extracts"
+  packages: []
+  file_path_patterns:
+    - cp-medhok-bi-datamart-monorepo
+    - datamart
+  symbols: []
+  endpoints: []
+  tables: []

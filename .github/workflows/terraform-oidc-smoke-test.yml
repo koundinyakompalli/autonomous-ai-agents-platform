@@ -1,0 +1,27 @@
+name: Ops / Terraform / OIDC Smoke Test
+run-name: OIDC Smoke / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  sts-check:
+    name: STS Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Show caller identity
+        run: aws sts get-caller-identity

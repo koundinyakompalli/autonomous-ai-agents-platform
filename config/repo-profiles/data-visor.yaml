@@ -1,0 +1,256 @@
+schema_version: 1
+profile_version: 8
+generated_at: "2026-04-29T17:19:14.733Z"
+source_repo_commit_sha: 2e543d078357ded0717d5027763a4b6a465428a8
+generated:
+  aliases:
+    - cp-datalake-pipeline
+    - "data lake"
+    - "data visor"
+    - data-lake
+    - data-lake-pipeline
+    - data-visor
+    - datavisor
+    - dv
+  domains:
+    - ":workflow"
+    - "adding new validations"
+    - "amazon quicksight"
+    - "amazon redshift serverless"
+    - "apply all"
+    - atlassian
+    - auto-approval
+    - auto-approved
+    - "aws step functions"
+    - browse
+    - business-friendly
+    - cancel
+    - "configuration file format"
+    - cost-effective
+    - dashboard
+    - "data lake"
+    - "data lake pipeline development"
+    - "data pipeline"
+    - "data visor"
+    - "data warehouse"
+    - data-lake
+    - data-visor
+    - database
+    - datavisor
+    - "default preference"
+    - delete
+    - "discover available environments"
+    - "enterprise edition"
+    - "environment types"
+    - "error explanations"
+    - "etl logging"
+    - fact
+    - fields
+    - file
+    - filter
+    - format
+    - guide
+    - health
+    - https
+    - input
+    - inputs
+    - "key technologies"
+    - lambda
+    - level
+    - "list databases"
+    - "list provisioned clusters"
+    - "list redshift serverless workgroups"
+    - "materialized views"
+    - medpharm
+    - mhkjira
+    - "mysql etl sql"
+    - optimize
+    - pending
+    - pre-aggregated
+    - production-grade
+    - "project overview"
+    - quicksight
+    - "read all sections before"
+    - redshift
+    - "redshift deployment target environment"
+    - "redshift serverless"
+    - "reference data"
+    - "reference table"
+    - "reference table validator"
+    - reference-data-validation
+    - region
+    - reporting
+    - "reporting pipeline"
+    - "reporting views"
+    - saml
+    - "sample output"
+    - session
+    - "standard schema layout"
+    - start
+    - sttm
+    - table
+    - "tables validated"
+    - "target environment type"
+    - user
+    - "user created"
+    - "verify schema exists"
+    - "verify schema structure"
+    - view
+    - "which redshift"
+    - workflows
+  packages: []
+  file_path_patterns:
+    - .external_modules
+    - .pytest_cache
+    - AgenticDataVisor
+    - Context
+    - Redshift
+    - analysis
+    - "backend references"
+    - client
+    - cp-datalake-pipeline
+    - dashboard
+    - documentation
+    - frontend
+    - github.com
+    - lambdas
+    - quicksight_authentication
+    - quicksight_console_data_prepare
+    - quicksight_console_dataset_info
+    - quicksight_email_export
+    - quicksight_pretoken
+    - redshift_append_table_processor
+    - redshift_client_environment_setup
+    - redshift_dms_status
+    - redshift_mv_coordinator
+    - redshift_mv_processor
+    - redshift_password_sync
+    - redshift_statement_checker
+    - runbooks
+    - terraform
+    - terraform_iam
+    - terraform_quicksight_account
+  symbols:
+    - AgenticDataVisor
+    - DateTimeEncoder
+    - MedPharm
+    - QuickSight
+    - RedshiftDeployer
+    - RedshiftSessionManager
+    - ReferenceTableValidator
+    - TableDiscovery
+    - WorkflowService
+  endpoints:
+    - /api/health
+    - "/api/workflow/:workflowId"
+    - /api/workflow/pending-inputs
+    - /api/workflow/start
+    - /api/workflow/user-input
+    - /api/workflow/user-input/cancel
+    - /api/workflows
+  tables:
+    - authorization_detail_fact
+    - authorization_review_fact
+    - datamart
+    - user_session_fact
+    - user_workflow_fact
+# --------------------------------------------------------------------------
+# CURATED (human-authored). Preserved verbatim across regeneration.
+#
+# Summary: `data-visor` (cp-datalake-pipeline) is the healthcare data lake
+# and reporting pipeline — a Python/Terraform AWS-native project that ETLs
+# MySQL operational data into Amazon Redshift (Serverless and Provisioned),
+# runs materialized-view coordinators via AWS Step Functions + Lambda, and
+# exposes analytics via Amazon QuickSight. Also hosts reference-table
+# validators and DMS-based replication from production MySQL. Focus areas:
+# authorization facts, claims facts, compliance reporting, auto-approval
+# rate metrics, CMS Rx PA appeals reporting, quality measures reporting.
+#
+# Typical ticket vocabulary: data lake, datalake, reporting, redshift,
+# materialized view, MV, DMS, replication, Quicksight, dashboard, report,
+# CMS Rx PA appeals, Part C/D reporting, auto approval rate, reference
+# table, ETL pipeline, MySQL to Redshift, step function, reporting SQL,
+# dimensional model, fact table, cp_replication_lake, reporting pipeline.
+# --------------------------------------------------------------------------
+curated:
+  aliases:
+    - data-visor
+    - data visor
+    - datavisor
+    - dv
+    - data-lake
+    - data-lake-pipeline
+    - data lake
+    - datalake
+    - cp-datalake-pipeline
+    - cp-datalake
+    - datalake-pipeline
+    - reporting
+    - reporting-pipeline
+  domains:
+    - data lake
+    - data lake pipeline
+    - dv
+    - reporting pipeline
+    - reporting sql
+    - reporting dashboard
+    - reference table
+    - reference tables
+    - reference data
+    - redshift
+    - redshift serverless
+    - redshift provisioned
+    - materialized view
+    - materialized views
+    - mv coordinator
+    - dms replication
+    - dms
+    - quicksight
+    - dashboard
+    - etl
+    - etl pipeline
+    - mysql to redshift
+    - step function
+    - cms rx pa appeals
+    - part c reporting
+    - part d reporting
+    - auto approval rate
+    - auto approval
+    - quality measures
+    - medical authorization reporting
+    - claims reporting
+    - datamart
+    - dimensional model
+    - fact table
+    - cp_replication_lake
+    - redshift password sync
+    - quicksight authentication
+    - quicksight pretoken
+    - quicksight dataset
+    - cloudfront keys
+  packages:
+    - redshift_mv_coordinator
+    - redshift_mv_processor
+    - redshift_append_table_processor
+    - redshift_dms_status
+    - redshift_password_sync
+    - redshift_statement_checker
+    - redshift_client_environment_setup
+    - quicksight_authentication
+    - quicksight_console_data_prepare
+    - quicksight_console_dataset_info
+    - quicksight_pretoken
+  file_path_patterns:
+    - AgenticDataVisor
+    - ETL
+    - terraform_quicksight_account
+    - terraform_iam
+    - lambdas
+    - redshift_mv_coordinator
+    - redshift_mv_processor
+    - redshift_dms_status
+    - quicksight_authentication
+    - quicksight_console_data_prepare
+  symbols: []
+  endpoints: []
+  tables: []

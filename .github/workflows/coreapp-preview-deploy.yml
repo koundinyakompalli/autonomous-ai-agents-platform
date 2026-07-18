@@ -1,0 +1,263 @@
+name: Ops / OneShot / Core-App Preview Deploy
+run-name: Core-App Preview / ${{ inputs.deployment_id || 'manual' }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_id:
+        description: OneShot deployment row ID
+        required: true
+        type: string
+      oneshot_run_id:
+        description: OneShot run ID
+        required: true
+        type: string
+      repo_url:
+        description: Target repository URL
+        required: true
+        type: string
+      branch_name:
+        description: Implementation branch name
+        required: true
+        type: string
+      commit_sha:
+        description: Exact commit SHA to build
+        required: true
+        type: string
+      pr_url:
+        description: Draft PR URL
+        required: false
+        type: string
+      slot_name:
+        description: Preview slot name
+        required: true
+        default: core-app-preview
+        type: string
+      requested_by:
+        description: Operator identity
+        required: true
+        type: string
+      idempotency_key:
+        description: Dispatch idempotency key
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: coreapp-preview-slot
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  COREAPP_PREVIEW_ECR_REPO: medhok20/medhok-monorepo.coreapp
+  COREAPP_PREVIEW_ECS_CLUSTER: CLIENT-A
+  COREAPP_PREVIEW_ECS_SERVICE: CLIENT-A-cp-dev-mhk-core
+  COREAPP_PREVIEW_CONTAINER_NAME: app-container
+  COREAPP_PREVIEW_URL: https://client-a-cp-dev-mhk-core.mhkdevsandbox.com/medhok/
+  ONESHOT_DASHBOARD_BASE_URL: https://productfactory.mhkdevsandbox.com
+
+jobs:
+  mark-awaiting-approval:
+    name: Mark Awaiting Approval
+    runs-on: ubuntu-latest
+    outputs:
+      workflow_url: ${{ steps.workflow-url.outputs.workflow_url }}
+
+    steps:
+      - name: Checkout Specter repo
+        uses: actions/checkout@v7
+
+      - name: Compute workflow URL
+        id: workflow-url
+        run: |
+          echo "workflow_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Post awaiting approval status
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "awaiting_approval" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ steps.workflow-url.outputs.workflow_url }}"
+
+  deploy-preview:
+    name: Build and Deploy Preview
+    needs: mark-awaiting-approval
+    runs-on: ubuntu-latest
+    environment: specter-aws-operations
+
+    steps:
+      - name: Checkout Specter repo
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Mark building
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "building" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ needs.mark-awaiting-approval.outputs.workflow_url }}"
+
+      - name: Clone core-app repo at exact commit
+        env:
+          COREAPP_PREVIEW_GITHUB_TOKEN: ${{ secrets.COREAPP_PREVIEW_GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/coreapp-preview
+          git clone "https://x-access-token:${COREAPP_PREVIEW_GITHUB_TOKEN}@github.com/mhk-repos/cp-medhok-monorepo.git" /tmp/coreapp-preview
+          cd /tmp/coreapp-preview
+          git fetch origin "${{ inputs.branch_name }}" --depth 1
+          if ! git branch -r --contains "${{ inputs.commit_sha }}" | grep -q "origin/${{ inputs.branch_name }}"; then
+            echo "Commit ${{ inputs.commit_sha }} is not reachable from origin/${{ inputs.branch_name }}"
+            exit 1
+          fi
+          git checkout "${{ inputs.commit_sha }}"
+
+      - name: Build core-app WAR
+        working-directory: /tmp/coreapp-preview
+        run: |
+          mvn -N -f medhok-parent-java21/pom.xml -s .m2/settings.xml --batch-mode install
+          mvn -f medhok-parent-java21/pom.xml -s .m2/settings.xml --batch-mode package -P stamped
+          ls -lah MedicalMgmt/target
+          test -n "$(ls MedicalMgmt/target/medical-mgmt-*.war)"
+
+      - name: Build preview image
+        id: build-image
+        working-directory: /tmp/coreapp-preview
+        run: |
+          SHORT_SHA="$(printf '%s' "${{ inputs.commit_sha }}" | cut -c1-7)"
+          IMAGE_TAG="oneshot-${{ inputs.oneshot_run_id }}-deploy-${{ inputs.deployment_id }}-${SHORT_SHA}"
+          IMAGE_URI="${ECR_REGISTRY}/${COREAPP_PREVIEW_ECR_REPO}:${IMAGE_TAG}"
+
+          docker build \
+            -f MedicalMgmt/Dockerfile \
+            -t "${IMAGE_URI}" \
+            MedicalMgmt
+
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Mark pushing
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "pushing" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ needs.mark-awaiting-approval.outputs.workflow_url }}" \
+            --image-uri "${{ steps.build-image.outputs.image_uri }}"
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push image to ECR
+        run: |
+          docker push "${{ steps.build-image.outputs.image_uri }}"
+
+      - name: Mark deploying
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "deploying" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ needs.mark-awaiting-approval.outputs.workflow_url }}" \
+            --image-uri "${{ steps.build-image.outputs.image_uri }}"
+
+      - name: Register new task definition
+        id: taskdef
+        run: |
+          CURRENT_TASK_DEF_ARN="$(aws ecs describe-services \
+            --cluster "${COREAPP_PREVIEW_ECS_CLUSTER}" \
+            --services "${COREAPP_PREVIEW_ECS_SERVICE}" \
+            --query 'services[0].taskDefinition' \
+            --output text)"
+
+          aws ecs describe-task-definition \
+            --task-definition "${CURRENT_TASK_DEF_ARN}" \
+            > /tmp/current-task-definition.json
+
+          python3 .github/scripts/coreapp-preview/register-task-definition.py \
+            --source /tmp/current-task-definition.json \
+            --container-name "${COREAPP_PREVIEW_CONTAINER_NAME}" \
+            --image-uri "${{ steps.build-image.outputs.image_uri }}" \
+            --output /tmp/task-definition-register.json
+
+          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/task-definition-register.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+
+          echo "current_task_definition_arn=${CURRENT_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+          echo "new_task_definition_arn=${NEW_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+
+      - name: Update preview ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "${COREAPP_PREVIEW_ECS_CLUSTER}" \
+            --service "${COREAPP_PREVIEW_ECS_SERVICE}" \
+            --task-definition "${{ steps.taskdef.outputs.new_task_definition_arn }}"
+
+      - name: Wait for preview service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${COREAPP_PREVIEW_ECS_CLUSTER}" \
+            --services "${COREAPP_PREVIEW_ECS_SERVICE}"
+
+      - name: Post active deployment status
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "active" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ needs.mark-awaiting-approval.outputs.workflow_url }}" \
+            --image-uri "${{ steps.build-image.outputs.image_uri }}" \
+            --task-definition-arn "${{ steps.taskdef.outputs.new_task_definition_arn }}" \
+            --preview-url "${COREAPP_PREVIEW_URL}"
+
+      - name: Preview deployment summary
+        run: |
+          echo "### Core-app preview deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment ID: \`${{ inputs.deployment_id }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- OneShot run: \`${{ inputs.oneshot_run_id }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`${{ inputs.branch_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ inputs.commit_sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${{ steps.build-image.outputs.image_uri }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Task definition: \`${{ steps.taskdef.outputs.new_task_definition_arn }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Preview URL: \`${COREAPP_PREVIEW_URL}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post failure status
+        if: failure()
+        run: |
+          python3 .github/scripts/coreapp-preview/post-status.py \
+            --base-url "${ONESHOT_DASHBOARD_BASE_URL}" \
+            --deployment-id "${{ inputs.deployment_id }}" \
+            --secret "${{ secrets.ONESHOT_DEPLOY_WEBHOOK_SECRET }}" \
+            --status "failed" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --workflow-url "${{ needs.mark-awaiting-approval.outputs.workflow_url }}" \
+            --error "Core-app preview deploy workflow failed. Inspect the GitHub Actions run for details."

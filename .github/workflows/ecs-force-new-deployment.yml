@@ -1,0 +1,151 @@
+name: Ops / ECS / Force New Deployment
+run-name: Force Deploy / ${{ inputs.service_name }} / ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: "ECS service to redeploy (case-insensitive). Examples: darci, bcat-planner, orchestrator, harvey, dashboard"
+        type: string
+        required: true
+      reason:
+        description: Short reason for the redeploy request
+        type: string
+        required: true
+      wait_for_stable:
+        description: Wait for the ECS service to become stable after the rollout
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: specter-force-new-deployment
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  ECS_CLUSTER_NAME: specter-cluster
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      normalized_service_name: ${{ steps.normalize.outputs.service_name }}
+
+    steps:
+      - name: Normalize service name
+        id: normalize
+        run: |
+          service_name="$(printf '%s' "${{ inputs.service_name }}" | tr '[:lower:]' '[:upper:]')"
+
+          if ! printf '%s' "${service_name}" | grep -Eq '^[A-Z0-9-]+$'; then
+            echo "Invalid ECS service name: ${service_name}"
+            echo "Use letters, digits, and hyphens only."
+            exit 1
+          fi
+
+          echo "service_name=${service_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Verify ECS service exists
+        run: |
+          aws ecs describe-services \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --services "${{ steps.normalize.outputs.service_name }}" \
+            --region "${AWS_REGION}" > /tmp/ecs-service-preflight.json
+
+          if [ "$(jq '.failures | length' /tmp/ecs-service-preflight.json)" -ne 0 ]; then
+            echo "ECS service lookup failed:"
+            jq '.failures' /tmp/ecs-service-preflight.json
+            exit 1
+          fi
+
+          if [ "$(jq '.services | length' /tmp/ecs-service-preflight.json)" -ne 1 ]; then
+            echo "Expected exactly one ECS service match."
+            cat /tmp/ecs-service-preflight.json
+            exit 1
+          fi
+
+      - name: Preflight summary
+        run: |
+          echo "### ECS force deployment request" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cluster: \`${ECS_CLUSTER_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Service: \`${{ steps.normalize.outputs.service_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reason: \`${{ inputs.reason }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Wait for stable: \`${{ inputs.wait_for_stable }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Current service state:" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          jq '.services[0] | {serviceName, status, desiredCount, runningCount, pendingCount, taskDefinition}' /tmp/ecs-service-preflight.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  approve-operation:
+    name: Approval Gate
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: specter-aws-operations
+
+    steps:
+      - run: echo "Admin approval recorded for ECS redeploy of ${{ needs.preflight.outputs.normalized_service_name }}"
+
+  force-deploy:
+    name: Force Deployment
+    needs:
+      - preflight
+      - approve-operation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Force new deployment
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --service "${{ needs.preflight.outputs.normalized_service_name }}" \
+            --force-new-deployment \
+            --region "${AWS_REGION}" > /tmp/ecs-update-service.json
+
+      - name: Wait for stable service
+        if: ${{ inputs.wait_for_stable }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --services "${{ needs.preflight.outputs.normalized_service_name }}" \
+            --region "${AWS_REGION}"
+
+      - name: Fetch final service state
+        run: |
+          aws ecs describe-services \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --services "${{ needs.preflight.outputs.normalized_service_name }}" \
+            --region "${AWS_REGION}" > /tmp/ecs-service-post.json
+
+      - name: Deployment summary
+        run: |
+          echo "### ECS force deployment complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cluster: \`${ECS_CLUSTER_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Service: \`${{ needs.preflight.outputs.normalized_service_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reason: \`${{ inputs.reason }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Waited for stable: \`${{ inputs.wait_for_stable }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Latest deployment state:" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          jq '.services[0] | {serviceName, status, desiredCount, runningCount, pendingCount, taskDefinition, deployments}' /tmp/ecs-service-post.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
