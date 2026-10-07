@@ -1,4 +1,4 @@
-FROM maven:3.9.15-eclipse-temurin-26 AS jdk-maven
+FROM maven:3.9-eclipse-temurin-26 AS jdk-maven
 
 FROM node:26-slim
 
