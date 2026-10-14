@@ -20,7 +20,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Builder — install all deps and compile TypeScript
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /build
 
@@ -40,7 +40,7 @@ RUN npm exec -- tsc
 # ---------------------------------------------------------------------------
 # Stage 2: Production dependencies only
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 
 WORKDIR /deps
 
@@ -52,7 +52,7 @@ RUN npm ci --omit=dev
 # ---------------------------------------------------------------------------
 # Stage 3: Runtime — minimal image
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 # Install curl for health checks (not included in Alpine by default)
 RUN apk add --no-cache curl
